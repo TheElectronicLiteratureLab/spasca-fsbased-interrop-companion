@@ -1,0 +1,1374 @@
+<html>
+  <head>
+    <script type="module" src="https://unpkg.com/immers-client/dist/destination.bundle.js"></script>
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+    <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
+    <script src="aframe-html.js"></script>
+
+    <!-- for input sharing -->
+    <script src="https://unpkg.com/peerjs@1.4.5/dist/peerjs.min.js"></script>
+    <!-- for content sharing, using NAF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.4.0/socket.io.slim.js"></script>
+    <script src="https://naf.benetou.fr/easyrtc/easyrtc.js"></script>
+    <script src="https://unpkg.com/networked-aframe@^0.9.0/dist/networked-aframe.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/aframe-mirror@latest/index.js"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+  </head>
+  <body>
+
+<div style="display:none" id="observablehq-numberOfPages-835aa7e9"></div>
+<div style="position:fixed;z-index:0" id="page"></div>
+
+<script type="module">
+// just text
+import {Runtime, Inspector} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
+import define from "https://api.observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations@2010.js?v=3";
+new Runtime().module(define, name => {
+  if (name === "numberOfPages") return new Inspector(document.querySelector("#observablehq-numberOfPages-835aa7e9"));
+});
+
+// HTML with interactable input
+import define2 from "https://api.observablehq.com/d/f219f0c440c6d5a2.js?v=3";
+new Runtime().module(define2, name => {
+  if (name === "viewof offsetExample") return new Inspector(document.querySelector("#observablehq-viewof-offsetExample-ab4c1560"));
+  if (name === "result_as_html") return new Inspector(document.querySelector("#observablehq-result_as_html-ab4c1560"));
+  return ["result_no_name","result"].includes(name);
+});
+setTimeout( _ => 
+  document.querySelector("#gui3d").setAttribute("html", "html:#observablehq-key;cursor:#cursor;" )
+, 2000)
+
+</script>
+
+<script>
+// could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
+	// ?inputmode=makeymakey
+
+// e.g background https://fabien.benetou.fr/pub/home/metaverse.png might have to allow options like scale to allow for modifying both size and ratio
+AFRAME.registerComponent('background-via-url', { // non interactive mode
+  init: function () {
+	var src = AFRAME.utils.getUrlParameter('background')
+	if (src && src != "") {
+		this.el.setAttribute( "visible", "true")
+		this.el.setAttribute( "src", src )
+		Array.from( document.querySelectorAll(".mural-instructions") ).map( i => i.setAttribute("visible", "true") )
+	}
+  }
+})
+
+AFRAME.registerComponent('web-url', {
+// motivated by https://glitch.com/edit/#!/aframe-lil-gui?path=observablewidget.html
+// might create some conflict with NAF or sth else... unsure
+  init: function () {
+	const url = "https://fabien.benetou.fr/Fabien/Principle?action=webvr"
+	var target = url
+	var src = AFRAME.utils.getUrlParameter('url')
+	// could also be a component parameter
+	var el = this.el
+	if (src && src != "") target = src
+	fetch(target).then( res => res.text() ).then( r => {
+	  document.querySelector("#page").innerHTML = r; 
+	  el.setAttribute("html", "html:#page;cursor:#cursor;" )
+	  //backdrop
+	  const geometry = new THREE.PlaneGeometry( el.object3D.children[0].geometry.parameters.width*1.1,
+		el.object3D.children[0].geometry.parameters.height*1.1 );
+	  const material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+	  const plane = new THREE.Mesh( geometry, material );
+	  plane.position.z = -.1
+	  el.object3D.add( plane );
+	})
+  }
+})
+
+var fontColor= "white"
+
+var immersClient
+setTimeout( _ => {
+	document.querySelector("immers-hud").immersClient.addEventListener("immers-client-connected", _ => {
+		immersClient = document.querySelector("immers-hud").immersClient
+		console.log(immersClient.profile.displayName, "connected")
+	})
+}, 1000)
+/* not sure what's the right way... but timeout works, others don't.
+document.addEventListener("immers-client-connected", _ => console.log("connected"))
+window.addEventListener("immers-client-connected", _ => console.log("connected"))
+
+        immers-client-friends-update or immers-client-new-message to keep track of conversations between recurring meeting? Say you join a room, spend a working session with colleagues then leave. Could these be used to in this context to send reminders to those who subscribed to that event?
+*/
+
+var polys
+async function getPolyList(keyword){
+	//return await fetch('/search?keyword='+keyword).then( res => res.json() ).then( res => return res )
+	var response = await fetch('/search?keyword='+keyword);
+	var polys = await response.json()
+	return polys
+}
+
+// for testing purposes
+getPolyList("pizza").then( p => polys = p.results )
+
+function cachePoly(res){
+	var n = 0;
+	res.map( i => { fetch(i.Thumbnail.replace("https://static.poly.pizza/","http://localhost:7777/getpoly?id=").replace(".webp","")) } ) ;
+	// see await Promise.all()
+}
+// should properly wait. Only once all queries are done then try to load.
+
+function loadPolyThumbnails(res){
+	var n = 0;
+	res.map( i => {
+		var el = document.createElement("a-image");
+		el.setAttribute("src", i.Thumbnail.replace("https://static.poly.pizza/","http://localhost:7777polydata/"));
+		el.setAttribute("position", "0 1 "+n--/10);
+			// could instead attach e.g 9 items to the wrist using wristattachsecondary on a palette
+		el.setAttribute("scale", ".1 .1 .1")
+		el.setAttribute("loadpolyfomthumbnail", "") // that could then be used to execute on pinch based on src property
+		AFRAME.scenes[0].appendChild(el);
+	} )
+}
+
+function loadFirstPolyModel(res){
+	var n = 0;
+	var i = res[n]
+	var el = document.createElement("a-gltf-model");
+	el.setAttribute("src", i.Thumbnail.replace("https://static.poly.pizza/","http://localhost:7777polydata/").replace("webp","glb")); 
+	el.setAttribute("position", "0 1 "+n--);
+	AFRAME.scenes[0].appendChild(el); 
+	return el
+}
+
+function loadPolyModels(res){
+// to load all models, rarely a good idea
+	var n = 0;
+	res.map( i => {
+		var el = document.createElement("a-gltf-model");
+		el.setAttribute("src", i.Thumbnail.replace("https://static.poly.pizza/","http://localhost:7777polydata/").replace("webp","glb")); 
+		el.setAttribute("position", "0 1 "+n--);
+		AFRAME.scenes[0].appendChild(el); 
+		// optionally rescale e.g rescaleModelFromPoly(el) // probably has to wait for it to be properly loaded, cf modelHasLoaded event
+			// e.g rescaleModelFromPoly ( loadFirstPolyModel(polys) ) won't work
+	} )
+}
+
+function rescaleModelFromPoly(modelEl){
+// rescale to fit in 1m3 box
+	var bbox = new THREE.Box3().setFromObject( modelEl.object3D );
+	var rescale = 1 / ( (( bbox.max.x - bbox.min.x) + (bbox.max.y - bbox.min.y) + (bbox.max.z - bbox.min.z) ) /3 );
+	modelEl.setAttribute("scale", rescale+ " " + rescale + " " + rescale)
+	// could also leave untouched if within boundaries, e.g > 0.1 and < 1
+}
+
+// SYNC WITH HMD EDITS before trying this
+/*
+
+source as URL e.g https://fabien.benetou.fr/Fabien/Principle?action=source (locally Fabien.Principle.pmwiki)
+	usual parsing (e.g stop words)
+	dedicated PmWiki cleanup e.g no URL
+	clean up or rather highlight (e.g color not being black) with presence from https://github.com/wordset/wordset-dictionary
+	could also have a short dictionnary of stop words based on popularity
+		e.g https://en.wikipedia.org/wiki/Most_common_words_in_English#100_most_common_words
+		but seems so short it might not help much, could try long and popular instead
+WPM * distance travelled as metric, not just 1
+
+can generate layout for keyboard as (Ctrl shortcut) copiable items to append to AR clipbard
+	https://twitter.com/utopiah/status/1533690234424139779
+		could also use an optional type in addition to target
+			such items would be copied without pressing Ctrl
+
+see remotesave for saving to be able to use the result outside the HMD
+*/
+
+/*
+
+use imagesFromURLs (used in screenstack) on https://vatelier.benetou.fr/MyDemo/newtooling/wiki_graph.json
+       and line-link-entities="target:#instructionA; source:#instructionC" between pages
+
+*/
+const wikiAsImages = "https://vatelier.benetou.fr/MyDemo/newtooling/wiki_graph.json"
+
+// see https://remote-keyboard.glitch.me on how to provide a remote keyboard (no BT) for hud keydown/keyup events
+	// consider alt server e.g 9000-peers-peerjsserver-bxw59h3fm87.ws-eu47.gitpod.io as peerjs isn't always reliable
+	// to do the same offline could add to express too, cf https://github.com/peers/peerjs-server#combining-with-existing-express-app
+//new Peer("2022xrkbd").on('connection', conn => conn.on('data', data => processRemoteInputData(data) ))
+const altServer = "9000-peers-peerjsserver-bxw59h3fm87.ws-eu47.gitpod.io" 
+//new Peer("2022xrkbd", {host: altServer}).on('connection', conn => conn.on('data', data => processRemoteInputData(data) ))
+// disabled for now
+function processRemoteInputData( data ){
+	// .status : keydown keyup pointermove
+		// on keydown or keyup, result un .key
+		// on pointermove, result un .x and .y
+
+	// could try to throw back as an event...
+	parseKeys( data.status, data.key )
+	if (data.status == "pointermove") parsePointer( data.x, data.y )
+}
+
+// SSE on a specific route to know if this file was updated, if so reload (would force leave VR) cf Inventing on Principle
+const source = new EventSource("streaming");
+source.onmessage = message => { 
+		console.log(message.data) // showing the updates without manually forcing a reload
+		if ((JSON.parse(message.data)).status == "reload" ) location.reload(true); 
+	} ;
+// monitored server-side, index.js with fs
+
+/* extrusion and more generally compactness of 3D object description :
+
+	Constructive Solid Geometry  (CSG) https://openjscad.nodebb.com/topic/235/threejs-integration/11 as example of integration of JSCAD (modelling with code basically) with threejs, naively looks like an interesting intersection, ideally with spacial editing after (i.e pinching a vertex to update the resulting geometry)
+*/
+
+// consider PinePhone keyboard as something more usable that BT rollable
+	// PeerJS/WS(S) to share key.events
+	// would also work with iPad keyboard ... or another other device with keyboard and browser.
+
+// refactoring : consider pluggable execution models and targets e.g eval(), containers, Observable, etc
+	// right now all mashed up together so creates both complexity and security risk
+
+// consider also STT and translation experiment
+// Codex by OpenAI (cf EP account) https://beta.openai.com/account/api-keys stored on ~/.openai-codex-test-xr used via backend
+// with token e.g JWT could also consider ~/.bashrc ~/.bin or ~/Prototypes as commands
+	// esp. those allowing to integrate with specific hardware
+
+// load as page loads
+// <a-text target observablecell="targetid:observablehq-numberOfPages-835aa7e9" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
+// interactive
+// <a-text target value="jxr obsv observablehq-numberOfPages-835aa7e9" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
+
+function newNoteFromObservableCell( cell ){
+	var targetEl = document.querySelector("#"+cell)
+	var potentialRes = document.querySelector("#observablehq-numberOfPages-835aa7e9>span")
+	if (potentialRes && potentialRes.children[1]){
+	  addNewNote( potentialRes.children[1].innerText ) 
+		return
+	}
+
+	let observer = new MutationObserver(mutationRecords => {
+	  addNewNote( mutationRecords[0].addedNodes[0].children[1].innerText ) 
+	});
+
+	observer.observe(targetEl, {
+	  childList: true, // observe direct children
+	  subtree: true, // and lower descendants too
+	  characterDataOldValue: true // pass old data to callback
+	})
+}
+
+AFRAME.registerComponent('observablecell', { // non interactive mode
+  schema: {
+	  targetid: {type: 'string'}
+  },
+  init: function () {
+	var el = this.el
+	var targetEl = document.querySelector("#"+this.data.targetid)
+	let observer = new MutationObserver(mutationRecords => {
+	  addNewNote( mutationRecords[0].addedNodes[0].children[1].innerText )
+	});
+
+	observer.observe(targetEl, {
+	  childList: true, // observe direct children
+	  subtree: true, // and lower descendants too
+	  characterDataOldValue: true // pass old data to callback
+  });
+}})
+
+// might mess thing up on Quest somehow... like typing does not seem to work anymore since.
+
+/*
+const registerServiceWorker = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register(
+        'sw-test/sw.js',
+        {
+          scope: '',
+        }
+      );
+      if (registration.installing) {
+        console.log('Service worker installing');
+      } else if (registration.waiting) {
+        console.log('Service worker installed');
+      } else if (registration.active) {
+        console.log('Service worker active');
+      }
+    } catch (error) {
+      console.error(`Registration failed with ${error}`);
+    }
+  }
+};
+*/
+
+// 2 modes : interact/display (see the .hidableenvironment class)
+	// interact : small scale, 3D model of impact visible, keyboard visible, instruction visible
+	// display : changeable scale, everything but content not visible
+
+// could try new movements dedicated to modifying text, in particular dedicated to coding
+	// e.g replacing a word by an expression el sa color red => dropping qs elname on el => qs elname sa color red
+
+// for snapping display the current position (like now)
+	// and future position as transparency when within a certain radius to target + offset
+	// see getClosestTargetElement( pos ) when an object is already selected an moving
+	// only snap there if within certain distance
+
+// replace console with an in VR equivalent, at least during the try/catch of eval() to get some feedback
+
+function displaySnappablePositions( position ){
+	// to show while moving an object
+	// has to be close enough (below threshold)
+}
+
+function coloredBlocksFromScreens(colors, el){
+	// those are NOT updated at the moment
+	colors.map( (u,i) => {
+		var e = document.createElement("a-box")
+		e.setAttribute("color", u.split(" ")[1])
+		e.setAttribute("position",`2 1.8 -${i}`)
+		e.setAttribute("width","0.2")
+		e.setAttribute("depth","0.2")
+		el.appendChild(e)
+	})
+}
+
+function imagesFromURLs(urls, el){
+	urls.map( (u,i) => {
+		var e = document.createElement("a-image")
+		if (u.indexOf("http")>-1)
+			e.setAttribute("src", u)
+		else
+			e.setAttribute("src", `screens/${u}`)
+		//e.setAttribute("position",`0 1.8 -${i}`)
+		e.setAttribute("position",`0 1.1 -${i/50}`) // flight mode
+		e.setAttribute("rotation",`-30 0 0`) // flight mode
+		e.setAttribute("scale", ".05 .05 .05") // have to scale down here otherwise move interactions aren't good
+		// could instead rely on https://github.com/visjs/vis-timeline
+		// as previously used  in https://mobile.twitter.com/utopiah/status/1110576751577567233
+		e.setAttribute("width","2")
+		el.appendChild(e)
+		targets.push(e)
+	})
+}
+
+function URLs(urls, el){
+	urls.map( (u,i) => {
+		var e = document.createElement("a-text")
+		e.setAttribute("value", u.split(" ")[1])
+		e.setAttribute("position",`-1 1.25 -${i}`)
+		// incorrect as screens (and their average color) are done per minute but URL done per change of tab
+		//does not help, should be a text property instead 
+		// e.setAttribute("width","10")
+		e.setAttribute("text", "wrapCount","200")
+		// el.appendChild(e) // disabled in flight mode
+	})
+}
+
+
+function stringWithPositionFromCoordinates(pos){
+	var el = getClosestTargetElement( pos, 0.5 )
+	// loosen up the threshold as we normally pick from the top left
+
+	// assumes a lot :
+		// NO rotation of the text, at all!
+		// single line of text
+		// scale only of 1 depth and uniform scaling
+		// left aligned
+		// probably only positive values
+	var selectedGlyph = {}
+	selectedGlyph.index = -1 // if we get an empty string
+	selectedGlyph.element = el
+	if (!el) return selectedGlyph
+	var glyph = el.object3D.children[0].geometry.visibleGlyphs
+	const matches = glyph.map( (t,i) => {
+			return {
+				el: el,
+				dist : Math.abs( pos.x - (
+					el.object3D.position.x + t.position[0]/(150/el.object3D.scale.x) ) ),
+				index : i
+			}
+		})
+		.filter( t => t.dist < 0.5 )
+		.sort( (a,b) => a.dist - b.dist )
+		// https://twitter.com/utopiah/status/1532766336941686784
+	if (matches.length > 0) {
+		selectedGlyph.index = matches[0].index
+	}
+	return selectedGlyph
+}
+
+function plot(equation,variablename="x",scale=5,step=1){
+	// could delete the past one document.querySelector("#plot")
+	// but nice to compare curves... should rather avoid adding grids instead.
+	var plot = document.querySelector("#plot")
+	if (!plot){
+		plot = document.createElement("a-entity")
+		targets.push(plot) // adding only once
+		plot.setAttribute("position", "0 1.5 -.5") // convenient position to test on desktop
+		plot.setAttribute("scale", ".01 .01 .01")
+		var idx = 0
+		for (var i=-scale;i<=scale;i+=step){
+			xl = `start: ${-scale} ${i} 0; end : ${scale} ${i} 0; opacity: 1;`
+			// weirdest "trick"... something using only `` on setAttribute produces empty string
+			// but indirecting once by setting a variable make the following one work?!
+			plot.setAttribute("line__"+ ++idx, xl)
+			plot.setAttribute("line__"+ ++idx, `start: ${i} ${-scale} 0; end : ${i} ${scale} 0; opacity: 1;`)
+		}
+		xaxis = `start: ${-scale} 0 0; end : ${scale} 0 0; opacity: 1; color:white;`
+		plot.setAttribute("line__axis_x", xaxis)
+		plot.setAttribute("line__axis_y", `start: 0 ${-scale} 0; end : 0 ${scale} 0; opacity: 1; color:white;`)
+		plot.setAttribute("line__axis_z", `start: 0 0 ${-scale}; end : 0 0 ${scale}; opacity: 1; color:white;`)
+		plot.id = "plot"
+		AFRAME.scenes[0].appendChild( plot )
+	}
+	var previousPoint = null
+	var curveId = +Date.now()
+	idx = 0
+	for (var i=-scale;i<=scale;i+=step/10){
+		var pos = i + " " + eval( "x="+i +";"+ equation) + " .1"
+		if (previousPoint) {
+			plot.setAttribute("line__user"+curveId+"section"+ ++idx, 'start: ' + previousPoint+ '; end : ' + pos + '; color:red;')
+		}
+		previousPoint = pos
+}
+}
+
+
+AFRAME.registerComponent('target', {
+  init: function () {
+	targets.push( this.el )
+  }
+})
+
+const maxItems = 10
+const now = Math.round( +new Date()/1000 ) //ms in JS, seconds in UNIX epoch
+
+AFRAME.registerComponent('line-link-entities', {
+  schema: {
+    source: {type: 'selector'},
+    target: {type: 'selector'},
+    steps: {type: 'number', default: 1},
+  },
+  init: function () {
+    setTimeout( _ => { // stupid... but works. 
+	    var sourcePos = this.data.source.object3D.position
+	    var targetPos = this.data.target.object3D.position
+	    // adding a gltf inside an element prevents the parent from having coordinates (fast enough?)
+	    var step = 0
+	    var points = cut ([sourcePos, targetPos], 0, ++step)
+	    points = cut (points, 0, ++step)
+	    points = cut (points, points.length-2, step)
+	    var el = this.el
+	    points.map( (p,i,arr) => {
+	      if (arr[i+1])
+		el.setAttribute("line__"+i, "start:" + AFRAME.utils.coordinates.stringify( arr[i] ) + ";end: " +  AFRAME.utils.coordinates.stringify( arr[i+1] ) )      
+	    })
+    }, 100 ) // could check instead if both elements have loaded
+    
+    function cut(points, pos, step){
+      var a = points[pos]
+      var b = points[pos+1]
+      var midPos = new THREE.Vector3()
+      midPos.copy(a).add(b).divideScalar(2)
+      midPos.z -= a.distanceTo(b)/(step*10) // smoothed out but axis aligned
+      return [...points.slice(0,pos+1), midPos, ...points.slice(pos+1)]
+    }
+  }
+});
+
+AFRAME.registerComponent('screenstack', {
+  init: function () {
+	//load()
+	//if (cabin && cabin.length > 0) return // test doesn't seem to work well on new page / 1st load
+		  // see CEREMA project, seems to handle caching better
+	var el = this.el
+	//fetch('/screens').then(response => response.json()).then(data => { imagesFromURLs(data.files.slice(-maxItems), el); save(); })
+	  fetch(wikiAsImages).then(response => response.json()).then(data => imagesFromURLs( Object.entries(data.Nodes).map(( [k, v] ) => { return "https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_"+v.Group+"_"+v.Label+".png" } ).slice(0,maxItems) , el ))
+
+	// example time sorting
+	/* fetch('/screens').then(response => response.json()).then(data => console.log(
+		  data.files.filter( i => i.indexOf("_000") < 0 ).map( i => Number(i.replace(".png", "")) ).filter( i => i > now-60 ) 
+	) )
+        */
+
+	fetch('colors.txt').then(response => response.text()).then(data => coloredBlocksFromScreens(data.split("\n").splice(-maxItems), el))
+	// timings should match as colors are generated from the screens
+
+	fetch('currentURL.txt').then(response => response.text()).then(data => URLs(data.split("\n").splice(-maxItems), el ))
+	// could slice the array based on dates and e.g limit on current day or last 24hrs
+  }
+});
+
+var selectedElement = null;
+var targets = []
+
+function getClosestTargetElement( pos, threshold=0.05 ){ // 10x lower threshold for flight mode
+	// TODO Bbox intersects rather than position
+	var res = null
+	const matches = targets.map( t => { return { el: t, dist : pos.distanceTo(t.getAttribute("position") ) } })
+		.filter( t => t.dist < threshold ) 
+		.sort( (a,b) => a.dist > b.dist)
+	if (matches.length > 0) res = matches[0].el
+	return res
+}
+	
+/*
+alternatively could looks for the intersecting bounding boxes of all targets
+then from those pick the closest one (again based on center)
+
+Both work well... but without any depth/thickness the chance of intersection are null...
+extruding the plane to a volume on a known axis, e.g z here (no rotation) is trivial but limiting.
+
+Could rely on the bounding sphere instead but not ideal when text is beside other pieces of text
+
+Note that in practice we plan to bring geometry with the text, a la Scratch, to showcase grammar and potential to combine.
+Consequently those problems would probably go away by intersecting with that geometry instead.
+
+That still means an efficient solution, e.g convex hull or BVH
+*/
+
+// e.g addBackgroundBoxToTextElements( targets.filter( e => e.localName == "a-text" ) )
+// note that background is "just" for the user in the sense that an invisible bounding box is enough for interactions
+function addBackgroundBoxToTextElements( textElements ){
+	textElements.map( el => {
+
+		addBoundingBoxToTextElement( el )
+
+		var bbox = new THREE.Box3().setFromObject( el.object3D.children[0] )
+			// the text element itself has no volume whereas its first children is a mesh
+		var scale = el.getAttribute("scale").x // assume being uniform
+		var box = document.createElement("a-box")
+		el.appendChild( box )
+		box.setAttribute("width", (bbox.max.x - bbox.min.x) * 1/scale)
+		box.setAttribute("height", (bbox.max.y - bbox.min.y) * 1/scale)
+		box.setAttribute("depth", scale)
+		box.setAttribute("position", (bbox.max.x - bbox.min.x) * (1/scale) / 2 + " 0 " + -scale/2+0.0001 )
+
+		setTimeout( _ => { // AFrame induced delay
+			// should check instead how to make sure an object is indeed created.
+				// maybe via el.getObject3D()
+			var compoundbbox = new THREE.Box3().setFromObject( box.object3D )
+			compoundbbox.expandByObject( el.object3D )
+			var helperbox = new THREE.BoundingBoxHelper( box.object3D, 0x00ff00);
+			helperbox.update();
+			AFRAME.scenes[0].object3D.add(helperbox);
+			/*
+			var helpercompound = new THREE.BoundingBoxHelper( compoundbbox, 0x0000ff);
+			helpercompound.update();
+			AFRAME.scenes[0].object3D.add(helpercompound);
+			*/
+		}, 100)
+	})
+}
+
+const zeroVector3 = new THREE.Vector3()
+var bbox = new THREE.Box3()
+bbox.min.copy( zeroVector3 )
+bbox.max.copy( zeroVector3 )
+var selectionBox = new THREE.BoundingBoxHelper( bbox.object3D, 0x0000ff);
+
+var groupHelpers = []
+function addBoundingBoxToTextElement( el ){
+	var meshEl = el.object3D.children.filter( e => (e.type == "Mesh") )[0]
+	var helper = new THREE.BoundingBoxHelper(meshEl, 0xff0000);
+		// otherwise doesn't work with icon...
+	helper.update();
+	AFRAME.scenes[0].object3D.add(helper);
+	el.setAttribute("box-uuid", helper.uuid )
+	groupHelpers.push( helper )
+}
+
+function removeBoundingBoxToTextElement( el ){
+	var uuid = el.getAttribute("box-uuid")
+	el.removeAttribute("box-uuid")
+	//AFRAME.scenes[0].object3D.traverse( e => { if (e.uuid == uuid) e.removeFromParent() })
+	//AFRAME.scenes[0].object3D.traverse( e => { if (e.uuid == uuid) AFRAME.scenes[0].object3D.remove(e) })
+	AFRAME.scenes[0].object3D.traverse( e => { console.log(e.uuid == uuid) })
+	AFRAME.scenes[0].object3D.traverse( e => { if (e.uuid == uuid) console.log("found", e)})
+		// somehow removing did work before ...
+}
+
+function groupSelectionToNewNote(){
+	var text = ""
+	groupSelection.map( grpel => {
+		//removeBoundingBoxToTextElement( grpel )
+			// somehow fails...
+		text += grpel.getAttribute("value") + "\n"
+	})
+	groupHelpers.map( e => e.removeFromParent() )
+	groupHelpers = []
+	groupSelection = []
+	addNewNote( text )
+}
+
+var groupSelection = []
+function addToGroup( position ){
+	var el = getClosestTargetElement( position )
+	if (!el) return
+	groupSelection.push( el )
+	addBoundingBoxToTextElement( el )
+}
+
+function appendToHUD(txt){
+	const textHUD = document.querySelector("[hud]>a-text").getAttribute("value") 
+	if ( textHUD == startingText)
+		setHUD( txt )
+	else
+		setHUD( textHUD + " " + txt )
+}
+
+function setHUD(txt){
+	document.querySelector("[hud]>a-text").setAttribute("value",txt)
+}
+
+AFRAME.registerComponent('pinchletterpick', { 
+  init: function () {
+		 // alt document.querySelector("#righthand").components["hand-tracking-controls"].indexTipPosition
+	this.el.addEventListener('pinchmoved', function (event) {
+		var res = stringWithPositionFromCoordinates( event.detail.position )
+		if (res.element) 
+			setHUD( res.element.getAttribute("value")[res.index] )
+	});
+  }
+});
+
+AFRAME.registerComponent('pinchsecondary', { 
+  init: function () {
+	this.el.addEventListener('pinchended', function (event) {
+		selectedElement = getClosestTargetElement( event.detail.position )
+		// if close enough to a target among a list of potential targets, unselect previous target then select new
+		if (selectedElement) interpretJXR( selectedElement.getAttribute("value") )
+		if (setupMode) setupBBox["B"] = event.detail.position
+		if ( setupBBox["A"] && setupBBox["B"] ) {
+			setupMode = false
+			document.querySelector("[hud]>a-text").setAttribute("value",JSON.stringify(setupBBox))
+		}
+		/*
+		selectionPinchMode = false
+		setHUD( AFRAME.utils.coordinates.stringify( bbox.min ),
+			AFRAME.utils.coordinates.stringify( bbox.max ) )
+		bbox.min.copy( zeroVector3 )
+		bbox.man.copy( zeroVector3 )
+	       */
+	});
+	this.el.addEventListener('pinchmoved', function (event) {
+		if (selectionPinchMode){
+			bbox.min.copy( event.detail.position )
+			setHUD( "selectionPinchMode updated min")
+			if (!bbox.max.equal(zeroVector3))
+				selectionBox.update();
+		}
+	});
+	this.el.addEventListener('pinchstarted', function (event) {
+		if (!selectionPinchMode) bbox.min.copy( zeroVector3 )
+		if (selectionPinchMode) setHUD( "selectionPinchMode started")
+	});
+  }
+});
+
+AFRAME.registerComponent('wristattachsecondary',{
+  schema: {
+    target: {type: 'selector'},
+  },
+  init: function () {
+	var el = this.el
+	this.worldPosition=new THREE.Vector3();
+	//var side = this.el.getAttribute("hand-tracking-controls").hand[0] // fails
+		  // (this.el.components)
+	this.side = "l"
+	if ( this.el.getAttribute("hand-tracking-controls").indexOf("right") ) this.side = "r"
+  },
+  tick: function () {
+	// could check if it exists first, or isn't 0 0 0... might re-attach fine, to test
+		  // somehow very far away... need to convert to local coordinate probably
+		  // localToWorld?
+	var worldPosition=this.worldPosition;
+	  //this.el.object3D.traverse( e => { if (e.name == "b_"+this.side+"_wrist") {
+	  this.el.object3D.traverse( e => { if (e.name == "b_l_wrist") {
+		worldPosition.copy(e.position);e.parent.updateMatrixWorld();e.parent.localToWorld(worldPosition)
+		rotation = e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14
+		this.data.target.setAttribute("rotation", rotation)
+		this.data.target.setAttribute("position",
+				AFRAME.utils.coordinates.stringify( worldPosition ) )
+			  // doesnt work anymore...
+		//this.data.target.setAttribute("rotation", AFRAME.utils.coordinates.stringify( e.getAttribute("rotation") )
+	  }
+	})
+  }
+});
+
+AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right one
+
+// consider instead https://github.com/AdaRoseCannon/handy-work/blob/main/README-AFRAME.md for specific poses
+// or https://aframe.io/aframe/examples/showcase/hand-tracking/pinchable.js 
+
+  init: function () {
+	var el = this.el
+	this.el.addEventListener('pinchended', function (event) { 
+		// if positioned close enough to a target zone, trigger action
+		// unselect current target if any
+		selectedElement = null;
+		save()
+		if (setupMode) setupBBox["A"] = event.detail.position
+			// somehow keeps on setting up... shouldn't once done.
+		if ( setupBBox["A"] && setupBBox["B"] ) {
+			setupMode = false
+			document.querySelector("[hud]>a-text").setAttribute("value",JSON.stringify(setupBBox))
+		}
+		if ( drawingMode ) draw( event.detail.position )
+		if ( groupingMode ) addToGroup( event.detail.position )
+		selectionPinchMode = false
+		/*
+		setHUD( AFRAME.utils.coordinates.stringify( bbox.min ),
+			AFRAME.utils.coordinates.stringify( bbox.max ) )
+		bbox.min.copy( zeroVector3 )
+		bbox.man.copy( zeroVector3 )
+	       */
+	});
+	this.el.addEventListener('pinchmoved', function (event) { 
+		// move current target if any
+		if (selectionPinchMode){
+			bbox.max.copy( event.detail.position )
+			if (!bbox.min.equal(zeroVector3))
+				selectionBox.update();
+		}
+		if (selectedElement && !groupingMode) {
+			selectedElement.setAttribute("position", event.detail.position)
+			document.querySelector("#righthand").object3D.traverse( e => { if (e.name == "b_r_wrist") selectedElement.setAttribute("rotation", e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14)  })
+			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
+		}
+	});
+	this.el.addEventListener('pinchstarted', function (event) {
+		if (!selectionPinchMode) bbox.max.copy( zeroVector3 )
+
+		//var clone = getClosestTargetElement( event.detail.position ).cloneNode()
+		// might want to limit cloning to unmoved element and otherwise move the cloned one
+		//AFRAME.scenes[0].appendChild( clone )
+		//targets.push( clone )
+		//selectedElement = clone
+
+		selectedElement = getClosestTargetElement( event.detail.position )
+		// if close enough to a target among a list of potential targets, unselect previous target then select new
+	});
+  }
+});
+
+// testing on desktop
+var visible = true
+function tst(){
+	visible = !visible
+	targets.map( e => {
+			scale = 50// should be a variable instead
+			e.setAttribute("scale", visible ? ".05 .05 .05" : ".1 .1 .1" )
+			var pos = AFRAME.utils.coordinates.parse( e.getAttribute("position") )
+			visible ? pos.z *= scale : pos.z /= scale // might be the opposite but anyway give the principle
+			e.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
+			// should actually be just for src, not for text notes... even though could be interesting
+	})
+	var model = document.querySelector("#cabin").object3D
+	model.traverse( o => { if (o.material) {
+			o.material.wireframe = visible;
+			o.material.opacity = visible ? 0.05 : 1;
+			o.material.transparent = visible;
+	} })
+}
+
+
+// add (JXR) shortcuts as PIM function from e.g https://observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations
+	// allowing to search within PIM then show manipulable pages as preview.
+
+// note that can be tested in VR also as jxr tst()
+	// could make for nice in VR testing setup as eved notes
+
+var setupMode = false
+var setupBBox = {}
+function enterSetupMode(){
+	// rely on 2 pinches to create a bounding box of safe interaction
+	// https://threejs.org/docs/#api/en/math/Box3.containsBox
+	setupMode = true
+}
+
+AFRAME.registerComponent('changecoloronpress', {
+	init: function(){
+		var el = this.el
+		this.el.addEventListener('pressedended', function (event) { 
+			tst()
+			// other action could possibly based on position relative to zones instead, i.e a list of bbox/functions pairs
+		})
+	}
+})
+//---- other components : ------
+// could become like https://twitter.com/utopiah/status/1264131327269502976
+	// can include a mini typing game to warm up finger placement
+
+var selectionPinchMode = false
+function startSelectionVolume(){
+	selectionPinchMode = true
+	// see setupBBox in pinchprimary and pinchsecondary
+	// then addBoundingBoxToTextElement()
+}
+// note that the bbox with vertical position model is still interesting
+	// (if within bounding box, try to execute code)
+	// because it allows grouping and sequentially rather executing line by line
+	// see https://threejs.org/docs/#api/en/math/Box3.containsBox
+
+// save pose of targets and src locally and if available on PIM
+/*
+savingJSON = targets.map( e => {
+	rot : e.getAttribute("rotation"),
+	pos : e.getAttribute("position"), 
+	scale : e.getAttribute("scale"), 
+	src : e.getAttribute("src"), 
+	value : e.getAttribute("value"), 
+})
+*/
+// load alt set of items e.g from https://observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations
+	// or https://fabien.benetou.fr/pub/home/pimxr-experimentation/sources.json
+
+// position should be configurable as rotation is handled by the OS
+var groupingMode = false
+
+var sketchEl
+var lastPointSketch
+function parsePointer( x,y ){
+		console.log(x,y)
+	if (!sketchEl) {
+		sketchEl = document.createElement("a-entity")
+		// sketchEl.setAttribute("position", "0 1.4 -0.3") otherwise lines don't align
+			// could counter that offset but might be problematic later on with translations/rotations
+		targets.push( sketchEl )
+		AFRAME.scenes[0].appendChild(sketchEl)
+	}
+	var el = document.createElement("a-sphere")
+	var pos = x/1000 + " " + y/1000 + " 0"
+		// should offset and flip properly
+	el.setAttribute("position", pos)
+	el.setAttribute("radius", 0.01)
+	el.setAttribute("color", "green")
+	sketchEl.appendChild( el )
+	if (lastPointSketch){
+		var oldpos = AFRAME.utils.coordinates.stringify( lastPointSketch.getAttribute("position") )
+		sketchEl.setAttribute("line__"+ Date.now(), `start: ${oldpos}; end : ${pos};`)
+	}
+	lastPointSketch = el
+	
+}
+
+function parseKeys(status, key){
+	var e = hudTextEl
+	if (status == "keyup"){
+		if (key == "Control"){
+			groupingMode = false
+			groupSelectionToNewNote()
+		}
+	}
+	if (status == "keydown"){
+		var txt = e.getAttribute("value") 
+		if (txt == "[]") 
+			e.setAttribute("value", "")
+		if (key == "Backspace" && txt.length)
+			e.setAttribute("value", txt.slice(0,-1))
+		if (key == "Control")
+			groupingMode = true
+		if (key == "Shift" && selectedElement)
+			e.setAttribute("value", selectedElement.getAttribute("value") )
+		else if (key == "Enter") {
+			if ( selectedElement ){
+				var clone = selectedElement.cloneNode()
+				clone.setAttribute("scale", "0.1 0.1 0.1")  // somehow lost
+				AFRAME.scenes[0].appendChild( clone )
+				targets.push( clone )
+				selectedElement = clone
+			} else {
+				if (txt.match(/^jxr /)) interpretJXR(txt)
+				// check if text starts with jxr, if so, also interpret it.
+				addNewNote(e.getAttribute("value"))
+				e.setAttribute("value", "")
+			}
+		} else {
+		// consider also event.ctrlKey and multicharacter ones, e.g shortcuts like F1, HOME, etc
+			if (key.length == 1)
+				e.setAttribute("value", e.getAttribute("value") + key )
+		}
+		save()
+	}
+}
+
+var hudTextEl
+const startingText = "[]"
+
+AFRAME.registerComponent('hud', {
+	init: function(){
+		var el = this.el
+		var e = document.createElement("a-text") //could be hardcoded instead... arguable.
+		e.setAttribute("value", startingText)
+		//e.setAttribute("font", "sw-test/Roboto-msdf.json")
+		e.setAttribute("position", "-0.05 0 -0.2") 
+		e.setAttribute("scale", "0.05 0.05 0.05") 
+		el.appendChild( e )
+		hudTextEl = e
+		document.addEventListener('keyup', function(event) {
+			parseKeys('keyup', event.key)
+		});
+		document.addEventListener('keydown', function(event) {
+			parseKeys('keydown', event.key)
+		});
+	}
+})
+
+function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null ){
+	//var newnote = document.createElement("a-text")
+	var newnote = document.createElement("a-troika-text")
+	newnote.setAttribute("anchor", "left" )
+	newnote.setAttribute("outline-width", "5%" )
+	newnote.setAttribute("outline-color", "black" )
+
+	if (id) newnote.id = id
+	newnote.setAttribute("side", "double" )
+	var userFontColor = AFRAME.utils.getUrlParameter('fontcolor')
+	if (userFontColor && userFontColor != "") 
+		newnote.setAttribute("color", userFontColor )
+	else 
+		newnote.setAttribute("color", fontColor )
+	newnote.setAttribute("value", text )
+	//newnote.setAttribute("font", "sw-test/Roboto-msdf.json")
+	newnote.setAttribute("position", position)
+	newnote.setAttribute("scale", scale)
+	AFRAME.scenes[0].appendChild( newnote )
+	targets.push(newnote)
+}
+
+function interpretAny( code ){
+
+	if (!code.match(/^dxr /)) return
+	var newcode = code
+	newcode = newcode.replace("dxr ", "")
+	//newcode = newcode.replace(/bash ([^\s]+)/ ,`debian '$1'`) // syntax delegated server side
+	fetch("/command?command="+newcode).then( d => d.json() ).then( d => {
+		console.log( d.res )
+		appendToHUD( d.res ) // consider shortcut like in jxr to modify the scene directly
+		// res might return that said language isn't support
+			// commandlistlanguages could return a list of supported languages
+	})
+}
+
+var drawingMode = false
+function draw( position ){
+	var drawingMoment = +Date.now()
+	var pos = AFRAME.utils.coordinates.stringify( position )
+	// add sphere per point
+	var el = document.createElement("a-sphere")
+	el.setAttribute("position", pos)
+	el.setAttribute("radius", 0.001)
+	el.setAttribute("color", "lightblue")
+	el.setAttribute("dateadded", drawingMoment )
+	// if previous point exist, draw line between both
+	var pastPoints = Array.from( document.querySelectorAll("[dateadded]") )
+		.sort( (a,b) => a.getAttribute("dateadded") - b.getAttribute("dateadded") )
+	if (pastPoints.length) {
+		var previousPoint = pastPoints[0]
+		var drawing = previousPoint.parentElement
+		var oldpos = AFRAME.utils.coordinates.stringify( previousPoint.getAttribute("position") )
+		drawing.setAttribute("line__"+ drawingMoment, `start: ${oldpos}; end : ${pos};`)
+	} else {
+		var drawing = document.createElement("a-entity")
+		drawing.className = "drawing"
+		AFRAME.scenes[0].appendChild( drawing )
+	}
+	drawing.appendChild( el )
+	// if sufficiently close to another sphere (the first) close the loop
+	if (pastPoints.length>1) {
+		var lastPoint = pastPoints[pastPoints.length-1]
+		var oldpos = AFRAME.utils.coordinates.stringify( lastPoint.getAttribute("position") )
+		if (lastPoint.getAttribute("position").distanceTo( position) < 0.1) // threshold
+			drawing.setAttribute("line__"+ drawingMoment + "_closeloop", `start: ${oldpos}; end : ${pos};`)
+			// then enter extrude mode (assume they are on 1 plane)
+			// should also prevent from adding points to the current drawing
+			// before investing too much effort in this, should consider how it would actually improve usage
+			// especially as we can add AFrame primitives with the keyboard
+				// intersection of kbd and hand tracked 6DoF being the primary usage
+	}
+
+	/* test values, must wait .1 second between otherwise there is no known position
+		(most likely AFrame to threejs delay)
+	draw( new THREE.Vector3(-0.04, 1.7, -1) );
+	draw( new THREE.Vector3(0.04, 1.7, -1) );
+	draw( new THREE.Vector3(0, 1.72, -1) );
+	*/
+
+
+}
+
+// the goal is to associate objects as shape with volume to code snippet
+function addGltfFromURLAsTarget( url, scale=1 ){
+	var el = document.createElement("a-entity")
+	AFRAME.scenes[0].appendChild(el)
+	el.setAttribute("gltf-model", url)
+	el.setAttribute("position", "0 1.7 -0.3") // arbitrary for test
+	el.setAttribute("scale", scale + " " + scale + " " + scale)
+	targets.push(el)
+
+	// consider https://sketchfab.com/developers/download-api/downloading-models/javascript
+}
+
+function showhistory(){
+	setHUD("history :\n")
+	commandhistory.map( i => appendToHUD(i.uninterpreted+"\n") )
+}
+
+function saveHistoryAsCompoundSnippet(){
+	addNewNote( commandhistory.map( e => e.uninterpreted ).join("\n") )
+}
+
+var commandhistory = []
+
+function parseJXR( code ){
+	var newcode = code
+	newcode = newcode.replace("jxr ", "")
+	newcode = newcode.replace(/(\d)s (.*)/ ,`setTimeout( _ => { $2 }, $1*1000)`)
+
+	// qs X => document.querySelector("X")
+	newcode = newcode.replace(/qs ([^\s]+)/ ,`document.querySelector('$1')`)
+
+	// sa X Y => .setAttribute("X", "Y")
+	newcode = newcode.replace(/ sa ([^\s]+) ([^\s]+)/,`.setAttribute('$1','$2')`)
+		// problematic for position as they include spaces
+
+	newcode = newcode.replace(/obsv ([^\s]+)/ ,`newNoteFromObservableCell('$1')`)
+
+	// e.g qs a-sphere sa color red => 
+	// document.querySelector("a-sphere").setAttribute("color", "red")
+
+	newcode = newcode.replace(/lg ([^\s]+) ([^\s]+)/ ,`addGltfFromURLAsTarget('$1',$2)`)
+	// order matters, here we only process the 2 params if they are there, otherwise 1
+	newcode = newcode.replace(/lg ([^\s]+)/ ,`addGltfFromURLAsTarget('$1')`)
+	return newcode
+}
+
+function interpretJXR( code ){
+	if (code.length == 1) appendToHUD( code ) // special case of being a single character, thus keyboard
+	if (!code.match(/^jxr /)) return
+	var uninterpreted = code
+	var parseCode = ""
+	code.split("\n").map( lineOfCode => parseCode += parseJXR( lineOfCode ) + ";" )
+	// could ignore meta code e.g showhistory / saveHistoryAsCompoundSnippet
+	commandhistory.push( {date: +Date.now(), uninterpreted: uninterpreted, interpreted: parseCode} )
+	
+	console.log( parseCode )
+	try {
+		eval( parseCode )
+	} catch (error) {
+		console.error(`Evaluation failed with ${error}`);
+	}
+
+	// unused keyboard shortcuts (e.g BrowserSearch) could be used too
+	// opt re-run it by moving the corresponding text in target volume
+}
+
+AFRAME.registerComponent('toolbox', {
+	init: function(){
+		var el = this.el
+		var e = document.createElement("a-sphere")
+		e.setAttribute("scale", "0.1 0.1 0.1")
+		e.setAttribute("color", "lightblue")
+		e.setAttribute("pressable")
+		e.setAttribute("changecoloronpress")
+		e.id = "toolboxsphere"
+		el.appendChild( e )
+		var e = document.createElement("a-cylinder")
+		e.setAttribute("scale", "0.1 0.1 0.1")
+		e.setAttribute("color", "darkred")
+		e.setAttribute("pressable")
+		e.setAttribute("changecoloronpress")
+		e.id = "toolboxcylinder"
+		el.appendChild( e )
+		var e = document.createElement("a-box")
+		e.setAttribute("scale", "0.1 0.1 0.1")
+		e.setAttribute("color", "pink")
+		e.setAttribute("pressable")
+		e.setAttribute("changecoloronpress")
+		e.id = "toolbox"
+		el.appendChild( e )
+	},
+	tick: function(){
+		var toolbox = document.querySelector("#toolbox")
+		var cam = document.querySelector("[camera]")
+		toolbox.object3D.position.x = cam.getAttribute("position").x-0.5
+		toolbox.object3D.position.z = cam.getAttribute("position").z+0.2
+		//toolbox.object3D.rotation.y = cam.getAttribute("rotation").y
+	}
+})
+
+// from https://aframe.io/aframe/examples/showcase/hand-tracking/pressable.js
+AFRAME.registerComponent('pressable', {
+	schema:{pressDistance:{default:0.06}},
+	init:function(){this.worldPosition=new THREE.Vector3();this.handEls=document.querySelectorAll('[hand-tracking-controls]');this.pressed=false;},
+	tick:function(){var handEls=this.handEls;var handEl;var distance;for(var i=0;i<handEls.length;i++){handEl=handEls[i];distance=this.calculateFingerDistance(handEl.components['hand-tracking-controls'].indexTipPosition);if(distance<this.data.pressDistance){if(!this.pressed){this.el.emit('pressedstarted');} this.pressed=true;return;}} if(this.pressed){this.el.emit('pressedended');} this.pressed=false;},
+	calculateFingerDistance:function(fingerPosition){var el=this.el;var worldPosition=this.worldPosition;worldPosition.copy(el.object3D.position);el.object3D.parent.updateMatrixWorld();el.object3D.parent.localToWorld(worldPosition);return worldPosition.distanceTo(fingerPosition);}
+});
+
+AFRAME.registerComponent('selectionboxonpinches', {
+	init:function(){
+		AFRAME.scenes[0].object3D.add(selectionBox);
+	}
+})
+
+let alphabet = 'abcdefghijklmnopqrstuvwxyz';
+
+AFRAME.registerComponent('keyboard', {
+	init:function(){
+		const horizontaloffset = .5
+		const horizontalratio = 1/30
+		 for (var i = 0; i < alphabet.length; i++) {
+			var e = document.createElement("a-text")
+			e.setAttribute("side", "double" )
+			e.setAttribute("value", alphabet[i])
+			e.setAttribute("target", true)
+			e.setAttribute("scale", ".1 .1 .1")
+			var pos = i * horizontalratio - horizontaloffset
+			e.setAttribute("position",`${pos} 1.6 -0.4`)
+			this.el.appendChild(e) 
+		 }
+	}
+})
+	
+AFRAME.registerComponent('capturegesture', {
+	init:function(){this.handEls=document.querySelectorAll('[hand-tracking-controls]');},
+	tick:function(){
+		document.querySelector("#righthand").object3D.traverse( e => { if (e.name == "b_r_wrist") console.log("rw", e.rotation) })
+		document.querySelector("#lefthand" ).object3D.traverse( e => { if (e.name == "b_l_wrist") console.log("rl", e.rotation) })
+			// should look up thumb-metacarpal and index-finger-metacarpal if not sufficient
+				// might trickle down iif wrist rotation itself is already good
+			// https://immersive-web.github.io/webxr-hand-input/
+	}
+});
+
+
+const maxItemsFromSources = 20
+AFRAME.registerComponent('timeline', {
+        init:function(){
+		console.log("timeline component")
+                fetch("../content/fot_timeline.json").then(res => res.json() ).then(res => {
+                        res.fot_timeline.slice(0,maxItemsFromSources).map( (c,i) => addNewNote( c.year+"_"+c.event, "1 "+i/10+" -1", ".1 .1 .1") ) 
+		console.log(res)
+                })
+        },
+});
+
+AFRAME.registerComponent('glossary', {
+	init:function(){
+		fetch("content/glossary.json").then(res => res.json() ).then(res => {
+			Object.values(res.entries).slice(0,maxItemsFromSources).map( (c,i) => addNewNote( c.phrase + c.entry.slice(0,50)+"..." , "-1 "+i/10+" -1", ".1 .1 .1") ) 
+		})
+	},
+});
+
+AFRAME.registerComponent('issues', {
+	init:function(){
+		// fetch("https://api.github.com/repos/Utopiah/relax-plus-think-space/issues").then(res => res.json() ).then(res => {
+		fetch("https://git.benetou.fr/api/v1/repos/utopiah/text-code-xr-engine/issues").then(res => res.json() ).then(res => {
+			res.slice(0,maxItemsFromSources).map( (n,i) => addNewNote( n.title, "0 "+(1+i/10)+" -1", ".1 .1 .1" ) )
+		})
+	},
+});
+
+AFRAME.registerComponent('dynamic-view', {
+	init:function(){
+		fetch("content/DynamicView.json").then(res => res.json() ).then(res => {
+			res.nodes.slice(0,maxItemsFromSources).map( n => addNewNote( n.title, "" + res.layout.nodePositions[n.identifier].x/100 + " " + res.layout.nodePositions[n.identifier].y/100 + " -1", ".1 .1 .1" ) )
+		})
+	},
+});
+
+AFRAME.registerComponent('commands-from-external-json', {
+/*
+// following discussion with Yanick
+
+// for cabin.html to faciliate growth and flexibility
+
+fetch('./commands.json') // then load like A-Frame elements
+// e.g command //{name,defaultpose,autorun,description}
+// could even be stored as wiki page
+
+fetch('./templates.json')
+// e.g [commands with optional pose]
+
+// watch can be a template too
+	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionA" value="Interactive instructions:" position="0 1.5 -0.2" scale="0.2 0.2 0.2"></a-text>
+	<a-text side="double" id="instructionB" target value="jxr lg Fox.glb 0.001" position="0 1.65 -0.2" scale="0.1 0.1 0.1">
+		<a-entity gltf-model="Fox.glb" scale="0.005 0.005 0.005"></a-entity>
+	</a-text>
+	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionC" target value="jxr obsv observablehq-numberOfPages-835aa7e9" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionD" target value="jxr 1s startSelectionVolume()" position="0 1.50 -0.2" scale="0.1 0.1 0.1"></a-text>
+*/
+	init:function(){
+		var el = this.el
+		var links = [ // could be in the commands file instead
+			"target:#instructionA; source:#instructionB",
+			"target:#instructionA; source:#instructionC",
+			"target:#instructionA; source:#instructionD",
+		]
+		//fetch("commands.json").then(res => res.json() ).then(res => {
+		fetch("https://fabien.benetou.fr/PIMVRdata/CabinCommands?action=source").then(res => res.json() ).then(res => {
+			// to consider for remoteload/remotesave instead, to distinguish from url though.
+			// also potential security concern so might insure that only a specific user, with mandatory password access, added commands.
+			res.map( c => addNewNote( c.value, c.position, c.scale, c.id) ) // missing name/title, autorun (true/false), description, 3D icon/visual
+			links.map( l => { var linkEl = document.createElement("a-entity"); 
+					 linkEl.setAttribute("line-link-entities", l)
+					 el.appendChild(linkEl) 
+			} )
+		})
+	},
+});
+
+
+const savedProperties = [ "src", "position", "rotation", "scale", "value", ]
+
+var cabin
+const url = 'https://fabien.benetou.fr/PIMVRdata/CabinData?action='
+
+function save(){
+	var data = targets.map( e => { return {
+			localname: e.localName,
+			src: e.getAttribute("src"),
+			position: e.getAttribute("position"),
+			rotation: e.getAttribute("rotation"),
+			scale: e.getAttribute("scale"),
+			value: e.getAttribute("value"),
+		} } )
+	cabin = data
+	localStorage.setItem('cabin', JSON.stringify( data) )
+	return data
+	// could be called on page exit, unsure if reliable in VR
+	// alternatively could be call after each content is moved or created
+}
+
+function load(){
+	if (localStorage.getItem('cabin'))
+		cabin = JSON.parse(localStorage.getItem('cabin'))
+	cabin.map( e => {
+		var newel = document.createElement(e.localname)
+		//if (e.localname=="a-text") newel.setAttribute("font", "sw-test/Roboto-msdf.json")
+		// forcing Robot to try to keep all local and thus be able to cache via ServiceWorker.
+		savedProperties.map( p => {
+			if (e[p] ) newel.setAttribute(p, e[p])
+		})
+		AFRAME.scenes[0].appendChild( newel )
+	})
+}
+
+function remoteload(){
+	fetch(url+'source') 
+		.then( response => { return response.json() } )
+		.then( data => { console.log("remote data:", data) })
+	// for the reMarkable write back in source, OCR/HWR could be done on the WebXR device instead
+		// alternatively "just" sending the .jpg thumbnail would be a good enough start
+		// note that highlights are also JSON files
+		// both might not be ideal directly in the original JSON but could be attachement as URLs
+}
+
+function remotesave(){
+	  fetch(url+'edit', {
+		  method: 'POST',
+		  headers: {'Content-Type':'application/x-www-form-urlencoded'},
+		  body: "post=1&author=PIMVR&authpw=edit_password&text="+JSON.stringify( cabin )
+	  }).then(res => res).then(res => console.log("saved remotely", res))
+}
+
+// could change model opacity based on hand position, fading out when within a (very small here) safe space
+</script>
+<div id="observablehq-key">
+    <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
+    <div id="observablehq-result_as_html-ab4c1560"></div>
+</div>
+<a-scene  cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
+	selectionboxonpinches keyboard commands-from-external-json
+	glossary timeline issues
+	capturegesture screenstack toolbox NOnetworked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
+      <a-assets>
+	      <template id="avatar-template"> <a-cylinder scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
+	      <template id="text-template"> <a-text></a-text> </template>
+      </a-assets>
+	<!--
+	<a-video src="https://video.benetou.fr/download/videos/318c8408-c34a-430c-846d-f875dc3c343e-480.mp4"></a-video> 
+	<a-video position="0 2 -2" src="https://video.benetou.frstreaming-playlists/hls/91634fb7-116e-43a1-a4e7-144dd92da17c/1.m3u8"></a-video>
+	<a-video position="0 2 -2" src="https://video.benetou.fr/videos/embed/91634fb7-116e-43a1-a4e7-144dd92da17c"></a-video>
+      -->
+      <a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
+	      hud camera look-controls wasd-controls position="0 1.6 0"></a-entity>
+      <a-entity pinchprimary id="rightHand" hand-tracking-controls="hand: right;"></a-entity>
+      <a-entity wristattachsecondary="target: #box" NOpinchletterpick pinchsecondary id="leftHand" hand-tracking-controls="hand: left;"></a-entity>
+      <a-box pressable changecoloronpress id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
+      <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
+	<a-entity id="scaledworld" scale=".05 .05 .05" position="0 .85 0"><!-- can't be used for interactions otherwise becomes indirect-->
+	      <a-box position="-0.1 1.2 -0.3" scale="0.5 0.5 0.5" rotation="0 45 0" color="#4CC3D9"></a-box>
+	      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
+	      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
+	      <a-image class="hidableenvironment" position="0 -0.3 -4" rotation="-80 0 0" width="6" height="2" src="miniflex.jpg" opacity="0.3"></a-image>
+	</a-entity>
+      <a-image id=background background-via-url visible=false position="0 1.5 -1.02" scale="2 1 1" src=""></a-image>
+      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_typesofdiagrams2.png" 
+		rotation="0 -45 0" position="1.5 1.7 -.7" scale=".4 .2 .2" ></a-image>
+      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_typesofdiagrams1.png" 
+		rotation="0 -45 0" position="1.5 1.4 -.7" scale=".4 .2 .2" ></a-image>
+      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_semanticanalysisofdiagrams.png" 
+		rotation="0 45 0" position="-1.5 1.7 -.7" scale=".4 .2 .2" ></a-image>
+      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_mappingfusion.png" 
+		rotation="0 45 0" position="-1.5 1.4 -.7" scale=".4 .2 .2" ></a-image>
+      <a-image position="-0.5 1.3 0" scale=".3 .3 .3" rotation="0 90 0" src="content/draft15sept-1.png"></a-image>
+      <a-entity dynamic-view position="-5 1.3 0" ></a-entity>
+<!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
+	<!-- moved to commands.json partially
+		see as inspiration https://fabien.benetou.fr/Events/VRHackatonUtrecht2016 
+	<a-entity line-link-entities="target:#instructionA; source:#instructionB"></a-entity>
+	<a-entity line-link-entities="target:#instructionA; source:#instructionC"></a-entity>
+	<a-entity line-link-entities="target:#instructionA; source:#instructionD"></a-entity>
+	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionA" value="Interactive instructions:" position="0 1.5 -0.2" scale="0.2 0.2 0.2"></a-text>
+	<a-text side="double" id="instructionB" target value="jxr lg Fox.glb 0.001" position="0 1.65 -0.2" scale="0.1 0.1 0.1">
+		<a-entity gltf-model="Fox.glb" scale="0.005 0.005 0.005"></a-entity>
+	</a-text>
+	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionC" target value="jxr obsv observablehq-numberOfPages-835aa7e9" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionD" target value="jxr 1s startSelectionVolume()" position="0 1.50 -0.2" scale="0.1 0.1 0.1"></a-text>
+
+	<a-text target value="testing string picking for pinch" position="0 1.7 -0.2" scale=".1 .1 .1"></a-text>
+	<a-text target value="dxr bash ls" position="0 1.4 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="dxr python 'print(42)'" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="dxr julia 43" position="0 1.3 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr showhistory()" position="0 1.75 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr saveHistoryAsCompoundSnippet()" position="0 1.85 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr lg https://vartiste-utopiah.glitch.me/data/upload.glb" position="0 1.6 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr tst()" position="0 1.4 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr qs a-sphere sa color red" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr qs a-sphere sa color blue" position="0 1.3 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr plot('x*x')" position="0 1.20 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr plot('x')" position="0 1.15 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr enterSetupMode()" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
+	-->
+      <a-entity hide-on-enter-ar id="cabin" class="hidableenvironment" gltf-model="url(arches.glb)" scale="10 10 10" position="0 0.2 0.15" rotation="0 -90 0"></a-entity>
+      <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
+      <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
+      <a-sky hide-on-enter-ar color="#3d3846"></a-sky>
+
+      <a-entity id="gui3d" position="0 1.5 -.4"></a-entity>
+
+      <a-entity id=inbrowser web-url position="0 1.5 -2.4"></a-entity>
+      <!-- permanent offline persistent e-ink based, rM2 size, reminder
+      <a-plane position="0 2 -2" scale="4 4 4" mirror></a-plane>
+      <a-plane position="0 1 -1" scale="0.21 0.15 1" rotation="-30 0 0" wireframe="true"></a-plane>
+	-->
+
+    </a-scene>
+<script>
+NAF.schemas.add({
+  template: '#text-template',
+  components: [
+    'position',
+    'rotation',
+    'scale',
+    'value',
+  ]
+});
+</script>
+  </body>
+</html>
