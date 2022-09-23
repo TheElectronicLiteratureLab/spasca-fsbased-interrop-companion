@@ -10,3 +10,5 @@ See also the AR version https://video.benetou.fr/w/x7HeEBF9HGfdVyf7vWsKsQ
 
 
 ![Preview image](https://fabien.benetou.fr/pub/home/future_of_text_demo/content/engine-preview.png)
+
+First communicated on https://twitter.com/utopiah/status/1531188862415929344 as way to work on (WebXR) code during a flight.
