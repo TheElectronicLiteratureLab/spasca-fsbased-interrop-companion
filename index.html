@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <script type="module" src="https://unpkg.com/immers-client/dist/destination.bundle.js"></script>
@@ -11,7 +12,7 @@
     <!-- for content sharing, using NAF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.4.0/socket.io.slim.js"></script>
     <script src="https://naf.benetou.fr/easyrtc/easyrtc.js"></script>
-    <script src="https://unpkg.com/networked-aframe@^0.9.0/dist/networked-aframe.min.js"></script>
+    <script src="https://unpkg.com/networked-aframe@^0.10.0/dist/networked-aframe.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/aframe-mirror@latest/index.js"></script>
 
@@ -24,6 +25,8 @@
 
 <div style="display:none" id="observablehq-numberOfPages-835aa7e9"></div>
 <div style="position:fixed;z-index:0" id="page"></div>
+<div id="#observablehq-result_as_html-ab4c1560"></div>
+<div id="#observablehq-result_as_html-ab4c1560"></div>
 
 <script type="module">
 // just text
@@ -110,8 +113,8 @@ async function getPolyList(keyword){
 	return polys
 }
 
-// for testing purposes
-getPolyList("pizza").then( p => polys = p.results )
+// for testing purposes, disable when not local with asset caching server
+//getPolyList("pizza").then( p => polys = p.results )
 
 function cachePoly(res){
 	var n = 0;
@@ -209,12 +212,15 @@ function processRemoteInputData( data ){
 	if (data.status == "pointermove") parsePointer( data.x, data.y )
 }
 
+// for testing purposes, disable when not local with asset caching server
 // SSE on a specific route to know if this file was updated, if so reload (would force leave VR) cf Inventing on Principle
+/*
 const source = new EventSource("streaming");
 source.onmessage = message => { 
 		console.log(message.data) // showing the updates without manually forcing a reload
 		if ((JSON.parse(message.data)).status == "reload" ) location.reload(true); 
 	} ;
+*/
 // monitored server-side, index.js with fs
 
 /* extrusion and more generally compactness of 3D object description :
@@ -477,25 +483,64 @@ AFRAME.registerComponent('line-link-entities', {
   }
 });
 
+const baseCachedURL = "https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_" 
+const baseLiveURL = "https://vatelier.benetou.fr/MyDemo/newtooling/web/renders/fabien.benetou.fr_"
+const queryFormatBaseURL = "https://fabien.benetou.fr/"
+const imageExtension = ".png"
+const renderSuffix = "?action=serverrender"
+function tryCachedImageOtherwiseRenderLive(pages){
+	let urls = []
+	pages.map( i => {
+		let cached = baseCachedURL + i.group + "_" + i.name + imageExtension
+		urls.push( cached )
+		fetch( cached).then( res => res.status ).then( r => { if (r==404) 
+			// console.log("try to get new one", r, cached)
+			replaceCachedImageByLive(i.group, i.name)
+		} )
+	})
+	return urls
+}
+
+function replaceCachedImageByLive(group, name){
+	const live = baseLiveURL+group+"_"+name+imageExtension
+	fetch( live ).then( res => res.status ).then( r => {
+		if (r==200) 
+		// check if in the "new" cache before doing a live query first
+			document.querySelector("[src='"+baseCachedURL+group+"_"+name+imageExtension+"']")
+				.setAttribute("src", live)
+		else
+			fetch( queryFormatBaseURL+group+"/"+name+renderSuffix ).then( res => res.json() )
+			.then( document.querySelector("[src='"+baseCachedURL+group+"_"+name+imageExtension+"']")
+				.setAttribute("src", live)
+			)
+	} )
+}
+
 AFRAME.registerComponent('screenstack', {
+// this could be potentially be replaced with web-url
   init: function () {
 	//load()
 	//if (cabin && cabin.length > 0) return // test doesn't seem to work well on new page / 1st load
 		  // see CEREMA project, seems to handle caching better
 	var el = this.el
-	//fetch('/screens').then(response => response.json()).then(data => { imagesFromURLs(data.files.slice(-maxItems), el); save(); })
-	  fetch(wikiAsImages).then(response => response.json()).then(data => imagesFromURLs( Object.entries(data.Nodes).map(( [k, v] ) => { return "https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_"+v.Group+"_"+v.Label+".png" } ).slice(0,maxItems) , el ))
-
+	fetch(wikiAsImages).then(response => response.json()).then(data =>
+		imagesFromURLs(
+			tryCachedImageOtherwiseRenderLive(
+				Object.entries(data.Nodes).map(( [k, v] ) => { return {group:v.Group, name:v.Label} } ).slice(0,maxItems)
+			)
+		, el )
+	)
 	// example time sorting
 	/* fetch('/screens').then(response => response.json()).then(data => console.log(
 		  data.files.filter( i => i.indexOf("_000") < 0 ).map( i => Number(i.replace(".png", "")) ).filter( i => i > now-60 ) 
 	) )
         */
 
-	fetch('colors.txt').then(response => response.text()).then(data => coloredBlocksFromScreens(data.split("\n").splice(-maxItems), el))
+	// works only locally for privacy reasons.
+	//fetch('colors.txt').then(response => response.text()).then(data => coloredBlocksFromScreens(data.split("\n").splice(-maxItems), el))
 	// timings should match as colors are generated from the screens
 
-	fetch('currentURL.txt').then(response => response.text()).then(data => URLs(data.split("\n").splice(-maxItems), el ))
+	//fetch('currentURL.txt').then(response => response.text()).then(data => URLs(data.split("\n").splice(-maxItems), el ))
 	// could slice the array based on dates and e.g limit on current day or last 24hrs
   }
 });
@@ -550,7 +595,7 @@ function addBackgroundBoxToTextElements( textElements ){
 				// maybe via el.getObject3D()
 			var compoundbbox = new THREE.Box3().setFromObject( box.object3D )
 			compoundbbox.expandByObject( el.object3D )
-			var helperbox = new THREE.BoundingBoxHelper( box.object3D, 0x00ff00);
+			var helperbox = new THREE.BoxHelper( box.object3D, 0x00ff00);
 			helperbox.update();
 			AFRAME.scenes[0].object3D.add(helperbox);
 			/*
@@ -624,7 +669,7 @@ function setHUD(txt){
 
 AFRAME.registerComponent('pinchletterpick', { 
   init: function () {
-		 // alt document.querySelector("#righthand").components["hand-tracking-controls"].indexTipPosition
+	 // alt document.querySelector("#righthand").components["hand-tracking-controls"].indexTipPosition
 	this.el.addEventListener('pinchmoved', function (event) {
 		var res = stringWithPositionFromCoordinates( event.detail.position )
 		if (res.element) 
@@ -735,7 +780,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		}
 		if (selectedElement && !groupingMode) {
 			selectedElement.setAttribute("position", event.detail.position)
-			document.querySelector("#righthand").object3D.traverse( e => { if (e.name == "b_r_wrist") selectedElement.setAttribute("rotation", e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14)  })
+			document.querySelector("#rightHand").object3D.traverse( e => { if (e.name == "b_r_wrist") selectedElement.setAttribute("rotation", e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14)  })
 			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
 		}
 	});
@@ -1136,8 +1181,8 @@ AFRAME.registerComponent('keyboard', {
 AFRAME.registerComponent('capturegesture', {
 	init:function(){this.handEls=document.querySelectorAll('[hand-tracking-controls]');},
 	tick:function(){
-		document.querySelector("#righthand").object3D.traverse( e => { if (e.name == "b_r_wrist") console.log("rw", e.rotation) })
-		document.querySelector("#lefthand" ).object3D.traverse( e => { if (e.name == "b_l_wrist") console.log("rl", e.rotation) })
+		document.querySelector("#rightHand").object3D.traverse( e => { if (e.name == "b_r_wrist") console.log("rw", e.rotation) })
+		document.querySelector("#leftHand" ).object3D.traverse( e => { if (e.name == "b_l_wrist") console.log("rl", e.rotation) })
 			// should look up thumb-metacarpal and index-finger-metacarpal if not sufficient
 				// might trickle down iif wrist rotation itself is already good
 			// https://immersive-web.github.io/webxr-hand-input/
@@ -1148,10 +1193,8 @@ AFRAME.registerComponent('capturegesture', {
 const maxItemsFromSources = 20
 AFRAME.registerComponent('timeline', {
         init:function(){
-		console.log("timeline component")
                 fetch("../content/fot_timeline.json").then(res => res.json() ).then(res => {
                         res.fot_timeline.slice(0,maxItemsFromSources).map( (c,i) => addNewNote( c.year+"_"+c.event, "1 "+i/10+" -1", ".1 .1 .1") ) 
-		console.log(res)
                 })
         },
 });
@@ -1283,12 +1326,17 @@ function remotesave(){
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
 <a-scene  cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
-	selectionboxonpinches keyboard commands-from-external-json
-	glossary timeline issues
-	capturegesture screenstack toolbox NOnetworked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
+	selectionboxonpinches keyboard commands-from-external-json glossary timeline issues
+	capturegesture screenstack toolbox networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
       <a-assets>
 	      <template id="avatar-template"> <a-cylinder scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
 	      <template id="text-template"> <a-text></a-text> </template>
+	      <template id="left-hand-default-template">
+		      <a-entity networked-hand-controls="hand:left"></a-entity>
+	      </template>
+	      <template id="right-hand-default-template">
+		      <a-entity networked-hand-controls="hand:right"></a-entity>
+	      </template>
       </a-assets>
 	<!--
 	<a-video src="https://video.benetou.fr/download/videos/318c8408-c34a-430c-846d-f875dc3c343e-480.mp4"></a-video> 
@@ -1297,8 +1345,17 @@ function remotesave(){
       -->
       <a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 	      hud camera look-controls wasd-controls position="0 1.6 0"></a-entity>
+
+<!-- remove for NAF equivalent
+      <a-entity id="my-tracked-left-hand" networked-hand-controls="hand:left" networked="template:#left-hand-default-template"
+		pinchsecondary wristattachsecondary="target: #box" ></a-entity>
+      <a-entity id="my-tracked-right-hand" networked-hand-controls="hand:right" networked="template:#right-hand-default-template"
+	      pinchprimary ></a-entity>
+-->
+
       <a-entity pinchprimary id="rightHand" hand-tracking-controls="hand: right;"></a-entity>
       <a-entity wristattachsecondary="target: #box" NOpinchletterpick pinchsecondary id="leftHand" hand-tracking-controls="hand: left;"></a-entity>
+
       <a-box pressable changecoloronpress id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
 	<a-entity id="scaledworld" scale=".05 .05 .05" position="0 .85 0"><!-- can't be used for interactions otherwise becomes indirect-->
@@ -1368,7 +1425,7 @@ NAF.schemas.add({
     'scale',
     'value',
   ]
-});
+})
 </script>
   </body>
 </html>
