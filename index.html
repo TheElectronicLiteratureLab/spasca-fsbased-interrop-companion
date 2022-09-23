@@ -62,11 +62,16 @@ setTimeout( _ =>
 // e.g background https://fabien.benetou.fr/pub/home/metaverse.png might have to allow options like scale to allow for modifying both size and ratio
 AFRAME.registerComponent('background-via-url', { // non interactive mode
   init: function () {
+	let generatorName = this.attrName
 	var src = AFRAME.utils.getUrlParameter('background')
 	if (src && src != "") {
 		this.el.setAttribute( "visible", "true")
 		this.el.setAttribute( "src", src )
-		Array.from( document.querySelectorAll(".mural-instructions") ).map( i => i.setAttribute("visible", "true") )
+		this.el.className += generatorName
+		Array.from( document.querySelectorAll(".mural-instructions") ).map( i => {
+			i.setAttribute("visible", "true") 
+			i.className += generatorName
+		})
 	}
   }
 })
@@ -80,10 +85,12 @@ AFRAME.registerComponent('web-url', {
 	var src = AFRAME.utils.getUrlParameter('url')
 	// could also be a component parameter
 	var el = this.el
+	let generatorName = this.attrName
 	if (src && src != "") target = src
 	fetch(target).then( res => res.text() ).then( r => {
 	  document.querySelector("#page").innerHTML = r; 
 	  el.setAttribute("html", "html:#page;cursor:#cursor;" )
+	  el.className += generatorName
 	  //backdrop
 	  const geometry = new THREE.PlaneGeometry( el.object3D.children[0].geometry.parameters.width*1.1,
 		el.object3D.children[0].geometry.parameters.height*1.1 );
@@ -345,7 +352,7 @@ function coloredBlocksFromScreens(colors, el){
 	})
 }
 
-function imagesFromURLs(urls, el){
+function imagesFromURLs(urls, el, classes=null){
 	urls.map( (u,i) => {
 		var e = document.createElement("a-image")
 		if (u.indexOf("http")>-1)
@@ -359,6 +366,8 @@ function imagesFromURLs(urls, el){
 		// could instead rely on https://github.com/visjs/vis-timeline
 		// as previously used  in https://mobile.twitter.com/utopiah/status/1110576751577567233
 		e.setAttribute("width","2")
+		if (classes) e.className += classes
+		
 		el.appendChild(e)
 		targets.push(e)
 	})
@@ -463,15 +472,18 @@ AFRAME.registerComponent('line-link-entities', {
     steps: {type: 'number', default: 1},
   },
   init: function () {
+    let generatorName = this.attrName
     setTimeout( _ => { // stupid... but works. 
 	    var sourcePos = this.data.source.object3D.position
 	    var targetPos = this.data.target.object3D.position
+ 	    if (!sourcePos || !targetPos) return
 	    // adding a gltf inside an element prevents the parent from having coordinates (fast enough?)
 	    var step = 0
 	    var points = cut ([sourcePos, targetPos], 0, ++step)
 	    points = cut (points, 0, ++step)
 	    points = cut (points, points.length-2, step)
 	    var el = this.el
+	    el.className += generatorName
 	    points.map( (p,i,arr) => {
 	      if (arr[i+1])
 		el.setAttribute("line__"+i, "start:" + AFRAME.utils.coordinates.stringify( arr[i] ) + ";end: " +  AFRAME.utils.coordinates.stringify( arr[i+1] ) )      
@@ -529,12 +541,13 @@ AFRAME.registerComponent('screenstack', {
 	//if (cabin && cabin.length > 0) return // test doesn't seem to work well on new page / 1st load
 		  // see CEREMA project, seems to handle caching better
 	var el = this.el
+	let generatorName = this.attrName
 	fetch(wikiAsImages).then(response => response.json()).then(data =>
 		imagesFromURLs(
 			tryCachedImageOtherwiseRenderLive(
 				Object.entries(data.Nodes).map(( [k, v] ) => { return {group:v.Group, name:v.Label} } ).slice(0,maxItems)
 			)
-		, el )
+		, el, generatorName )
 	)
 	// example time sorting
 	/* fetch('/screens').then(response => response.json()).then(data => console.log(
@@ -968,7 +981,7 @@ AFRAME.registerComponent('hud', {
 	}
 })
 
-function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null ){
+function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes=null ){
 	//var newnote = document.createElement("a-text")
 	var newnote = document.createElement("a-troika-text")
 	newnote.setAttribute("anchor", "left" )
@@ -976,6 +989,7 @@ function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=nu
 	newnote.setAttribute("outline-color", "black" )
 
 	if (id) newnote.id = id
+	if (classes) newnote.className += classes
 	newnote.setAttribute("side", "double" )
 	var userFontColor = AFRAME.utils.getUrlParameter('fontcolor')
 	if (userFontColor && userFontColor != "") 
@@ -1169,17 +1183,21 @@ let alphabet = 'abcdefghijklmnopqrstuvwxyz';
 
 AFRAME.registerComponent('keyboard', {
 	init:function(){
+		let generatorName = this.attrName
 		const horizontaloffset = .5
 		const horizontalratio = 1/30
 		 for (var i = 0; i < alphabet.length; i++) {
-			var e = document.createElement("a-text")
+			var pos = i * horizontalratio - horizontaloffset
+                        addNewNote( alphabet[i], pos+" 1.6 -.4", ".1 .1 .1", null, generatorName)
+			/*
+			var e = document.createElement("a-text") // could also rely on addNewNote()
 			e.setAttribute("side", "double" )
 			e.setAttribute("value", alphabet[i])
 			e.setAttribute("target", true)
 			e.setAttribute("scale", ".1 .1 .1")
-			var pos = i * horizontalratio - horizontaloffset
 			e.setAttribute("position",`${pos} 1.6 -0.4`)
 			this.el.appendChild(e) 
+			*/
 		 }
 	}
 })
@@ -1199,36 +1217,66 @@ AFRAME.registerComponent('capturegesture', {
 const maxItemsFromSources = 20
 AFRAME.registerComponent('timeline', {
         init:function(){
+		let generatorName = this.attrName
                 fetch("../content/fot_timeline.json").then(res => res.json() ).then(res => {
-                        res.fot_timeline.slice(0,maxItemsFromSources).map( (c,i) => addNewNote( c.year+"_"+c.event, "1 "+i/10+" -1", ".1 .1 .1") ) 
+                        res.fot_timeline.slice(0,maxItemsFromSources).map( (c,i) => addNewNote( c.year+"_"+c.event, "1 "+i/10+" -1", ".1 .1 .1", null, generatorName) ) 
                 })
         },
 });
 
 AFRAME.registerComponent('glossary', {
 	init:function(){
+		let generatorName = this.attrName
 		fetch("content/glossary.json").then(res => res.json() ).then(res => {
-			Object.values(res.entries).slice(0,maxItemsFromSources).map( (c,i) => addNewNote( c.phrase + c.entry.slice(0,50)+"..." , "-1 "+i/10+" -1", ".1 .1 .1") ) 
+			Object.values(res.entries).slice(0,maxItemsFromSources).map( (c,i) => addNewNote( c.phrase + c.entry.slice(0,50)+"..." , "-1 "+i/10+" -1", ".1 .1 .1", null, generatorName) ) 
 		})
 	},
 });
 
 AFRAME.registerComponent('issues', {
 	init:function(){
+		let generatorName = this.attrName
 		// fetch("https://api.github.com/repos/Utopiah/relax-plus-think-space/issues").then(res => res.json() ).then(res => {
 		fetch("https://git.benetou.fr/api/v1/repos/utopiah/text-code-xr-engine/issues").then(res => res.json() ).then(res => {
-			res.slice(0,maxItemsFromSources).map( (n,i) => addNewNote( n.title, "0 "+(1+i/10)+" -1", ".1 .1 .1" ) )
+			res.slice(0,maxItemsFromSources).map( (n,i) => addNewNote( n.title, "0 "+(1+i/10)+" -1.5", ".1 .1 .1", null, generatorName ) )
 		})
 	},
 });
 
 AFRAME.registerComponent('dynamic-view', {
 	init:function(){
+		let generatorName = this.attrName
 		fetch("content/DynamicView.json").then(res => res.json() ).then(res => {
-			res.nodes.slice(0,maxItemsFromSources).map( n => addNewNote( n.title, "" + res.layout.nodePositions[n.identifier].x/100 + " " + res.layout.nodePositions[n.identifier].y/100 + " -1", ".1 .1 .1" ) )
+			res.nodes.slice(0,maxItemsFromSources).map( n => addNewNote( n.title, "" + res.layout.nodePositions[n.identifier].x/100 + " " + res.layout.nodePositions[n.identifier].y/100 + " -1", ".1 .1 .1", null, generatorName ) )
 		})
 	},
 });
+
+function toggleVisibilityEntitiesFromClass(classname){
+	let entities = Array.from( document.querySelectorAll("."+classname) )
+	if (entities.length == 0) return
+	let state = entities[0].getAttribute("visible") // assume they are all the same
+	if (state)
+		entities.map( e => e.setAttribute("visible", "false"))
+	else
+		entities.map( e => e.setAttribute("visible", "true"))
+}
+
+function toggleVisibilityAllGenerators(){
+	generators.split(" ").map( g => toggleVisibilityEntitiesFromClass(g) )
+	// note hidableassets though
+}
+
+function toggleVisibilityAll(){
+	toggleVisibilityAllGenerators()
+	toggleVisibilityEntitiesFromClass("hidableassets")
+}
+
+function toggleVisibilityAllButClass(classname){
+	generators.split(" ").filter( e => e != classname).map( g => toggleVisibilityEntitiesFromClass(g) )
+	toggleVisibilityEntitiesFromClass("hidableassets")
+}
+
 
 AFRAME.registerComponent('commands-from-external-json', {
 /*
@@ -1253,6 +1301,7 @@ fetch('./templates.json')
 */
 	init:function(){
 		var el = this.el
+		let generatorName = this.attrName
 		var links = [ // could be in the commands file instead
 			"target:#instructionA; source:#instructionB",
 			"target:#instructionA; source:#instructionC",
@@ -1262,7 +1311,7 @@ fetch('./templates.json')
 		fetch("https://fabien.benetou.fr/PIMVRdata/CabinCommands?action=source").then(res => res.json() ).then(res => {
 			// to consider for remoteload/remotesave instead, to distinguish from url though.
 			// also potential security concern so might insure that only a specific user, with mandatory password access, added commands.
-			res.map( c => addNewNote( c.value, c.position, c.scale, c.id) ) // missing name/title, autorun (true/false), description, 3D icon/visual
+			res.map( c => addNewNote( c.value, c.position, c.scale, c.id, generatorName) ) // missing name/title, autorun (true/false), description, 3D icon/visual
 			links.map( l => { var linkEl = document.createElement("a-entity"); 
 					 linkEl.setAttribute("line-link-entities", l)
 					 el.appendChild(linkEl) 
@@ -1325,15 +1374,19 @@ function remotesave(){
 	  }).then(res => res).then(res => console.log("saved remotely", res))
 }
 
+var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
+	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironment"
+// could be an array proper completed on each component registration
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
-<a-scene  cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
-	selectionboxonpinches keyboard commands-from-external-json glossary timeline issues
-	capturegesture screenstack toolbox networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
+<a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
+	screenstack dynamic-view selectionboxonpinches keyboard commands-from-external-json glossary timeline issues
+	capturegesture toolbox networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
       <a-assets>
 	      <template id="avatar-template"> <a-cylinder scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
 	      <template id="text-template"> <a-text></a-text> </template>
@@ -1364,7 +1417,7 @@ function remotesave(){
 
       <a-box pressable changecoloronpress id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
-	<a-entity id="scaledworld" scale=".05 .05 .05" position="0 .85 0"><!-- can't be used for interactions otherwise becomes indirect-->
+	<a-entity id="scaledworld" class="hidableassets" scale=".05 .05 .05" position="0 .85 0"><!-- can't be used for interactions otherwise becomes indirect-->
 	      <a-box position="-0.1 1.2 -0.3" scale="0.5 0.5 0.5" rotation="0 45 0" color="#4CC3D9"></a-box>
 	      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
 	      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
@@ -1379,8 +1432,7 @@ function remotesave(){
 		rotation="0 45 0" position="-1.5 1.7 -.7" scale=".4 .2 .2" ></a-image>
       <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_mappingfusion.png" 
 		rotation="0 45 0" position="-1.5 1.4 -.7" scale=".4 .2 .2" ></a-image>
-      <a-image position="-0.5 1.3 0" scale=".3 .3 .3" rotation="0 90 0" src="content/draft15sept-1.png"></a-image>
-      <a-entity dynamic-view position="-5 1.3 0" ></a-entity>
+      <a-image position="-0.5 1.3 0" scale=".3 .3 .3" rotation="0 90 0" class="hidableassets" src="content/draft15sept-1.png"></a-image>
 <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 	<!-- moved to commands.json partially
 		see as inspiration https://fabien.benetou.fr/Events/VRHackatonUtrecht2016 
@@ -1413,7 +1465,7 @@ function remotesave(){
       <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
       <a-sky hide-on-enter-ar color="#3d3846"></a-sky>
 
-      <a-entity id="gui3d" position="0 1.5 -.4"></a-entity>
+      <a-entity id="gui3d" class="observableui" position="0 1.5 -.4"></a-entity>
 
       <a-entity id=inbrowser web-url position="0 1.5 -2.4"></a-entity>
       <!-- permanent offline persistent e-ink based, rM2 size, reminder
