@@ -41,7 +41,7 @@
   </head>
   <body>
 
-<div style='position:fixed;z-index:9; top: 0%; left: 0%; border-bottom: 70px solid transparent; border-left: 70px solid #eee; '>
+<div style='position:fixed;z-index:-1; top: 0%; left: 0%; border-bottom: 70px solid transparent; border-left: 70px solid #eee; '>
 	<a href="https://git.benetou.fr/utopiah/text-code-xr-engine/issues/">
 		<img style='position:fixed;left:10px;' title='code repository' src='https://git.benetou.fr/assets/img/logo.svg/'>
 	</a>
@@ -788,6 +788,9 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 	var el = this.el
 	this.el.addEventListener('pinchended', function (event) { 
 		// if positioned close enough to a target zone, trigger action
+			// see own trigger-box component. Could use dedicated threejs helpers instead.
+				// https://github.com/Utopiah/aframe-triggerbox-component/blob/master/aframe-triggerbox-component.js#L66
+			// could make trigger zones visible as debug mode
 		// unselect current target if any
 		selectedElement = null;
 		save()
@@ -1250,6 +1253,22 @@ AFRAME.registerComponent('glossary', {
 	},
 });
 
+var added = []
+AFRAME.registerComponent('fot', {
+	init:function(){
+		let generatorName = this.attrName
+		setInterval( _ => fetch("https://fabien.benetou.fr/PIMVRdata/FoT?action=source#" + Date.now()).then(res => res.text() ).then(res => {
+			res.split("\n").slice(0,maxItemsFromSources).map( (n,i) => {
+				found = added.find((str) => str === n)
+				if (typeof found === 'undefined'){
+					added.push(n)
+					addNewNote( n, "-1 "+(1+i/10)+" -2", ".1 .1 .1", null, generatorName ) 
+}
+			})
+		}), 100 )
+	},
+});
+
 AFRAME.registerComponent('issues', {
 	init:function(){
 		let generatorName = this.attrName
@@ -1392,7 +1411,7 @@ function remotesave(){
 }
 
 var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
-	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironment"
+	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot"
 // could be an array proper completed on each component registration
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
@@ -1403,6 +1422,7 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
 </div>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
 	screenstack dynamic-view selectionboxonpinches keyboard commands-from-external-json glossary timeline issues
+fot
 	capturegesture toolbox networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
       <a-assets>
 	      <template id="avatar-template"> <a-cylinder scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>

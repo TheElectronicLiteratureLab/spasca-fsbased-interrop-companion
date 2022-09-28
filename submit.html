@@ -1,0 +1,43 @@
+<html>
+Send text and commands to the immersive space :
+<form>
+<textarea rows="5" cols="33">
+</textarea>
+<br>
+<input type=button onclick=sendtovr(this) value=Send></input>
+</form>
+<br>
+<a onclick=replaceWithThisText(this)>jxr toggleVisibilityEntitiesFromClass('fot')</a>
+
+<hr>
+<br>
+Documentation as :
+
+<ul>
+<li><a href=https://fabien.benetou.fr/PIMVRdata/CabinCommands?action=source>example of instructions and commands already positioned</a>,</li>
+<li><a href=https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/>live result</a> (ideally in VR) and</li> 
+<li>open-source <a href=https://git.benetou.fr/utopiah/text-code-xr-engine/issues>code repository</a> where you can see the code and make your own suggestions via issues. </li>
+</ul>
+<script>
+function replaceWithThisText(element){
+document.querySelector("textarea").value = element.innerText
+}
+	
+const url = 'https://fabien.benetou.fr/PIMVRdata/FoT?action='
+function sendtovr(cabin){
+text = document.querySelector("textarea").value
+document.querySelector("textarea").value = ''
+
+ fetch(url+'source')
+          .then( response => { return response.text() } )
+          .then( data => {
+
+	  fetch(url+'edit', {
+		  method: 'POST',
+		  headers: {'Content-Type':'application/x-www-form-urlencoded'},
+		  body: "post=1&author=PIMVR&authpw=edit_password&text="+ data+'%0a'+text }).then(res => res).then(res => console.log("saved remotely", res))
+	})
+}
+
+</script>
+</html>
