@@ -53,6 +53,7 @@ import define from "https://api.observablehq.com/@utopiah/from-pim-to-2d-to-3d-t
 import define2 from "https://api.observablehq.com/d/f219f0c440c6d5a2.js?v=3";
 new Runtime().module(define, name => {
   if (name === "numberOfPages") return new Inspector(document.querySelector("#observablehq-numberOfPages-835aa7e9"));
+  document.querySelector(".a-enter-vr").style.position = "fixed"
 });
 
 // HTML with interactable input
