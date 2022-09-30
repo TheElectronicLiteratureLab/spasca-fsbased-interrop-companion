@@ -844,7 +844,7 @@ function tst(){
 			scale = 50// should be a variable instead
 			e.setAttribute("scale", visible ? ".05 .05 .05" : ".1 .1 .1" )
 			var pos = AFRAME.utils.coordinates.parse( e.getAttribute("position") )
-			visible ? pos.z *= scale : pos.z /= scale // might be the opposite but anyway give the principle
+			//visible ? pos.z *= scale : pos.z /= scale // might be the opposite but anyway give the principle
 			e.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
 			// should actually be just for src, not for text notes... even though could be interesting
 	})
