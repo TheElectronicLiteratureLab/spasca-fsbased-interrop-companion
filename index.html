@@ -41,26 +41,21 @@
   </head>
   <body>
 
-<div style='position:fixed;z-index:-1; top: 0%; left: 0%; border-bottom: 70px solid transparent; border-left: 70px solid #eee; '>
-	<a href="https://git.benetou.fr/utopiah/text-code-xr-engine/issues/">
-		<img style='position:fixed;left:10px;' title='code repository' src='https://git.benetou.fr/assets/img/logo.svg/'>
-	</a>
+<div>
+	<div id="observablehq-numberOfPages-835aa7e9"></div>
+	<div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
-<div style="display:none" id="observablehq-numberOfPages-835aa7e9"></div>
-<div style="display:none;position:fixed;z-index:0" id="page"></div>
-<div id="#observablehq-result_as_html-ab4c1560"></div>
-<div id="#observablehq-result_as_html-ab4c1560"></div>
 
 <script type="module">
 // just text
 import {Runtime, Inspector} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
 import define from "https://api.observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations@2010.js?v=3";
+import define2 from "https://api.observablehq.com/d/f219f0c440c6d5a2.js?v=3";
 new Runtime().module(define, name => {
   if (name === "numberOfPages") return new Inspector(document.querySelector("#observablehq-numberOfPages-835aa7e9"));
 });
 
 // HTML with interactable input
-import define2 from "https://api.observablehq.com/d/f219f0c440c6d5a2.js?v=3";
 new Runtime().module(define2, name => {
   if (name === "viewof offsetExample") return new Inspector(document.querySelector("#observablehq-viewof-offsetExample-ab4c1560"));
   if (name === "result_as_html") return new Inspector(document.querySelector("#observablehq-result_as_html-ab4c1560"));
@@ -69,7 +64,6 @@ new Runtime().module(define2, name => {
 setTimeout( _ => 
   document.querySelector("#gui3d").setAttribute("html", "html:#observablehq-key;cursor:#cursor;" )
 , 2000)
-
 </script>
 
 <script>
@@ -105,7 +99,11 @@ AFRAME.registerComponent('web-url', {
 	let generatorName = this.attrName
 	if (src && src != "") target = src
 	fetch(target).then( res => res.text() ).then( r => {
-	  document.querySelector("#page").innerHTML = r; 
+	  pageEl = document.createElement("div")
+	  pageEl.id = "page"
+	  pageEl.innerHTML = r
+	  pageEl.style = "visibility:hidden;"
+	  document.body.appendChild(pageEl)
 	  el.setAttribute("html", "html:#page;cursor:#cursor;" )
 	  el.className += generatorName
 	  //backdrop
