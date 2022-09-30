@@ -1262,7 +1262,7 @@ AFRAME.registerComponent('fot', {
 				found = added.find((str) => str === n)
 				if (typeof found === 'undefined'){
 					added.push(n)
-					addNewNote( n, "-1 "+(1+i/10)+" -2", ".1 .1 .1", null, generatorName ) 
+					addNewNote( n, "-1 "+(1+i/10)+" -2.5", ".1 .1 .1", null, generatorName ) 
 }
 			})
 		}), 100 )
@@ -1274,7 +1274,7 @@ AFRAME.registerComponent('issues', {
 		let generatorName = this.attrName
 		// fetch("https://api.github.com/repos/Utopiah/relax-plus-think-space/issues").then(res => res.json() ).then(res => {
 		fetch("https://git.benetou.fr/api/v1/repos/utopiah/text-code-xr-engine/issues").then(res => res.json() ).then(res => {
-			res.slice(0,maxItemsFromSources).map( (n,i) => addNewNote( n.title, "0 "+(1+i/10)+" -1.5", ".1 .1 .1", null, generatorName ) )
+			res.slice(0,maxItemsFromSources).map( (n,i) => addNewNote( n.title, "0 "+(1+i/10)+" -1.8", ".1 .1 .1", null, generatorName ) )
 		})
 	},
 });
@@ -1296,6 +1296,10 @@ function toggleVisibilityEntitiesFromClass(classname){
 		entities.map( e => e.setAttribute("visible", "false"))
 	else
 		entities.map( e => e.setAttribute("visible", "true"))
+}
+
+function pushBackClass(classname){
+	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.z -= .1 )
 }
 
 function toggleVisibilityAllGenerators(){
@@ -1425,7 +1429,7 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
 fot
 	capturegesture toolbox networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
       <a-assets>
-	      <template id="avatar-template"> <a-cylinder scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
+	      <template id="avatar-template"> <a-cylinder opacity=.3 scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
 	      <template id="text-template"> <a-text></a-text> </template>
 	      <template id="left-hand-default-template">
 		      <a-entity networked-hand-controls="hand:left"></a-entity>
