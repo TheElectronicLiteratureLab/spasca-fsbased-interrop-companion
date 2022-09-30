@@ -1353,10 +1353,14 @@ fetch('./templates.json')
 			"target:#instructionA; source:#instructionD",
 		]
 		//fetch("commands.json").then(res => res.json() ).then(res => {
-		fetch("https://fabien.benetou.fr/PIMVRdata/CabinCommands?action=source").then(res => res.json() ).then(res => {
+		var commandsURL = "https://fabien.benetou.fr/PIMVRdata/CabinCommands?action=source"
+		var src = AFRAME.utils.getUrlParameter('commands-url')
+		if (src && src != "") commandsURL = src
+		fetch(commandsURL).then(res => res.json() ).then(res => {
 			// to consider for remoteload/remotesave instead, to distinguish from url though.
 			// also potential security concern so might insure that only a specific user, with mandatory password access, added commands.
-			res.map( c => addNewNote( c.value, c.position, c.scale, c.id, generatorName) ) // missing name/title, autorun (true/false), description, 3D icon/visual
+			res.map( c => addNewNote( c.value, c.position, c.scale, c.id, generatorName) )
+				// missing name/title, autorun (true/false), description, 3D icon/visual, visiblity (useful for sequential tutorial)
 			links.map( l => { var linkEl = document.createElement("a-entity"); 
 					 linkEl.setAttribute("line-link-entities", l)
 					 el.appendChild(linkEl) 
