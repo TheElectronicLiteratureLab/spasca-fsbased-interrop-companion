@@ -77,6 +77,17 @@ setTimeout( _ =>
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
 
+AFRAME.registerComponent('disable-components-via-url', { 
+  init: function () {
+	var src = AFRAME.utils.getUrlParameter('disable-components-via-url')
+	if (src && src != "") {
+		src.split(",").map( c => {
+			Array.from( document.querySelectorAll("["+c+"]") ).map( e => { e.removeAttribute(c) })
+		})
+	}
+  }
+})
+
 // e.g background https://fabien.benetou.fr/pub/home/metaverse.png might have to allow options like scale to allow for modifying both size and ratio
 AFRAME.registerComponent('background-via-url', { // non interactive mode
   init: function () {
@@ -1439,8 +1450,8 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
-	screenstack dynamic-view selectionboxonpinches keyboard commands-from-external-json glossary timeline issues
-fot
+	screenstack dynamic-view selectionboxonpinches keyboard commands-from-external-json glossary
+	timeline issues fot disable-components-via-url
 	capturegesture toolbox networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
       <a-assets>
 	      <template id="avatar-template"> <a-cylinder opacity=.3 scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
@@ -1488,33 +1499,8 @@ fot
       <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_mappingfusion.png" 
 		rotation="0 45 0" position="-1.5 1.4 -.7" scale=".4 .2 .2" ></a-image>
       <a-image position="-0.5 1.3 0" scale=".3 .3 .3" rotation="0 90 0" class="hidableassets" src="content/draft15sept-1.png"></a-image>
-<!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
-	<!-- moved to commands.json partially
-		see as inspiration https://fabien.benetou.fr/Events/VRHackatonUtrecht2016 
-	<a-entity line-link-entities="target:#instructionA; source:#instructionB"></a-entity>
-	<a-entity line-link-entities="target:#instructionA; source:#instructionC"></a-entity>
-	<a-entity line-link-entities="target:#instructionA; source:#instructionD"></a-entity>
-	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionA" value="Interactive instructions:" position="0 1.5 -0.2" scale="0.2 0.2 0.2"></a-text>
-	<a-text side="double" id="instructionB" target value="jxr lg Fox.glb 0.001" position="0 1.65 -0.2" scale="0.1 0.1 0.1">
-		<a-entity gltf-model="Fox.glb" scale="0.005 0.005 0.005"></a-entity>
-	</a-text>
-	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionC" target value="jxr obsv observablehq-numberOfPages-835aa7e9" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text side="double" networked="template:#text-template;attachTemplateToLocal:false;" id="instructionD" target value="jxr 1s startSelectionVolume()" position="0 1.50 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
-	<a-text target value="testing string picking for pinch" position="0 1.7 -0.2" scale=".1 .1 .1"></a-text>
-	<a-text target value="dxr bash ls" position="0 1.4 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="dxr python 'print(42)'" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="dxr julia 43" position="0 1.3 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr showhistory()" position="0 1.75 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr saveHistoryAsCompoundSnippet()" position="0 1.85 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr lg https://vartiste-utopiah.glitch.me/data/upload.glb" position="0 1.6 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr tst()" position="0 1.4 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr qs a-sphere sa color red" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr qs a-sphere sa color blue" position="0 1.3 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr plot('x*x')" position="0 1.20 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr plot('x')" position="0 1.15 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr enterSetupMode()" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
-	-->
       <a-entity hide-on-enter-ar id="cabin" class="hidableenvironment" gltf-model="url(arches.glb)" scale="10 10 10" position="0 0.2 0.15" rotation="0 -90 0"></a-entity>
       <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
       <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
