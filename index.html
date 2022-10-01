@@ -68,12 +68,52 @@ new Runtime().module(define2, name => {
   if (name === "result_as_html") return new Inspector(document.querySelector("#observablehq-result_as_html-ab4c1560"));
   return ["result_no_name","result"].includes(name);
 });
-setTimeout( _ => 
-  document.querySelector("#gui3d").setAttribute("html", "html:#observablehq-key;cursor:#cursor;" )
-, 2000)
+// setTimeout( _ => document.querySelector("#gui3d").setAttribute("html", "html:#observablehq-key;cursor:#cursor;" ) , 2000)
+  // <a-entity id="gui3d" class="observableui" position="0 1.5 -.4"></a-entity>
 </script>
 
 <script>
+var fontColor= "white"
+const wikiAsImages = "https://vatelier.benetou.fr/MyDemo/newtooling/wiki_graph.json"
+const maxItems = 10
+const now = Math.round( +new Date()/1000 ) //ms in JS, seconds in UNIX epoch
+const baseCachedURL = "https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_" 
+const baseLiveURL = "https://vatelier.benetou.fr/MyDemo/newtooling/web/renders/fabien.benetou.fr_"
+const queryFormatBaseURL = "https://fabien.benetou.fr/"
+const imageExtension = ".png"
+const renderSuffix = "?action=serverrender"
+var selectedElement = null;
+var targets = []
+const zeroVector3 = new THREE.Vector3()
+var bbox = new THREE.Box3()
+bbox.min.copy( zeroVector3 )
+bbox.max.copy( zeroVector3 )
+var selectionBox = new THREE.BoundingBoxHelper( bbox.object3D, 0x0000ff);
+var groupHelpers = []
+var primaryPinchStarted = false
+var visible = true
+var setupMode = false
+var setupBBox = {}
+var wristShortcut = "jxr switchToWireframe()"
+var selectionPinchMode = false
+var groupingMode = false
+var sketchEl
+var lastPointSketch
+var hudTextEl
+const startingText = "[]"
+var drawingMode = false
+var added = []
+const maxItemsFromSources = 20
+let alphabet = 'abcdefghijklmnopqrstuvwxyz>';
+var commandhistory = []
+const savedProperties = [ "src", "position", "rotation", "scale", "value", ] // add newer properties e.g visibility and generator as class
+var groupSelection = []
+var cabin
+const url = 'https://fabien.benetou.fr/PIMVRdata/CabinData?action='
+var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
+	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
+// could be an array proper completed on each component registration
+
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
 
@@ -87,7 +127,6 @@ AFRAME.registerComponent('enable-components-via-url', {
 	}
   }
 })
-
 
 AFRAME.registerComponent('disable-components-via-url', { 
   init: function () {
@@ -118,8 +157,8 @@ AFRAME.registerComponent('background-via-url', { // non interactive mode
 })
 
 AFRAME.registerComponent('web-url', {
+// e.g <a-entity id=inbrowser web-url position="0 1.5 -2.4"></a-entity>
 // motivated by https://glitch.com/edit/#!/aframe-lil-gui?path=observablewidget.html
-// might create some conflict with NAF or sth else... unsure
   init: function () {
 	const url = "https://fabien.benetou.fr/Fabien/Principle?action=webvr"
 	var target = url
@@ -146,8 +185,6 @@ AFRAME.registerComponent('web-url', {
 	})
   }
 })
-
-var fontColor= "white"
 
 var immersClient
 setTimeout( _ => {
@@ -242,7 +279,7 @@ can generate layout for keyboard as (Ctrl shortcut) copiable items to append to 
 		could also use an optional type in addition to target
 			such items would be copied without pressing Ctrl
 
-see remotesave for saving to be able to use the result outside the HMD
+see remoteSave for saving to be able to use the result outside the HMD
 */
 
 /*
@@ -251,7 +288,6 @@ use imagesFromURLs (used in screenstack) on https://vatelier.benetou.fr/MyDemo/n
        and line-link-entities="target:#instructionA; source:#instructionC" between pages
 
 */
-const wikiAsImages = "https://vatelier.benetou.fr/MyDemo/newtooling/wiki_graph.json"
 
 // see https://remote-keyboard.glitch.me on how to provide a remote keyboard (no BT) for hud keydown/keyup events
 	// consider alt server e.g 9000-peers-peerjsserver-bxw59h3fm87.ws-eu47.gitpod.io as peerjs isn't always reliable
@@ -431,7 +467,6 @@ function URLs(urls, el){
 	})
 }
 
-
 function stringWithPositionFromCoordinates(pos){
 	var el = getClosestTargetElement( pos, 0.5 )
 	// loosen up the threshold as we normally pick from the top left
@@ -497,18 +532,14 @@ function plot(equation,variablename="x",scale=5,step=1){
 			plot.setAttribute("line__user"+curveId+"section"+ ++idx, 'start: ' + previousPoint+ '; end : ' + pos + '; color:red;')
 		}
 		previousPoint = pos
+	}
 }
-}
-
 
 AFRAME.registerComponent('target', {
   init: function () {
 	targets.push( this.el )
   }
 })
-
-const maxItems = 10
-const now = Math.round( +new Date()/1000 ) //ms in JS, seconds in UNIX epoch
 
 AFRAME.registerComponent('line-link-entities', {
   schema: {
@@ -546,11 +577,6 @@ AFRAME.registerComponent('line-link-entities', {
   }
 });
 
-const baseCachedURL = "https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_" 
-const baseLiveURL = "https://vatelier.benetou.fr/MyDemo/newtooling/web/renders/fabien.benetou.fr_"
-const queryFormatBaseURL = "https://fabien.benetou.fr/"
-const imageExtension = ".png"
-const renderSuffix = "?action=serverrender"
 function tryCachedImageOtherwiseRenderLive(pages){
 	let urls = []
 	pages.map( i => {
@@ -609,8 +635,6 @@ AFRAME.registerComponent('screenstack', {
   }
 });
 
-var selectedElement = null;
-var targets = []
 
 function getClosestTargetElement( pos, threshold=0.05 ){ // 10x lower threshold for flight mode
 	// TODO Bbox intersects rather than position
@@ -671,13 +695,6 @@ function addBackgroundBoxToTextElements( textElements ){
 	})
 }
 
-const zeroVector3 = new THREE.Vector3()
-var bbox = new THREE.Box3()
-bbox.min.copy( zeroVector3 )
-bbox.max.copy( zeroVector3 )
-var selectionBox = new THREE.BoundingBoxHelper( bbox.object3D, 0x0000ff);
-
-var groupHelpers = []
 function addBoundingBoxToTextElement( el ){
 	var meshEl = el.object3D.children.filter( e => (e.type == "Mesh") )[0]
 	var helper = new THREE.BoundingBoxHelper(meshEl, 0xff0000);
@@ -711,7 +728,6 @@ function groupSelectionToNewNote(){
 	addNewNote( text )
 }
 
-var groupSelection = []
 function addToGroup( position ){
 	var el = getClosestTargetElement( position )
 	if (!el) return
@@ -807,7 +823,6 @@ AFRAME.registerComponent('wristattachsecondary',{
   }
 });
 
-var primaryPinchStarted = false
 AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right one
 
 // consider instead https://github.com/AdaRoseCannon/handy-work/blob/main/README-AFRAME.md for specific poses
@@ -855,7 +870,10 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		}
 		if (selectedElement && !groupingMode) {
 			selectedElement.setAttribute("position", event.detail.position)
-			document.querySelector("#rightHand").object3D.traverse( e => { if (e.name == "b_r_wrist") selectedElement.setAttribute("rotation", e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14)  })
+			document.querySelector("#rightHand").object3D.traverse( e => {
+				if (e.name == "b_r_wrist")
+					selectedElement.setAttribute("rotation", e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14)
+			})
 			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
 		}
 	});
@@ -876,7 +894,6 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 });
 
 // testing on desktop
-var visible = true
 function switchToWireframe(){
 	visible = !visible
 	targets.map( e => {
@@ -895,22 +912,18 @@ function switchToWireframe(){
 	} })
 }
 
-
 // add (JXR) shortcuts as PIM function from e.g https://observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations
 	// allowing to search within PIM then show manipulable pages as preview.
 
 // note that can be tested in VR also as jxr switchToWireframe()
 	// could make for nice in VR testing setup as eved notes
 
-var setupMode = false
-var setupBBox = {}
 function enterSetupMode(){
 	// rely on 2 pinches to create a bounding box of safe interaction
 	// https://threejs.org/docs/#api/en/math/Box3.containsBox
 	setupMode = true
 }
 
-var wristShortcut = "jxr switchToWireframe()"
 AFRAME.registerComponent('start-on-press', {
 	// should become a property of the component instead to be more flexible.
 	init: function(){
@@ -925,7 +938,6 @@ AFRAME.registerComponent('start-on-press', {
 // could become like https://twitter.com/utopiah/status/1264131327269502976
 	// can include a mini typing game to warm up finger placement
 
-var selectionPinchMode = false
 function startSelectionVolume(){
 	selectionPinchMode = true
 	// see setupBBox in pinchprimary and pinchsecondary
@@ -950,10 +962,7 @@ savingJSON = targets.map( e => {
 	// or https://fabien.benetou.fr/pub/home/pimxr-experimentation/sources.json
 
 // position should be configurable as rotation is handled by the OS
-var groupingMode = false
 
-var sketchEl
-var lastPointSketch
 function parsePointer( x,y ){
 		console.log(x,y)
 	if (!sketchEl) {
@@ -1018,9 +1027,6 @@ function parseKeys(status, key){
 	}
 }
 
-var hudTextEl
-const startingText = "[]"
-
 AFRAME.registerComponent('hud', {
 	init: function(){
 		var el = this.el
@@ -1079,7 +1085,6 @@ function interpretAny( code ){
 	})
 }
 
-var drawingMode = false
 function draw( position ){
 	var drawingMoment = +Date.now()
 	var pos = AFRAME.utils.coordinates.stringify( position )
@@ -1146,8 +1151,6 @@ function showhistory(){
 function saveHistoryAsCompoundSnippet(){
 	addNewNote( commandhistory.map( e => e.uninterpreted ).join("\n") )
 }
-
-var commandhistory = []
 
 function parseJXR( code ){
 	var newcode = code
@@ -1245,8 +1248,6 @@ AFRAME.registerComponent('selectionboxonpinches', {
 	}
 })
 
-let alphabet = 'abcdefghijklmnopqrstuvwxyz>';
-
 AFRAME.registerComponent('keyboard', {
 	init:function(){
 		let generatorName = this.attrName
@@ -1270,8 +1271,6 @@ AFRAME.registerComponent('capturegesture', {
 	}
 });
 
-
-const maxItemsFromSources = 20
 AFRAME.registerComponent('timeline', {
         init:function(){
 		let generatorName = this.attrName
@@ -1290,7 +1289,6 @@ AFRAME.registerComponent('glossary', {
 	},
 });
 
-var added = []
 AFRAME.registerComponent('fot', {
 	init:function(){
 		let generatorName = this.attrName
@@ -1355,7 +1353,6 @@ function toggleVisibilityAllButClass(classname){
 	toggleVisibilityEntitiesFromClass("hidableassets")
 }
 
-
 AFRAME.registerComponent('commands-from-external-json', {
 /*
 // following discussion with Yanick
@@ -1388,10 +1385,11 @@ fetch('./templates.json')
 		links = []
 		//fetch("commands.json").then(res => res.json() ).then(res => {
 		var commandsURL = "https://fabien.benetou.fr/PIMVRdata/CabinCommands?action=source"
+		commandsURL = "https://fabien.benetou.fr/PIMVRdata/EngineSequentialTutorialCommands?action=source" // new default
 		var src = AFRAME.utils.getUrlParameter('commands-url')
 		if (src && src != "") commandsURL = src
 		fetch(commandsURL).then(res => res.json() ).then(res => {
-			// to consider for remoteload/remotesave instead, to distinguish from url though.
+			// to consider for remoteLoad/remoteSave instead, to distinguish from url though.
 			// also potential security concern so might insure that only a specific user, with mandatory password access, added commands.
 			var visible = true
 			if (c.visible) visible = c.visible
@@ -1406,12 +1404,6 @@ fetch('./templates.json')
 		})
 	},
 });
-
-
-const savedProperties = [ "src", "position", "rotation", "scale", "value", ]
-
-var cabin
-const url = 'https://fabien.benetou.fr/PIMVRdata/CabinData?action='
 
 function save(){
 	var data = targets.map( e => { return {
@@ -1443,27 +1435,25 @@ function load(){
 	})
 }
 
-function remoteload(){
+function remoteLoad(){
 	fetch(url+'source') 
 		.then( response => { return response.json() } )
 		.then( data => { console.log("remote data:", data) })
+	// does actually load back. Should consider what load() does instead.
+
 	// for the reMarkable write back in source, OCR/HWR could be done on the WebXR device instead
 		// alternatively "just" sending the .jpg thumbnail would be a good enough start
 		// note that highlights are also JSON files
 		// both might not be ideal directly in the original JSON but could be attachement as URLs
 }
 
-function remotesave(){
+function remoteSave(){
 	  fetch(url+'edit', {
 		  method: 'POST',
 		  headers: {'Content-Type':'application/x-www-form-urlencoded'},
 		  body: "post=1&author=PIMVR&authpw=edit_password&text="+JSON.stringify( cabin )
 	  }).then(res => res).then(res => console.log("saved remotely", res))
 }
-
-var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
-	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
-// could be an array proper completed on each component registration
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
@@ -1472,9 +1462,10 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
-	capturegesture toolbox disable-components-via-url enable-components-via-url commands-from-external-json 
-	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
-	<!-- screenstack dynamic-view selectionboxonpinches keyboard glossary timeline issues fot -->
+	toolbox disable-components-via-url enable-components-via-url commands-from-external-json >
+	<!-- screenstack dynamic-view selectionboxonpinches keyboard glossary timeline issues fot
+	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
+	-->
       <a-assets>
 	      <template id="avatar-template"> <a-cylinder opacity=.3 scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
 	      <template id="text-template"> <a-text></a-text> </template>
@@ -1505,11 +1496,10 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
 
       <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
-	<a-entity id="scaledworld" class="hidableassets" scale=".05 .05 .05" position="0 .85 0"><!-- can't be used for interactions otherwise becomes indirect-->
+	<a-entity id="scaledworld" class="hidableassets" scale=".05 .05 .05" position="0 1.45 -1"><!-- can't be used for interactions otherwise becomes indirect-->
 	      <a-box position="-0.1 1.2 -0.3" scale="0.5 0.5 0.5" rotation="0 45 0" color="#4CC3D9"></a-box>
 	      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
 	      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-	      <a-image class="hidableenvironment" position="0 -0.3 -4" rotation="-80 0 0" width="6" height="2" src="miniflex.jpg" opacity="0.3"></a-image>
 	</a-entity>
       <a-image id=background background-via-url visible=false position="0 1.5 -1.02" scale="2 1 1" src=""></a-image>
       <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_typesofdiagrams2.png" 
@@ -1520,20 +1510,18 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
 		rotation="0 45 0" position="-1.5 1.7 -.7" scale=".4 .2 .2" ></a-image>
       <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_mappingfusion.png" 
 		rotation="0 45 0" position="-1.5 1.4 -.7" scale=".4 .2 .2" ></a-image>
-      <a-image position="-0.5 1.3 0" scale=".3 .3 .3" rotation="0 90 0" class="hidableassets" src="content/draft15sept-1.png"></a-image>
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
-      <a-entity hide-on-enter-ar id="cabin" class="hidableenvironment" gltf-model="url(arches.glb)" scale="10 10 10" position="0 0.2 0.15" rotation="0 -90 0"></a-entity>
+      <!-- assets CabanaAndCurtains.glb Pond.glb TempleOfLife.glb JapaneseRoom.glb -->
+      <a-entity hide-on-enter-ar id="cabin" class="hidableenvironment" gltf-model="url(../content/Pond.glb)" scale="80 80 80" position="0 0.2 0.15" rotation="0 -90 0"></a-entity>
+      <a-entity hide-on-enter-ar class="hidableenvironment" gltf-model="url(../content/CabanaAndCurtains.glb)" scale=".010 .010 .010" position="0 0.2 0.15" rotation="0 0 0"></a-entity>
       <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
       <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
-      <a-sky hide-on-enter-ar color="#3d3846"></a-sky>
+      <a-sky hide-on-enter-ar color="#add8e6"></a-sky>
 
-      <a-entity id="gui3d" class="observableui" position="0 1.5 -.4"></a-entity>
-
-      <a-entity id=inbrowser web-url position="0 1.5 -2.4"></a-entity>
       <!-- permanent offline persistent e-ink based, rM2 size, reminder
-      <a-plane position="0 2 -2" scale="4 4 4" mirror></a-plane>
-      <a-plane position="0 1 -1" scale="0.21 0.15 1" rotation="-30 0 0" wireframe="true"></a-plane>
+	      <a-plane position="0 2 -2" scale="4 4 4" mirror></a-plane>
+	      <a-plane position="0 1 -1" scale="0.21 0.15 1" rotation="-30 0 0" wireframe="true"></a-plane>
 	-->
 
     </a-scene>
