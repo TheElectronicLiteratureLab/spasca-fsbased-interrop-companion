@@ -110,6 +110,8 @@ const savedProperties = [ "src", "position", "rotation", "scale", "value", ] // 
 var groupSelection = []
 var cabin //storage for load/save. Should use a better name as this is a reminder of a past version rather than something semantically useful.
 const url = "https://fabien.benetou.fr/PIMVRdata/CabinData?action="
+var primarySide = 0
+const sides = ["right", "left"]
 var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
 	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
 // could be an array proper completed on each relevant component registration
@@ -755,18 +757,14 @@ AFRAME.registerComponent('wristattachsecondary',{
   init: function () {
 	var el = this.el
 	this.worldPosition=new THREE.Vector3();
-	//var side = this.el.getAttribute("hand-tracking-controls").hand[0] // fails
-		  // (this.el.components)
-	this.side = "l"
-	if ( this.el.getAttribute("hand-tracking-controls").indexOf("right") ) this.side = "r"
   },
   tick: function () {
 	// could check if it exists first, or isn't 0 0 0... might re-attach fine, to test
 		  // somehow very far away... need to convert to local coordinate probably
 		  // localToWorld?
+	(primarySide == 0) ? secondarySide = 1 : secondarySide = 0
 	var worldPosition=this.worldPosition;
-	  //this.el.object3D.traverse( e => { if (e.name == "b_"+this.side+"_wrist") {
-	  this.el.object3D.traverse( e => { if (e.name == "b_l_wrist") {
+	this.el.object3D.traverse( e => { if (e.name == "b_"+sides[secondarySide][0]+"_wrist") {
 		worldPosition.copy(e.position);e.parent.updateMatrixWorld();e.parent.localToWorld(worldPosition)
 		rotation = e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14
 		this.data.target.setAttribute("rotation", rotation)
@@ -776,6 +774,9 @@ AFRAME.registerComponent('wristattachsecondary',{
 		//this.data.target.setAttribute("rotation", AFRAME.utils.coordinates.stringify( e.getAttribute("rotation") )
 	  }
 	})
+  },
+  remove: function() {
+	// should remove event listeners here. Requires naming them.
   }
 });
 
@@ -811,6 +812,9 @@ AFRAME.registerComponent('pinchsecondary', {
 		if (!selectionPinchMode) bbox.min.copy( zeroVector3 )
 		if (selectionPinchMode) setHUD( "selectionPinchMode started")
 	});
+  },
+  remove: function() {
+	// should remove event listeners here. Requires naming them.
   }
 });
 
@@ -862,7 +866,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		if (selectedElement && !groupingMode) {
 			selectedElement.setAttribute("position", event.detail.position)
 			document.querySelector("#rightHand").object3D.traverse( e => {
-				if (e.name == "b_r_wrist")
+				if (e.name == "b_"+sides[primarySide][0]+"_wrist")
 					selectedElement.setAttribute("rotation", e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14)
 			})
 			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
@@ -881,6 +885,9 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		selectedElement = getClosestTargetElement( event.detail.position )
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
 	});
+  },
+  remove: function() {
+	// should remove event listeners here. Requires naming them.
   }
 });
 
@@ -1447,6 +1454,24 @@ function remoteSave(){
 	  }).then(res => res).then(res => console.log("saved remotely", res))
 }
 
+function switchSide(){
+	// mostly works... but event listeners are not properly removed. Quickly creates a mess, low performance and unpredictable.
+	document.querySelector("#"+sides[primarySide]+"Hand").removeAttribute("pinchprimary")
+	document.querySelector("#"+sides[secondarySide]+"Hand").removeAttribute("pinchsecondary")
+	document.querySelector("#"+sides[secondarySide]+"Hand").removeAttribute("wristattachsecondary")
+	document.querySelector("#"+sides[secondarySide]+"Hand").setAttribute("pinchprimary", "")
+	document.querySelector("#"+sides[primarySide]+"Hand").setAttribute("pinchsecondary", "")
+	document.querySelector("#"+sides[primarySide]+"Hand").setAttribute("wristattachsecondary", "target: #box")
+	if (primarySide == 0) {
+		secondarySide = 0
+		primarySide = 1
+	} else {
+		primarySide = 0
+		secondarySide = 1
+	}
+}
+
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
@@ -1482,8 +1507,8 @@ function remoteSave(){
 	      pinchprimary ></a-entity>
 -->
 
-      <a-entity pinchprimary id="rightHand" hand-tracking-controls="hand: right;"></a-entity>
-      <a-entity wristattachsecondary="target: #box" pinchsecondary id="leftHand" hand-tracking-controls="hand: left;"></a-entity>
+      <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
+      <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
 
       <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
