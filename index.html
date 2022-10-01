@@ -104,11 +104,11 @@ const startingText = "[]"
 var drawingMode = false
 var added = []
 const maxItemsFromSources = 20
-let alphabet = 'abcdefghijklmnopqrstuvwxyz>';
+let alphabet = ['abcdefghijklmnopqrstuvwxyz', '0123456789', '<>'];
 var commandhistory = []
 const savedProperties = [ "src", "position", "rotation", "scale", "value", ] // add newer properties e.g visibility and generator as class
 var groupSelection = []
-var cabin
+var cabin //storage for load/save. Should use a better name as this is a reminder of a past version rather than something semantically useful.
 const url = "https://fabien.benetou.fr/PIMVRdata/CabinData?action="
 var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
 	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
@@ -550,9 +550,10 @@ AFRAME.registerComponent('line-link-entities', {
   init: function () {
     let generatorName = this.attrName
     setTimeout( _ => { // stupid... but works. 
+ 	    if (!this.data.source || !this.data.target) return
 	    var sourcePos = this.data.source.object3D.position
 	    var targetPos = this.data.target.object3D.position
- 	    if (!sourcePos || !targetPos) return
+ 	    if (!sourcePos || !targetPos) return // might not be needed anymore
 	    // adding a gltf inside an element prevents the parent from having coordinates (fast enough?)
 	    var step = 0
 	    var points = cut ([sourcePos, targetPos], 0, ++step)
@@ -886,6 +887,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 // testing on desktop
 function switchToWireframe(){
 	visible = !visible
+	/*
 	targets.map( e => {
 			scale = 50// should be a variable instead
 			e.setAttribute("scale", visible ? ".05 .05 .05" : ".1 .1 .1" )
@@ -894,7 +896,8 @@ function switchToWireframe(){
 			e.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
 			// should actually be just for src, not for text notes... even though could be interesting
 	})
-	var model = document.querySelector("#cabin").object3D
+	*/
+	var model = document.querySelector("#environment").object3D
 	model.traverse( o => { if (o.material) {
 			o.material.wireframe = visible;
 			o.material.opacity = visible ? 0.05 : 1;
@@ -1165,9 +1168,10 @@ function parseJXR( code ){
 function interpretJXR( code ){
 	if (code.length == 1) { // special case of being a single character, thus keyboard
 		if (code == ">") { // Enter equivalent
-			//addNewNote( hudTextEl.getAttribute("value").slice(0,-1)
 			addNewNote( hudTextEl.getAttribute("value") )
 			hudTextEl.setAttribute("value", "")
+		} else if (code == "<") { // Backspace equivalent
+			hudTextEl.setAttribute("value", hudTextEl.getAttribute("value").slice(0,-1))
 		} else {
 			appendToHUD( code ) 
 		}
@@ -1240,10 +1244,12 @@ AFRAME.registerComponent('keyboard', {
 		let generatorName = this.attrName
 		const horizontaloffset = .5
 		const horizontalratio = 1/30
-		 for (var i = 0; i < alphabet.length; i++) {
+		alphabet.map( (line,ln) => {
+		 for (var i = 0; i < line.length; i++) {
 			var pos = i * horizontalratio - horizontaloffset
-                        addNewNote( alphabet[i], pos+" 1.6 -.4", ".1 .1 .1", null, generatorName)
+                        addNewNote( line[i], pos+" "+(1.6-ln*.03)+" -.4", ".1 .1 .1", null, generatorName)
 		 }
+		})
 	}
 })
 	
@@ -1498,7 +1504,7 @@ function remoteSave(){
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
       <!-- assets CabanaAndCurtains.glb Pond.glb TempleOfLife.glb JapaneseRoom.glb -->
-      <a-entity hide-on-enter-ar id="cabin" class="hidableenvironment" gltf-model="url(../content/Pond.glb)" scale="80 80 80" position="0 0.2 0.15" rotation="0 -90 0"></a-entity>
+      <a-entity hide-on-enter-ar id="environment" class="hidableenvironment" gltf-model="url(../content/Pond.glb)" scale="80 80 80" position="0 0.2 0.15" rotation="0 -90 0"></a-entity>
       <a-entity hide-on-enter-ar class="hidableenvironment" gltf-model="url(../content/CabanaAndCurtains.glb)" scale=".010 .010 .010" position="0 0.2 0.15" rotation="0 0 0"></a-entity>
       <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
       <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
