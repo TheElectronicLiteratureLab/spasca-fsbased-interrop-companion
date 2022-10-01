@@ -1278,18 +1278,19 @@ AFRAME.registerComponent('glossary', {
 
 AFRAME.registerComponent('fot', {
 	init:function(){
+	},
+	tick: function(){
 		let generatorName = this.attrName
-		setInterval( _ => fetch("https://fabien.benetou.fr/PIMVRdata/FoT?action=source#" + Date.now()).then(res => res.text() ).then(res => {
-		// consider tick() instead
+		fetch("https://fabien.benetou.fr/PIMVRdata/FoT?action=source#" + Date.now()).then(res => res.text() ).then(res => {
 			res.split("\n").slice(0,maxItemsFromSources).map( (n,i) => {
 				found = added.find((str) => str === n)
 				if (typeof found === 'undefined'){
 					added.push(n)
 					addNewNote( n, "-1 "+(1+i/10)+" -2.5", ".1 .1 .1", null, generatorName ) 
-}
+				}
 			})
-		}), 100 )
-	},
+		})
+	}
 });
 
 AFRAME.registerComponent('issues', {
