@@ -1006,12 +1006,13 @@ AFRAME.registerComponent('hud', {
 	}
 })
 
-function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes=null ){
+function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes=null, visible="true" ){
 	//var newnote = document.createElement("a-text")
 	var newnote = document.createElement("a-troika-text")
 	newnote.setAttribute("anchor", "left" )
 	newnote.setAttribute("outline-width", "5%" )
 	newnote.setAttribute("outline-color", "black" )
+	newnote.setAttribute("visible", visible )
 
 	if (id) newnote.id = id
 	if (classes) newnote.className += classes
@@ -1137,7 +1138,15 @@ function parseJXR( code ){
 }
 
 function interpretJXR( code ){
-	if (code.length == 1) appendToHUD( code ) // special case of being a single character, thus keyboard
+	if (code.length == 1) { // special case of being a single character, thus keyboard
+		if (code == ">") { // Enter equivalent
+			//addNewNote( hudTextEl.getAttribute("value").slice(0,-1)
+			addNewNote( hudTextEl.getAttribute("value") )
+			hudTextEl.setAttribute("value", "")
+		} else {
+			appendToHUD( code ) 
+		}
+	}
 	if (!code.match(/^jxr /)) return
 	var uninterpreted = code
 	var parseCode = ""
@@ -1204,7 +1213,7 @@ AFRAME.registerComponent('selectionboxonpinches', {
 	}
 })
 
-let alphabet = 'abcdefghijklmnopqrstuvwxyz';
+let alphabet = 'abcdefghijklmnopqrstuvwxyz>';
 
 AFRAME.registerComponent('keyboard', {
 	init:function(){
@@ -1214,15 +1223,6 @@ AFRAME.registerComponent('keyboard', {
 		 for (var i = 0; i < alphabet.length; i++) {
 			var pos = i * horizontalratio - horizontaloffset
                         addNewNote( alphabet[i], pos+" 1.6 -.4", ".1 .1 .1", null, generatorName)
-			/*
-			var e = document.createElement("a-text") // could also rely on addNewNote()
-			e.setAttribute("side", "double" )
-			e.setAttribute("value", alphabet[i])
-			e.setAttribute("target", true)
-			e.setAttribute("scale", ".1 .1 .1")
-			e.setAttribute("position",`${pos} 1.6 -0.4`)
-			this.el.appendChild(e) 
-			*/
 		 }
 	}
 })
@@ -1352,6 +1352,7 @@ fetch('./templates.json')
 			"target:#instructionA; source:#instructionC",
 			"target:#instructionA; source:#instructionD",
 		]
+		links = []
 		//fetch("commands.json").then(res => res.json() ).then(res => {
 		var commandsURL = "https://fabien.benetou.fr/PIMVRdata/CabinCommands?action=source"
 		var src = AFRAME.utils.getUrlParameter('commands-url')
@@ -1359,12 +1360,16 @@ fetch('./templates.json')
 		fetch(commandsURL).then(res => res.json() ).then(res => {
 			// to consider for remoteload/remotesave instead, to distinguish from url though.
 			// also potential security concern so might insure that only a specific user, with mandatory password access, added commands.
-			res.map( c => addNewNote( c.value, c.position, c.scale, c.id, generatorName) )
+			var visible = true
+			if (c.visible) visible = c.visible
+			res.map( c => addNewNote( c.value, c.position, c.scale, c.id, generatorName, c.visible) )
 				// missing name/title, autorun (true/false), description, 3D icon/visual, visiblity (useful for sequential tutorial)
 			links.map( l => { var linkEl = document.createElement("a-entity"); 
 					 linkEl.setAttribute("line-link-entities", l)
 					 el.appendChild(linkEl) 
 			} )
+			var hideRest = AFRAME.utils.getUrlParameter('commands-hide-rest')
+			if (hideRest && hideRest != "") setTimeout( _ => toggleVisibilityAllButClass('commands-from-external-json'), 5000) // waiting for everything to have loaded...
 		})
 	},
 });
@@ -1424,7 +1429,7 @@ function remotesave(){
 }
 
 var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
-	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot"
+	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
 // could be an array proper completed on each component registration
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
