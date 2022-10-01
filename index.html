@@ -109,10 +109,10 @@ var commandhistory = []
 const savedProperties = [ "src", "position", "rotation", "scale", "value", ] // add newer properties e.g visibility and generator as class
 var groupSelection = []
 var cabin
-const url = 'https://fabien.benetou.fr/PIMVRdata/CabinData?action='
+const url = "https://fabien.benetou.fr/PIMVRdata/CabinData?action="
 var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
 	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
-// could be an array proper completed on each component registration
+// could be an array proper completed on each relevant component registration
 
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
@@ -747,40 +747,6 @@ function setHUD(txt){
 	document.querySelector("[hud]>a-troika-text").setAttribute("value",txt)
 }
 
-AFRAME.registerComponent('pinchsecondary', { 
-  init: function () {
-	this.el.addEventListener('pinchended', function (event) {
-		selectedElement = getClosestTargetElement( event.detail.position )
-		// if close enough to a target among a list of potential targets, unselect previous target then select new
-		if (selectedElement) interpretJXR( selectedElement.getAttribute("value") )
-		if (setupMode) setupBBox["B"] = event.detail.position
-		if ( setupBBox["A"] && setupBBox["B"] ) {
-			setupMode = false
-			setHUD( JSON.stringify(setupBBox))
-		}
-		/*
-		selectionPinchMode = false
-		setHUD( AFRAME.utils.coordinates.stringify( bbox.min ),
-			AFRAME.utils.coordinates.stringify( bbox.max ) )
-		bbox.min.copy( zeroVector3 )
-		bbox.man.copy( zeroVector3 )
-	       */
-	});
-	this.el.addEventListener('pinchmoved', function (event) {
-		if (selectionPinchMode){
-			bbox.min.copy( event.detail.position )
-			setHUD( "selectionPinchMode updated min")
-			if (!bbox.max.equal(zeroVector3))
-				selectionBox.update();
-		}
-	});
-	this.el.addEventListener('pinchstarted', function (event) {
-		if (!selectionPinchMode) bbox.min.copy( zeroVector3 )
-		if (selectionPinchMode) setHUD( "selectionPinchMode started")
-	});
-  }
-});
-
 AFRAME.registerComponent('wristattachsecondary',{
   schema: {
     target: {type: 'selector'},
@@ -812,7 +778,42 @@ AFRAME.registerComponent('wristattachsecondary',{
   }
 });
 
-AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right one
+AFRAME.registerComponent('pinchsecondary', { 
+  init: function () {
+	this.el.addEventListener('pinchended', function (event) {
+		selectedElement = getClosestTargetElement( event.detail.position )
+		// if close enough to a target among a list of potential targets, unselect previous target then select new
+		if (selectedElement) interpretJXR( selectedElement.getAttribute("value") )
+		selectedElement = null
+		if (setupMode) setupBBox["B"] = event.detail.position
+		if ( setupBBox["A"] && setupBBox["B"] ) {
+			setupMode = false
+			setHUD( JSON.stringify(setupBBox))
+		}
+		/*
+		selectionPinchMode = false
+		setHUD( AFRAME.utils.coordinates.stringify( bbox.min ),
+			AFRAME.utils.coordinates.stringify( bbox.max ) )
+		bbox.min.copy( zeroVector3 )
+		bbox.man.copy( zeroVector3 )
+	       */
+	});
+	this.el.addEventListener('pinchmoved', function (event) {
+		if (selectionPinchMode){
+			bbox.min.copy( event.detail.position )
+			setHUD( "selectionPinchMode updated min")
+			if (!bbox.max.equal(zeroVector3))
+				selectionBox.update();
+		}
+	});
+	this.el.addEventListener('pinchstarted', function (event) {
+		if (!selectionPinchMode) bbox.min.copy( zeroVector3 )
+		if (selectionPinchMode) setHUD( "selectionPinchMode started")
+	});
+  }
+});
+
+AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right one, should be switchable
 
 // consider instead https://github.com/AdaRoseCannon/handy-work/blob/main/README-AFRAME.md for specific poses
 // or https://aframe.io/aframe/examples/showcase/hand-tracking/pinchable.js 
