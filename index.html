@@ -77,6 +77,18 @@ setTimeout( _ =>
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
 
+AFRAME.registerComponent('enable-components-via-url', { 
+  init: function () {
+	var src = AFRAME.utils.getUrlParameter('enable-components-via-url')
+	if (src && src != "") {
+		src.split(",").map( c => {
+			this.el.setAttribute(c, "")
+		})
+	}
+  }
+})
+
+
 AFRAME.registerComponent('disable-components-via-url', { 
   init: function () {
 	var src = AFRAME.utils.getUrlParameter('disable-components-via-url')
@@ -795,6 +807,7 @@ AFRAME.registerComponent('wristattachsecondary',{
   }
 });
 
+var primaryPinchStarted = false
 AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right one
 
 // consider instead https://github.com/AdaRoseCannon/handy-work/blob/main/README-AFRAME.md for specific poses
@@ -807,6 +820,12 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			// see own trigger-box component. Could use dedicated threejs helpers instead.
 				// https://github.com/Utopiah/aframe-triggerbox-component/blob/master/aframe-triggerbox-component.js#L66
 			// could make trigger zones visible as debug mode
+		var dist = event.detail.position.distanceTo( document.querySelector("#box").object3D.position )
+		if (dist < .1){
+			setHUD("close enough, replaced shortcut with "+ selectedElement.getAttribute("value") )
+			wristShortcut = selectedElement.getAttribute("value")
+			setTimeout( _ => setHUD(""), 2000) 
+		}
 		// unselect current target if any
 		selectedElement = null;
 		save()
@@ -825,6 +844,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		bbox.min.copy( zeroVector3 )
 		bbox.man.copy( zeroVector3 )
 	       */
+		setTimeout( _ => primaryPinchStarted = false, 200) // delay otherwise still activate on release
 	});
 	this.el.addEventListener('pinchmoved', function (event) { 
 		// move current target if any
@@ -840,6 +860,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		}
 	});
 	this.el.addEventListener('pinchstarted', function (event) {
+		primaryPinchStarted = true
 		if (!selectionPinchMode) bbox.max.copy( zeroVector3 )
 
 		//var clone = getClosestTargetElement( event.detail.position ).cloneNode()
@@ -856,7 +877,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 
 // testing on desktop
 var visible = true
-function tst(){
+function switchToWireframe(){
 	visible = !visible
 	targets.map( e => {
 			scale = 50// should be a variable instead
@@ -878,7 +899,7 @@ function tst(){
 // add (JXR) shortcuts as PIM function from e.g https://observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations
 	// allowing to search within PIM then show manipulable pages as preview.
 
-// note that can be tested in VR also as jxr tst()
+// note that can be tested in VR also as jxr switchToWireframe()
 	// could make for nice in VR testing setup as eved notes
 
 var setupMode = false
@@ -889,11 +910,13 @@ function enterSetupMode(){
 	setupMode = true
 }
 
-AFRAME.registerComponent('changecoloronpress', {
+var wristShortcut = "jxr switchToWireframe()"
+AFRAME.registerComponent('start-on-press', {
+	// should become a property of the component instead to be more flexible.
 	init: function(){
 		var el = this.el
 		this.el.addEventListener('pressedended', function (event) { 
-			tst()
+			if (!primaryPinchStarted && wristShortcut.match(/^jxr /)) interpretJXR(wristShortcut)
 			// other action could possibly based on position relative to zones instead, i.e a list of bbox/functions pairs
 		})
 	}
@@ -1002,6 +1025,7 @@ AFRAME.registerComponent('hud', {
 	init: function(){
 		var el = this.el
 		var e = document.createElement("a-text") //could be hardcoded instead... arguable.
+		// should also be troika
 		e.setAttribute("value", startingText)
 		//e.setAttribute("font", "sw-test/Roboto-msdf.json")
 		e.setAttribute("position", "-0.05 0 -0.2") 
@@ -1176,28 +1200,25 @@ function interpretJXR( code ){
 	// opt re-run it by moving the corresponding text in target volume
 }
 
-AFRAME.registerComponent('toolbox', {
+AFRAME.registerComponent('toolbox', { // ununsed
 	init: function(){
 		var el = this.el
 		var e = document.createElement("a-sphere")
 		e.setAttribute("scale", "0.1 0.1 0.1")
 		e.setAttribute("color", "lightblue")
 		e.setAttribute("pressable")
-		e.setAttribute("changecoloronpress")
 		e.id = "toolboxsphere"
 		el.appendChild( e )
 		var e = document.createElement("a-cylinder")
 		e.setAttribute("scale", "0.1 0.1 0.1")
 		e.setAttribute("color", "darkred")
 		e.setAttribute("pressable")
-		e.setAttribute("changecoloronpress")
 		e.id = "toolboxcylinder"
 		el.appendChild( e )
 		var e = document.createElement("a-box")
 		e.setAttribute("scale", "0.1 0.1 0.1")
 		e.setAttribute("color", "pink")
 		e.setAttribute("pressable")
-		e.setAttribute("changecoloronpress")
 		e.id = "toolbox"
 		el.appendChild( e )
 	},
@@ -1274,6 +1295,7 @@ AFRAME.registerComponent('fot', {
 	init:function(){
 		let generatorName = this.attrName
 		setInterval( _ => fetch("https://fabien.benetou.fr/PIMVRdata/FoT?action=source#" + Date.now()).then(res => res.text() ).then(res => {
+		// consider tick() instead
 			res.split("\n").slice(0,maxItemsFromSources).map( (n,i) => {
 				found = added.find((str) => str === n)
 				if (typeof found === 'undefined'){
@@ -1450,9 +1472,9 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
-	screenstack dynamic-view selectionboxonpinches keyboard commands-from-external-json glossary
-	timeline issues fot disable-components-via-url
-	capturegesture toolbox networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
+	capturegesture toolbox disable-components-via-url enable-components-via-url commands-from-external-json 
+	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;">
+	<!-- screenstack dynamic-view selectionboxonpinches keyboard glossary timeline issues fot -->
       <a-assets>
 	      <template id="avatar-template"> <a-cylinder opacity=.3 scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
 	      <template id="text-template"> <a-text></a-text> </template>
@@ -1481,7 +1503,7 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
       <a-entity pinchprimary id="rightHand" hand-tracking-controls="hand: right;"></a-entity>
       <a-entity wristattachsecondary="target: #box" NOpinchletterpick pinchsecondary id="leftHand" hand-tracking-controls="hand: left;"></a-entity>
 
-      <a-box pressable changecoloronpress id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
+      <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
 	<a-entity id="scaledworld" class="hidableassets" scale=".05 .05 .05" position="0 .85 0"><!-- can't be used for interactions otherwise becomes indirect-->
 	      <a-box position="-0.1 1.2 -0.3" scale="0.5 0.5 0.5" rotation="0 45 0" color="#4CC3D9"></a-box>
