@@ -115,6 +115,7 @@ const sides = ["right", "left"]
 var generators = "line-link-entities link screenstack dynamic-view selectionboxonpinches keyboard "
 	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
 // could be an array proper completed on each relevant component registration
+var heightAdjustableClasses = ["commands-from-external-json"]
 
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
@@ -1355,13 +1356,26 @@ function toggleVisibilityEntitiesFromClass(classname){
 		entities.map( e => e.setAttribute("visible", "true"))
 }
 
-function pushBackClass(classname){
-	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.z -= .1 )
+function pushUpClass(classname, value=.1){
+	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.y += value)
+}
+
+function pushDownClass(classname, value=.1){
+// can be used for accessibiliy, either directly or sampling e.g 10s after entering VR to lower based on the estimated user height
+	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.y -= value)
+}
+
+function pushBackClass(classname, value=.1){
+	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.z -= value)
+}
+
+function pushFrontClass(classname, value=.1){
+	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.z += value)
 }
 
 function toggleVisibilityAllGenerators(){
 	generators.split(" ").map( g => toggleVisibilityEntitiesFromClass(g) )
-	// note hidableassets though
+	// not hidableassets though
 }
 
 function toggleVisibilityAll(){
@@ -1373,6 +1387,24 @@ function toggleVisibilityAllButClass(classname){
 	generators.split(" ").filter( e => e != classname).map( g => toggleVisibilityEntitiesFromClass(g) )
 	toggleVisibilityEntitiesFromClass("hidableassets")
 }
+
+AFRAME.registerComponent('adjust-height-in-vr', {
+	init: function(){
+		AFRAME.scenes[0].addEventListener("enter-vr", _ => {
+			setTimeout( _ => { // getting the value right away returns 0, so short delay
+				userHeight = document.querySelector("#player").object3D.position.y
+				// assume the user does not change, some might prefer to use standing up first then sit down.
+					// otherwise explicit controls
+				heightAdjustableClasses.map( c => {
+					max = Math.max.apply(null, Array.from( document.querySelectorAll("."+c) ).map( e => e.object3D.position.y) )	
+					min = Math.min.apply(null, Array.from( document.querySelectorAll("."+c) ).map( e => e.object3D.position.y) )	
+					pushDownClass(c, userHeight - (max-min)/2 )
+					setFeedbackHUD( "adjusted height by:" + ( userHeight - (max-min)/2 ) )
+				} )
+			}, 100 )
+		})
+	}
+})
 
 AFRAME.registerComponent('commands-from-external-json', {
 /*
@@ -1498,7 +1530,7 @@ function switchSide(){
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
-<a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;"
+<a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
 	toolbox disable-components-via-url enable-components-via-url commands-from-external-json >
 	<!-- screenstack dynamic-view selectionboxonpinches keyboard glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
