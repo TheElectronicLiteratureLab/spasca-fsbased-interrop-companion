@@ -99,7 +99,7 @@ var selectionPinchMode = false
 var groupingMode = false
 var sketchEl
 var lastPointSketch
-var hudTextEl
+var hudTextEl // should instead rely on the #typinghud selector in most cases
 const startingText = "[]"
 var drawingMode = false
 var added = []
@@ -638,13 +638,16 @@ AFRAME.registerComponent('screenstack', {
   }
 });
 
-
-function getClosestTargetElement( pos, threshold=0.05 ){ // 10x lower threshold for flight mode
+function getClosestTargetElements( pos, threshold=0.05 ){ 
 	// TODO Bbox intersects rather than position
-	var res = null
-	const matches = targets.filter( e => e.getAttribute("visible") == true).map( t => { return { el: t, dist : pos.distanceTo(t.getAttribute("position") ) } })
+	return targets.filter( e => e.getAttribute("visible") == true).map( t => { return { el: t, dist : pos.distanceTo(t.getAttribute("position") ) } })
 		.filter( t => t.dist < threshold ) 
 		.sort( (a,b) => a.dist > b.dist)
+}
+	
+function getClosestTargetElement( pos, threshold=0.05 ){ // 10x lower threshold for flight mode
+	var res = null
+	const matches = getClosestTargetElements( pos, threshold)
 	if (matches.length > 0) res = matches[0].el
 	return res
 }
@@ -738,8 +741,16 @@ function addToGroup( position ){
 	addBoundingBoxToTextElement( el )
 }
 
+function appendToFeedbackHUD(txt){
+	setFeedbackHUD( document.querySelector("#feedbackhud").getAttribute("value") + " " + txt )
+}
+
+function setFeedbackHUD(txt){
+	document.querySelector("#feedbackhud").setAttribute("value",txt)
+}
+
 function appendToHUD(txt){
-	const textHUD = document.querySelector("[hud]>a-troika-text").getAttribute("value") 
+	const textHUD = document.querySelector("#typinghud").getAttribute("value") 
 	if ( textHUD == startingText)
 		setHUD( txt )
 	else
@@ -747,7 +758,7 @@ function appendToHUD(txt){
 }
 
 function setHUD(txt){
-	document.querySelector("[hud]>a-troika-text").setAttribute("value",txt)
+	document.querySelector("#typinghud").setAttribute("value",txt)
 }
 
 AFRAME.registerComponent('wristattachsecondary',{
@@ -790,7 +801,7 @@ AFRAME.registerComponent('pinchsecondary', {
 		if (setupMode) setupBBox["B"] = event.detail.position
 		if ( setupBBox["A"] && setupBBox["B"] ) {
 			setupMode = false
-			setHUD( JSON.stringify(setupBBox))
+			setFeedbackHUD( JSON.stringify(setupBBox))
 		}
 		/*
 		selectionPinchMode = false
@@ -803,14 +814,14 @@ AFRAME.registerComponent('pinchsecondary', {
 	this.el.addEventListener('pinchmoved', function (event) {
 		if (selectionPinchMode){
 			bbox.min.copy( event.detail.position )
-			setHUD( "selectionPinchMode updated min")
+			setFeedbackHUD( "selectionPinchMode updated min")
 			if (!bbox.max.equal(zeroVector3))
 				selectionBox.update();
 		}
 	});
 	this.el.addEventListener('pinchstarted', function (event) {
 		if (!selectionPinchMode) bbox.min.copy( zeroVector3 )
-		if (selectionPinchMode) setHUD( "selectionPinchMode started")
+		if (selectionPinchMode) setFeedbackHUD( "selectionPinchMode started")
 	});
   },
   remove: function() {
@@ -830,11 +841,14 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			// see own trigger-box component. Could use dedicated threejs helpers instead.
 				// https://github.com/Utopiah/aframe-triggerbox-component/blob/master/aframe-triggerbox-component.js#L66
 			// could make trigger zones visible as debug mode
+		var closests = getClosestTargetElements( event.detail.position )
+		if (closests && closests.length > 0) // avoiding self reference
+			setFeedbackHUD("close enough, could stack with "+ closests[1].el.getAttribute("value") )
 		var dist = event.detail.position.distanceTo( document.querySelector("#box").object3D.position )
 		if (dist < .1){
-			setHUD("close enough, replaced shortcut with "+ selectedElement.getAttribute("value") )
+			setFeedbackHUD("close enough, replaced shortcut with "+ selectedElement.getAttribute("value") )
 			wristShortcut = selectedElement.getAttribute("value")
-			setTimeout( _ => setHUD(""), 2000) 
+			setTimeout( _ => setFeedbackHUD(""), 2000) 
 		}
 		// unselect current target if any
 		selectedElement = null;
@@ -843,7 +857,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			// somehow keeps on setting up... shouldn't once done.
 		if ( setupBBox["A"] && setupBBox["B"] ) {
 			setupMode = false
-			setHUD( JSON.stringify(setupBBox))
+			setFeedbackHUD( JSON.stringify(setupBBox))
 		}
 		if ( drawingMode ) draw( event.detail.position )
 		if ( groupingMode ) addToGroup( event.detail.position )
@@ -1029,13 +1043,19 @@ function parseKeys(status, key){
 
 AFRAME.registerComponent('hud', {
 	init: function(){
-		var el = this.el
-		var e = document.createElement("a-troika-text")
-		e.setAttribute("value", startingText)
-		e.setAttribute("position", "-0.05 0 -0.2") 
-		e.setAttribute("scale", "0.05 0.05 0.05") 
-		el.appendChild( e )
-		hudTextEl = e
+		var feedbackHUDel= document.createElement("a-troika-text")
+		feedbackHUDel.id = "feedbackhud"
+		feedbackHUDel.setAttribute("value", "")
+		feedbackHUDel.setAttribute("position", "-0.05 0.01 -0.2") 
+		feedbackHUDel.setAttribute("scale", "0.05 0.05 0.05") 
+		this.el.appendChild( feedbackHUDel )
+		var typingHUDel = document.createElement("a-troika-text")
+		typingHUDel.id = "typinghud"
+		typingHUDel.setAttribute("value", startingText)
+		typingHUDel.setAttribute("position", "-0.05 0 -0.2") 
+		typingHUDel.setAttribute("scale", "0.05 0.05 0.05") 
+		this.el.appendChild( typingHUDel )
+		hudTextEl = typingHUDel // should rely on the id based selector now
 		document.addEventListener('keyup', function(event) {
 			parseKeys('keyup', event.key)
 		});
@@ -1141,7 +1161,7 @@ function addGltfFromURLAsTarget( url, scale=1 ){
 }
 
 function showhistory(){
-	setHUD("history :\n")
+	setFeedbackHUD("history :\n")
 	commandhistory.map( i => appendToHUD(i.uninterpreted+"\n") )
 }
 
@@ -1176,9 +1196,9 @@ function interpretJXR( code ){
 	if (code.length == 1) { // special case of being a single character, thus keyboard
 		if (code == ">") { // Enter equivalent
 			addNewNote( hudTextEl.getAttribute("value") )
-			hudTextEl.setAttribute("value", "")
+			setHUD("")
 		} else if (code == "<") { // Backspace equivalent
-			hudTextEl.setAttribute("value", hudTextEl.getAttribute("value").slice(0,-1))
+			setHUD( hudTextEl.getAttribute("value").slice(0,-1))
 		} else {
 			appendToHUD( code ) 
 		}
