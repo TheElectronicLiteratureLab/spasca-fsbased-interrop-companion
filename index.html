@@ -73,7 +73,9 @@ new Runtime().module(define2, name => {
 </script>
 
 <script>
-var fontColor= "white"
+const prefix = /^jxr /
+const codeFontColor = "lightgrey"
+const fontColor= "white"
 const wikiAsImages = "https://vatelier.benetou.fr/MyDemo/newtooling/wiki_graph.json"
 const maxItems = 10
 const now = Math.round( +new Date()/1000 ) //ms in JS, seconds in UNIX epoch
@@ -944,7 +946,7 @@ AFRAME.registerComponent('start-on-press', {
 	init: function(){
 		var el = this.el
 		this.el.addEventListener('pressedended', function (event) { 
-			if (!primaryPinchStarted && wristShortcut.match(/^jxr /)) interpretJXR(wristShortcut)
+			if (!primaryPinchStarted && wristShortcut.match(prefix)) interpretJXR(wristShortcut)
 			// other action could possibly based on position relative to zones instead, i.e a list of bbox/functions pairs
 		})
 	}
@@ -1028,7 +1030,7 @@ function parseKeys(status, key){
 				targets.push( clone )
 				selectedElement = clone
 			} else {
-				if (txt.match(/^jxr /)) interpretJXR(txt)
+				if (txt.match(prefix)) interpretJXR(txt)
 				// check if text starts with jxr, if so, also interpret it.
 				addNewNote(e.getAttribute("value"))
 				e.setAttribute("value", "")
@@ -1081,6 +1083,8 @@ function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=nu
 		newnote.setAttribute("color", userFontColor )
 	else 
 		newnote.setAttribute("color", fontColor )
+	if (text.match(prefix))
+		newnote.setAttribute("color", codeFontColor )
 	newnote.setAttribute("value", text )
 	//newnote.setAttribute("font", "sw-test/Roboto-msdf.json")
 	newnote.setAttribute("position", position)
@@ -1204,7 +1208,7 @@ function interpretJXR( code ){
 			appendToHUD( code ) 
 		}
 	}
-	if (!code.match(/^jxr /)) return
+	if (!code.match(prefix)) return
 	var uninterpreted = code
 	var parseCode = ""
 	code.split("\n").map( lineOfCode => parseCode += parseJXR( lineOfCode ) + ";" )
