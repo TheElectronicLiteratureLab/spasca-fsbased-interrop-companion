@@ -139,6 +139,8 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
 	+ "commands-from-external-json glossary timeline issues web-url background-via-url observableui hidableenvironmentfot fot"
 // could be an array proper completed on each relevant component registration
 var heightAdjustableClasses = ["commands-from-external-json"]
+var pinches = [] // position, timestamp, primary vs secondary
+var dl2p = null // from distanceLastTwoPinches
 
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
@@ -912,6 +914,11 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		bbox.man.copy( zeroVector3 )
 	       */
 		setTimeout( _ => primaryPinchStarted = false, 200) // delay otherwise still activate on release
+	
+		var newPinchPos = new THREE.Vector3()
+		newPinchPos.copy(event.detail.position )
+		pinches.push({position:newPinchPos, timestamp:Date.now(), primary:true})
+		dl2p = distanceLastTwoPinches()
 	});
 	this.el.addEventListener('pinchmoved', function (event) { 
 		// move current target if any
@@ -994,6 +1001,14 @@ AFRAME.registerComponent('start-on-press', {
 //---- other components : ------
 // could become like https://twitter.com/utopiah/status/1264131327269502976
 	// can include a mini typing game to warm up finger placement
+
+function distanceLastTwoPinches(){
+	let dist = null
+	if (pinches.length>1){
+		dist = pinches[pinches.length-1].position.distanceTo( pinches[pinches.length-2].position )
+	}
+	return dist
+}
 
 function startSelectionVolume(){
 	selectionPinchMode = true
@@ -1593,7 +1608,7 @@ function switchSide(){
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
-	toolbox disable-components-via-url enable-components-via-url commands-from-external-json >
+	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json >
 	<!-- screenstack dynamic-view selectionboxonpinches keyboard glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
 	-->
@@ -1664,6 +1679,7 @@ function switchSide(){
 
 	<a-text target value="jxr AFRAME.scenes[0].components.inspector.openInspector()" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
 	<a-text target value="jxr observe selectedElement" position="0 1.15 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr observe dl2p" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
 
     </a-scene>
   </body>
