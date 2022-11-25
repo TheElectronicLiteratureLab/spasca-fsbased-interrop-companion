@@ -89,6 +89,9 @@ warning that selectedElement will get overwritten once executing a command by pi
 			and maybe their changed position states
 */
 
+// motivated by https://git.benetou.fr/utopiah/text-code-xr-engine/issues/63
+var reserved-keywords = ["selectedElement", "lastPointSketch ", "commandhistory", "groupSelection", "targets"]
+// see generated file reserved-keywords for more
 
 const prefix = /^jxr /
 const codeFontColor = "lightgrey"
