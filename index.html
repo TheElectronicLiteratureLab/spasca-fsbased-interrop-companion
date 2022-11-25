@@ -1603,6 +1603,30 @@ function switchSide(){
 	}
 }
 
+function cloneAndDistribute(){
+	el = document.querySelector("a-box[src]") // page
+	// trying instead to rely on previously selected matching element and dl2p
+
+	// lack visual feedback to show what is indeed lastly selected or the distance found
+	//el = selectedElements[selectedElements.length-2] // not current command
+	times = Math.floor(dl2p*10) // also assume it's been done properly
+	if (times < 2) times = 7
+	
+	offset = .5
+	 for (var i = 0; i < times ; i++) { // equivalent of Blender array modifier
+		let newEl = el.cloneNode() 
+		AFRAME.scenes[0].appendChild(newEl) // takes time...
+		setTimeout( setZ, 100, {el: newEl, z: -1-i*offset} )
+		newEl.addEventListener('hasLoaded', function (event) {
+			//this.object3D.position.z = i*offset
+			console.log("loaded") // doesnt seem to happen
+		})
+	 }
+
+	function setZ(params){
+		params.el.object3D.position.z = params.z
+	}
+}
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
@@ -1637,7 +1661,6 @@ function switchSide(){
 		pinchsecondary wristattachsecondary="target: #box" ></a-entity>
       <a-entity id="my-tracked-right-hand" networked-hand-controls="hand:right" networked="template:#right-hand-default-template"
 	      pinchprimary ></a-entity>
--->
 
       <a-entity class=movebypinch >
 		<a-text target value="jxr document.getElementById('player').object3D.position.z++" position="0 1.15 0.1" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
@@ -1645,7 +1668,8 @@ function switchSide(){
 		<a-text target value="jxr player.object3D.position.x++" position="-0.3 1.15 0" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
 		<a-text target value="jxr player.object3D.position.x--" position="0.3 1.15 0" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
       </a-entity>
-      <!-- works on desktop via interpretJXR() but not in VR by trying to pinch... -->
+-->
+      <!-- works on desktop via interpretJXR() but not in VR by trying to pinch... disabled for now for demo clarity-->
 
       <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
       <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
@@ -1680,9 +1704,11 @@ function switchSide(){
 	      <a-plane position="0 1 -1" scale="0.21 0.15 1" rotation="-30 0 0" wireframe="true"></a-plane>
 	-->
 
+	<a-text target value="instructions : pinch twice for distance then select element then execute cloneAndDistribute() " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
 	<a-text target value="jxr AFRAME.scenes[0].components.inspector.openInspector()" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
 	<a-text target value="jxr observe selectedElement" position="0 1.15 -0.2" scale="0.1 0.1 0.1"></a-text>
 	<a-text target value="jxr observe dl2p" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr cloneAndDistribute()" position="0 1.45 -0.2" scale="0.1 0.1 0.1"></a-text>
       <a-box target position="-0.1 1.2 -0.3" scale=".1 1 0.01" rotation="0 45 0"
 	src="https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_Analysis_LibrarianMoveWalls.png"></a-box>
 
