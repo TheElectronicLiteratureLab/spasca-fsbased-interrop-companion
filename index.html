@@ -141,6 +141,7 @@ var generators = "line-link-entities link screenstack dynamic-view selectionboxo
 var heightAdjustableClasses = ["commands-from-external-json"]
 var pinches = [] // position, timestamp, primary vs secondary
 var dl2p = null // from distanceLastTwoPinches
+var selectedElements = [];
 
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
@@ -840,6 +841,7 @@ AFRAME.registerComponent('pinchsecondary', {
   init: function () {
 	this.el.addEventListener('pinchended', function (event) {
 		selectedElement = getClosestTargetElement( event.detail.position )
+		selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:false})
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
 		if (selectedElement) interpretJXR( selectedElement.getAttribute("value") )
 		selectedElement = null
@@ -947,6 +949,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		//selectedElement = clone
 
 		selectedElement = getClosestTargetElement( event.detail.position )
+		selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
 	});
   },
@@ -1680,6 +1683,8 @@ function switchSide(){
 	<a-text target value="jxr AFRAME.scenes[0].components.inspector.openInspector()" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
 	<a-text target value="jxr observe selectedElement" position="0 1.15 -0.2" scale="0.1 0.1 0.1"></a-text>
 	<a-text target value="jxr observe dl2p" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <a-box target position="-0.1 1.2 -0.3" scale=".1 1 0.01" rotation="0 45 0"
+	src="https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_Analysis_LibrarianMoveWalls.png"></a-box>
 
     </a-scene>
   </body>
