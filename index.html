@@ -73,6 +73,23 @@ new Runtime().module(define2, name => {
 </script>
 
 <script>
+
+/*
+
+motion to data
+	- integer, e.g distance from beginning to end
+	- curve, sampling N points between beginning and end
+
+being able to use that in jxr commands, with example related to positioning entities
+	see https://git.benetou.fr/utopiah/text-code-xr-engine/issues/52#issuecomment-229
+	
+warning that selectedElement will get overwritten once executing a command by pinching
+	consequently in addition to have a history of executed commands
+		there should be a history of selected elements
+			and maybe their changed position states
+*/
+
+
 const prefix = /^jxr /
 const codeFontColor = "lightgrey"
 const fontColor= "white"
@@ -538,6 +555,7 @@ function plot(equation,variablename="x",scale=5,step=1){
 		}
 		previousPoint = pos
 	}
+	// variablename seems unused
 }
 
 AFRAME.registerComponent('target', {
@@ -1174,7 +1192,18 @@ function saveHistoryAsCompoundSnippet(){
 	addNewNote( commandhistory.map( e => e.uninterpreted ).join("\n") )
 }
 
+function bindVariableValueToNewNote(variableName){
+	const idName = "bindVariableValueToNewNote"+variableName
+	addNewNote( variableName + ":" + eval(variableName), `-0.15 1.4 -0.1`,  "0.1 0.1 0.1", idName, "observers", "true" )
+	return setInterval( _ => {
+		const value = variableName+";"+eval(variableName)
+		// not ideal for DOM elements, could have shortcuts for at least a-text with properties, e.g value or position
+		document.getElementById(idName).setAttribute("value", value)
+	}, 100 )
+}
+
 function parseJXR( code ){
+// should make reserved keywords explicit.
 	var newcode = code
 	newcode = newcode.replace("jxr ", "")
 	newcode = newcode.replace(/(\d)s (.*)/ ,`setTimeout( _ => { $2 }, $1*1000)`)
@@ -1187,6 +1216,11 @@ function parseJXR( code ){
 		// problematic for position as they include spaces
 
 	newcode = newcode.replace(/obsv ([^\s]+)/ ,`newNoteFromObservableCell('$1')`)
+
+	// TODO
+	//<a-text target value="jxr observe selectedElement" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
+	newcode = newcode.replace(/observe ([^\s]+)/,`bindVariableValueToNewNote('$1')`)
+	// could proxy instead... but for now, the quick and dirty way :
 
 	// e.g qs a-sphere sa color red => 
 	// document.querySelector("a-sphere").setAttribute("color", "red")
@@ -1595,6 +1629,9 @@ function switchSide(){
 	      <a-plane position="0 2 -2" scale="4 4 4" mirror></a-plane>
 	      <a-plane position="0 1 -1" scale="0.21 0.15 1" rotation="-30 0 0" wireframe="true"></a-plane>
 	-->
+
+	<a-text target value="jxr AFRAME.scenes[0].components.inspector.openInspector()" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr observe selectedElement" position="0 1.15 -0.2" scale="0.1 0.1 0.1"></a-text>
 
     </a-scene>
   </body>
