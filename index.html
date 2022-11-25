@@ -90,8 +90,9 @@ warning that selectedElement will get overwritten once executing a command by pi
 */
 
 // motivated by https://git.benetou.fr/utopiah/text-code-xr-engine/issues/63
-var reserved-keywords = ["selectedElement", "lastPointSketch ", "commandhistory", "groupSelection", "targets"]
-// see generated file reserved-keywords for more
+var reservedKeywords = ["selectedElement", "lastPointSketch ", "commandhistory", "groupSelection", "targets", "observe", "sa", "qs"]
+// see generated file reserved-keywords for more yet not sufficient, see instead parseJXR()
+// should also include some documentation
 
 const prefix = /^jxr /
 const codeFontColor = "lightgrey"
@@ -785,6 +786,24 @@ function setHUD(txt){
 	document.querySelector("#typinghud").setAttribute("value",txt)
 }
 
+AFRAME.registerComponent('waistattach',{
+  schema: {
+    target: {type: 'selectorAll'},
+  },
+  init: function () {
+	var el = this.el
+	this.worldPosition=new THREE.Vector3();
+  },
+  tick: function () {
+	var worldPosition=this.worldPosition;
+	worldPosition.copy(this.el.object3D.position);this.el.object3D.parent.updateMatrixWorld();this.el.object3D.parent.localToWorld(worldPosition)
+	Array.from( this.data.target ).map( t => {
+		t.object3D.position.x = worldPosition.x
+		t.object3D.position.z = worldPosition.z
+	})
+  },
+});
+
 AFRAME.registerComponent('wristattachsecondary',{
   schema: {
     target: {type: 'selector'},
@@ -1196,8 +1215,10 @@ function saveHistoryAsCompoundSnippet(){
 }
 
 function bindVariableValueToNewNote(variableName){
+	// from observe jxr keyword
 	const idName = "bindVariableValueToNewNote"+variableName
 	addNewNote( variableName + ":" + eval(variableName), `-0.15 1.4 -0.1`,  "0.1 0.1 0.1", idName, "observers", "true" )
+	// could add to the HUD instead and have a list of these
 	return setInterval( _ => {
 		const value = variableName+";"+eval(variableName)
 		// not ideal for DOM elements, could have shortcuts for at least a-text with properties, e.g value or position
@@ -1591,7 +1612,7 @@ function switchSide(){
 	<a-video position="0 2 -2" src="https://video.benetou.fr/videos/embed/91634fb7-116e-43a1-a4e7-144dd92da17c"></a-video>
       -->
       <a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
-	      hud camera look-controls wasd-controls position="0 1.6 0"></a-entity>
+	      hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
 
 <!-- remove for NAF equivalent
       <a-entity id="my-tracked-left-hand" networked-hand-controls="hand:left" networked="template:#left-hand-default-template"
@@ -1599,6 +1620,14 @@ function switchSide(){
       <a-entity id="my-tracked-right-hand" networked-hand-controls="hand:right" networked="template:#right-hand-default-template"
 	      pinchprimary ></a-entity>
 -->
+
+      <a-entity class=movebypinch >
+		<a-text target value="jxr document.getElementById('player').object3D.position.z++" position="0 1.15 0.1" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
+		<a-text target value="jxr player.object3D.position.z--" position="0 1.15 -0.1" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
+		<a-text target value="jxr player.object3D.position.x++" position="-0.3 1.15 0" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
+		<a-text target value="jxr player.object3D.position.x--" position="0.3 1.15 0" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
+      </a-entity>
+      <!-- works on desktop via interpretJXR() but not in VR by trying to pinch... -->
 
       <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
       <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
