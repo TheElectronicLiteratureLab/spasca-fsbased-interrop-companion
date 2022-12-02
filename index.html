@@ -782,7 +782,7 @@ function appendToHUD(txt){
 	if ( textHUD == startingText)
 		setHUD( txt )
 	else
-		setHUD( textHUD + " " + txt )
+		setHUD( textHUD + txt )
 }
 
 function setHUD(txt){
@@ -897,6 +897,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			wristShortcut = selectedElement.getAttribute("value")
 			setTimeout( _ => setFeedbackHUD(""), 2000) 
 		}
+		selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
 		// unselect current target if any
 		selectedElement = null;
 		save()
@@ -921,6 +922,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		newPinchPos.copy(event.detail.position )
 		pinches.push({position:newPinchPos, timestamp:Date.now(), primary:true})
 		dl2p = distanceLastTwoPinches()
+
 	});
 	this.el.addEventListener('pinchmoved', function (event) { 
 		// move current target if any
@@ -949,7 +951,6 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		//selectedElement = clone
 
 		selectedElement = getClosestTargetElement( event.detail.position )
-		selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
 	});
   },
@@ -1276,12 +1277,17 @@ function parseJXR( code ){
 function interpretJXR( code ){
 	if (code.length == 1) { // special case of being a single character, thus keyboard
 		if (code == ">") { // Enter equivalent
-			addNewNote( hudTextEl.getAttribute("value") )
+			content =  hudTextEl.getAttribute("value") 
+			if (Number.isFinite(Number(content))) {
+				loadPageRange(Number(content));
+			} else {
+				addNewNote( content )
+			}
 			setHUD("")
 		} else if (code == "<") { // Backspace equivalent
 			setHUD( hudTextEl.getAttribute("value").slice(0,-1))
 		} else {
-			appendToHUD( code ) 
+			appendToHUD( code )
 		}
 	}
 	if (!code.match(prefix)) return
@@ -1350,12 +1356,12 @@ AFRAME.registerComponent('selectionboxonpinches', {
 AFRAME.registerComponent('keyboard', {
 	init:function(){
 		let generatorName = this.attrName
-		const horizontaloffset = .5
-		const horizontalratio = 1/30
+		const horizontaloffset = .7
+		const horizontalratio = 1/20
 		alphabet.map( (line,ln) => {
 		 for (var i = 0; i < line.length; i++) {
 			var pos = i * horizontalratio - horizontaloffset
-                        addNewNote( line[i], pos+" "+(1.6-ln*.03)+" -.4", ".1 .1 .1", null, generatorName)
+                        addNewNote( line[i], pos+" "+(1.6-ln*.06)+" -.4", ".1 .1 .1", null, generatorName)
 		 }
 		})
 	}
@@ -1628,6 +1634,30 @@ function cloneAndDistribute(){
 	}
 }
 
+function loadPageRange(start=1, end=-1){
+	const baseURL = "https://fabien.benetou.fr/pub/home/future_of_text_demo/content/book_as_png/gfg_d-"
+	const extension = ".png"
+	// assumes portrait A4-ish
+	var rootEl = AFRAME.scenes[0]
+	if (end<0) end = start
+	
+	let step = 0
+	for (let i=start; i<=end; i++){
+		step++
+		let el = document.createElement("a-box")
+		el.setAttribute("target", true)
+		el.setAttribute("position", ""+ step/5+ " 1.3 -.7") // could be based on selectedElements last position instead
+		el.setAttribute("scale", ".1 .15 .01")
+		pageNumber = i
+		if (pageNumber<10) pageNumber = "0"+pageNumber
+		if (pageNumber<100) pageNumber = "0"+pageNumber
+		el.setAttribute("src", baseURL+pageNumber+extension)
+		el.setAttribute("pagenumber", pageNumber)
+		console.log("src", baseURL+pageNumber+extension)
+		rootEl.appendChild(el)
+	}
+}
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
@@ -1635,8 +1665,8 @@ function cloneAndDistribute(){
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
-	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json >
-	<!-- screenstack dynamic-view selectionboxonpinches keyboard glossary timeline issues fot
+	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json keyboard >
+	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
 	-->
       <a-assets>
@@ -1704,13 +1734,9 @@ function cloneAndDistribute(){
 	      <a-plane position="0 1 -1" scale="0.21 0.15 1" rotation="-30 0 0" wireframe="true"></a-plane>
 	-->
 
-	<a-text target value="instructions : pinch twice for distance then select element then execute cloneAndDistribute() " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr AFRAME.scenes[0].components.inspector.openInspector()" position="0 1.25 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr observe selectedElement" position="0 1.15 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr observe dl2p" position="0 1.35 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr cloneAndDistribute()" position="0 1.45 -0.2" scale="0.1 0.1 0.1"></a-text>
-      <a-box target position="-0.1 1.2 -0.3" scale=".1 1 0.01" rotation="0 45 0"
-	src="https://vatelier.benetou.fr/MyDemo/newtooling/textures/fabien.benetou.fr_Analysis_LibrarianMoveWalls.png"></a-box>
+	<a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr loadPageRange(1,13)" position="0 1.45 -0.2" scale="0.1 0.1 0.1"></a-text>
+	<a-text target value="jxr nextPage()" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
 
     </a-scene>
   </body>
