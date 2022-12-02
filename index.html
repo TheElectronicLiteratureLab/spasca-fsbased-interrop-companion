@@ -1647,6 +1647,7 @@ function loadPageRange(start=1, end=-1){
 		let el = document.createElement("a-box")
 		el.setAttribute("target", true)
 		el.setAttribute("position", ""+ step/5+ " 1.3 -.7") // could be based on selectedElements last position instead
+		// layout system could be parametric, e.g over x or y or z or another system
 		el.setAttribute("scale", ".1 .15 .01")
 		pageNumber = i
 		if (pageNumber<10) pageNumber = "0"+pageNumber
@@ -1678,65 +1679,25 @@ function loadPageRange(start=1, end=-1){
 		      <a-entity networked-hand-controls="hand:right"></a-entity>
 	      </template>
       </a-assets>
-	<!--
-	<a-video src="https://video.benetou.fr/download/videos/318c8408-c34a-430c-846d-f875dc3c343e-480.mp4"></a-video> 
-	<a-video position="0 2 -2" src="https://video.benetou.frstreaming-playlists/hls/91634fb7-116e-43a1-a4e7-144dd92da17c/1.m3u8"></a-video>
-	<a-video position="0 2 -2" src="https://video.benetou.fr/videos/embed/91634fb7-116e-43a1-a4e7-144dd92da17c"></a-video>
-      -->
+
       <a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 	      hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
-
-<!-- remove for NAF equivalent
-      <a-entity id="my-tracked-left-hand" networked-hand-controls="hand:left" networked="template:#left-hand-default-template"
-		pinchsecondary wristattachsecondary="target: #box" ></a-entity>
-      <a-entity id="my-tracked-right-hand" networked-hand-controls="hand:right" networked="template:#right-hand-default-template"
-	      pinchprimary ></a-entity>
-
-      <a-entity class=movebypinch >
-		<a-text target value="jxr document.getElementById('player').object3D.position.z++" position="0 1.15 0.1" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
-		<a-text target value="jxr player.object3D.position.z--" position="0 1.15 -0.1" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
-		<a-text target value="jxr player.object3D.position.x++" position="-0.3 1.15 0" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
-		<a-text target value="jxr player.object3D.position.x--" position="0.3 1.15 0" rotation="-30 0 0" scale="0.1 0.1 0.1"></a-text>
-      </a-entity>
--->
-      <!-- works on desktop via interpretJXR() but not in VR by trying to pinch... disabled for now for demo clarity-->
 
       <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
       <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
 
       <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
-	<a-entity id="scaledworld" class="hidableassets" scale=".05 .05 .05" position="0 1.45 -1"><!-- can't be used for interactions otherwise becomes indirect-->
-	      <a-box position="-0.1 1.2 -0.3" scale="0.5 0.5 0.5" rotation="0 45 0" color="#4CC3D9"></a-box>
-	      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-	      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-	</a-entity>
-      <a-image id=background background-via-url visible=false position="0 1.5 -1.02" scale="2 1 1" src=""></a-image>
-      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_typesofdiagrams2.png" 
-		rotation="0 -45 0" position="1.5 1.7 -.7" scale=".4 .2 .2" ></a-image>
-      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_typesofdiagrams1.png" 
-		rotation="0 -45 0" position="1.5 1.4 -.7" scale=".4 .2 .2" ></a-image>
-      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_semanticanalysisofdiagrams.png" 
-		rotation="0 45 0" position="-1.5 1.7 -.7" scale=".4 .2 .2" ></a-image>
-      <a-image visible=false class=mural-instructions src="../content/future_of_text_symposium/mappinghypertext_mappingfusion.png" 
-		rotation="0 45 0" position="-1.5 1.4 -.7" scale=".4 .2 .2" ></a-image>
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
-      <!-- assets CabanaAndCurtains.glb Pond.glb TempleOfLife.glb JapaneseRoom.glb -->
-      <a-entity hide-on-enter-ar id="environment" class="hidableenvironment" gltf-model="url(../content/Pond.glb)" scale="80 80 80" position="0 0.2 0.15" rotation="0 -90 0"></a-entity>
-      <a-entity hide-on-enter-ar class="hidableenvironment" gltf-model="url(../content/CabanaAndCurtains.glb)" scale=".010 .010 .010" position="0 0.2 0.15" rotation="0 0 0"></a-entity>
+      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/bibliotecacarai.glb" scale="0.5 0.5 0.5" position="4.62496 0.2 -0.23844" rotation="0 90 0"></a-entity>
       <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
       <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
       <a-sky hide-on-enter-ar color="#add8e6"></a-sky>
 
-      <!-- permanent offline persistent e-ink based, rM2 size, reminder
-	      <a-plane position="0 2 -2" scale="4 4 4" mirror></a-plane>
-	      <a-plane position="0 1 -1" scale="0.21 0.15 1" rotation="-30 0 0" wireframe="true"></a-plane>
-	-->
-
-	<a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr loadPageRange(1,13)" position="0 1.45 -0.2" scale="0.1 0.1 0.1"></a-text>
-	<a-text target value="jxr nextPage()" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr loadPageRange(1,13)" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="// jxr nextPage()" position="0 1.45 -0.2" scale="0.1 0.1 0.1"></a-text>
 
     </a-scene>
   </body>
