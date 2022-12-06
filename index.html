@@ -807,6 +807,28 @@ AFRAME.registerComponent('waistattach',{
   },
 });
 
+AFRAME.registerComponent('attach',{
+  schema: {
+    target: {type: 'selector'},
+  },
+  init: function () {
+	var el = this.el
+	this.worldPosition=new THREE.Vector3();
+  },
+  tick: function () {
+	  var worldPosition=this.worldPosition;
+	  worldPosition.copy(this.el.position);
+	  this.el.parent.updateMatrixWorld();
+	  this.el.parent.localToWorld(worldPosition)
+	  rotation = this.el.rotation.x*180/3.14 + " " + this.el.rotation.y*180/3.14 + " " + this.el.rotation.z*180/3.14
+	  this.data.target.setAttribute("rotation", rotation)
+	  this.data.target.setAttribute("position",
+		  AFRAME.utils.coordinates.stringify( worldPosition ) )
+  },
+  remove: function() {
+  }
+});
+
 AFRAME.registerComponent('wristattachsecondary',{
   schema: {
     target: {type: 'selector'},
@@ -889,8 +911,8 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 				// https://github.com/Utopiah/aframe-triggerbox-component/blob/master/aframe-triggerbox-component.js#L66
 			// could make trigger zones visible as debug mode
 		var closests = getClosestTargetElements( event.detail.position )
-		if (closests && closests.length > 0) // avoiding self reference
-			setFeedbackHUD("close enough, could stack with "+ closests[1].el.getAttribute("value") )
+		//if (closests && closests.length > 0) // avoiding self reference
+		//	setFeedbackHUD("close enough, could stack with "+ closests[1].el.getAttribute("value") )
 		var dist = event.detail.position.distanceTo( document.querySelector("#box").object3D.position )
 		if (dist < .1){
 			setFeedbackHUD("close enough, replaced shortcut with "+ selectedElement.getAttribute("value") )
@@ -1150,6 +1172,7 @@ function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=nu
 	newnote.setAttribute("scale", scale)
 	AFRAME.scenes[0].appendChild( newnote )
 	targets.push(newnote)
+	return newnote
 }
 
 function interpretAny( code ){
@@ -1275,6 +1298,7 @@ function parseJXR( code ){
 }
 
 function interpretJXR( code ){
+	if (!code) return
 	if (code.length == 1) { // special case of being a single character, thus keyboard
 		if (code == ">") { // Enter equivalent
 			content =  hudTextEl.getAttribute("value") 
@@ -1634,7 +1658,7 @@ function cloneAndDistribute(){
 	}
 }
 
-function loadPageRange(start=1, end=-1){
+function loadPageRange(start=1, end=-1, startPosition={x:0, y:1.3, z:-.7}, stepVector={x:.2, y:0, z:0}){
 	const baseURL = "https://fabien.benetou.fr/pub/home/future_of_text_demo/content/book_as_png/gfg_d-"
 	const extension = ".png"
 	// assumes portrait A4-ish
@@ -1646,17 +1670,34 @@ function loadPageRange(start=1, end=-1){
 		step++
 		let el = document.createElement("a-box")
 		el.setAttribute("target", true)
-		el.setAttribute("position", ""+ step/5+ " 1.3 -.7") // could be based on selectedElements last position instead
+		//el.setAttribute("position", ""+ step/5+ " 1.3 -.7") // could be based on selectedElements last position instead
+		let pos = "" + startPosition.x+stepVector.x*step + " " + startPosition.y+stepVector.y*step + " " + startPosition.z+stepVector.z*step 
+		el.setAttribute("position", pos)
 		// layout system could be parametric, e.g over x or y or z or another system
-		el.setAttribute("scale", ".1 .15 .01")
+		el.setAttribute("width", ".1")
+		el.setAttribute("height", ".15")
+		el.setAttribute("depth", ".01")
 		pageNumber = i
 		if (pageNumber<10) pageNumber = "0"+pageNumber
 		if (pageNumber<100) pageNumber = "0"+pageNumber
 		el.setAttribute("src", baseURL+pageNumber+extension)
 		el.setAttribute("pagenumber", pageNumber)
-		console.log("src", baseURL+pageNumber+extension)
+		el.id = pageNumber + "_" + Date.now()
 		rootEl.appendChild(el)
+		let posInterface = "" + startPosition.x+stepVector.x*step + " " + startPosition.y+1+stepVector.y*step + " " + startPosition.z+stepVector.z*step 
+		let UI = addNewNote("jxr nextPage('"+el.id+"')", posInterface, "0.1 0.1 0.1", el.id+"_interface")
+		//el.setAttribute("attach","target:#"+el.id+"_interface")
 	}
+}
+
+function nextPage(id){
+console.log("nextpage()")
+	// assuming only direct parent for now
+	const baseURL = "https://fabien.benetou.fr/pub/home/future_of_text_demo/content/book_as_png/gfg_d-"
+	const extension = ".png"
+	let pageNumber = Number( id.split("_")[0] )
+console.log(pageNumber+1)
+	loadPageRange(pageNumber+1)
 }
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
@@ -1696,8 +1737,7 @@ function loadPageRange(start=1, end=-1){
       <a-sky hide-on-enter-ar color="#add8e6"></a-sky>
 
       <a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr loadPageRange(1,13)" position="0 1.55 -0.2" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="// jxr nextPage()" position="0 1.45 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr loadPageRange(1,13)" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
 
     </a-scene>
   </body>
