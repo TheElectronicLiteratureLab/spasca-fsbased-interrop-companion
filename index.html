@@ -1700,6 +1700,17 @@ console.log(pageNumber+1)
 	loadPageRange(pageNumber+1)
 }
 
+function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseAgainstBooks?action=source"){
+	// alternatively could load from a page number
+	fetch(url)
+	.then( r => r.text() )
+	.then(data => { 
+		let code = data.split("\n").filter( l => (l.slice(0,2) == "[@") )[0].slice(2).slice(0,-2);
+		// example as PmWiki parsing
+		eval(code)
+	} )
+}
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
@@ -1738,6 +1749,7 @@ console.log(pageNumber+1)
 
       <a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadPageRange(1,13)" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr loadCodeFromPage()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
 
     </a-scene>
   </body>
