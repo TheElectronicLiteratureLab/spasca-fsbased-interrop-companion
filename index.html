@@ -1732,11 +1732,12 @@ function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseA
 	      </template>
       </a-assets>
 
-      <a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
-	      hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
-
-      <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
-      <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
+      <a-entity id="rig">
+	      <a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
+		      hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
+	      <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
+	      <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
+      </a-entity>
 
       <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
@@ -1751,7 +1752,7 @@ function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseA
       <a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadPageRange(1,13)" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadCodeFromPage()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr qs #player sa position 0 1.6 10" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-text>
 
 
 <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284" scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
