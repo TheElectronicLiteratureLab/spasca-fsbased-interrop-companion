@@ -1278,7 +1278,7 @@ function parseJXR( code ){
 	newcode = newcode.replace(/qs ([^\s]+)/ ,`document.querySelector('$1')`)
 
 	// sa X Y => .setAttribute("X", "Y")
-	newcode = newcode.replace(/ sa ([^\s]+) ([^\s]+)/,`.setAttribute('$1','$2')`)
+	newcode = newcode.replace(/ sa ([^\s]+) (.*)/,`.setAttribute('$1','$2')`)
 		// problematic for position as they include spaces
 
 	newcode = newcode.replace(/obsv ([^\s]+)/ ,`newNoteFromObservableCell('$1')`)
@@ -1742,14 +1742,33 @@ function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseA
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
-      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/bibliotecacarai.glb" scale="0.5 0.5 0.5" position="4.62496 0.2 -0.23844" rotation="0 90 0"></a-entity>
+	<a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/virtual_reality_meta_room_2022.glb" scale="" position="-0.10754 0.2 6.25885" rotation="0 90 0"></a-entity>
+
       <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
       <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
-      <a-sky hide-on-enter-ar color="#add8e6"></a-sky>
+      <a-sky hide-on-enter-ar src="../content/nebula.jpg"></a-sky>
 
       <a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadPageRange(1,13)" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadCodeFromPage()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr qs #player sa position 0 1.6 10" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-text>
+
+
+<a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284" scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
+
+	<a-entity id="featureN2">
+	<a-video rotation="0 180 0" position="0 2 10.5" scale=".5 .5 .5" src="../content/features/wrist.mp4"></a-video>
+      <a-text rotation="0 180 0" target value="wrist" position="0 2.25 10.2" scale=".5 .5 .5"></a-text>
+      <a-text rotation="0 180 0" target value="tap on your wrist to activate a shortcut" position="0 1.55 10.2" scale=".1 .1 .1"></a-text>
+      <a-text rotation="0 180 0" target value="jxr shortcut()" position="0 1.35 10.1" scale="0.1 0.1 0.1"></a-text>
+	</a-entity>
+
+	<a-entity id="featureN">
+	<a-image rotation="0 180 0" position="-2 2 10.5" scale=".5 .5 .5" src="../content/features/containers.jpg"></a-image>
+      <a-text rotation="0 180 0" target value="containers" position="-2 2.25 10.2" scale=".5 .5 .5"></a-text>
+      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-2 1.55 10.2" scale=".1 .1 .1"></a-text>
+      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-2 1.35 10.1" scale="0.1 0.1 0.1"></a-text>
+	</a-entity>
 
     </a-scene>
   </body>
