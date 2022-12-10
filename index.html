@@ -16,8 +16,8 @@
     <script src="https://naf.benetou.fr/easyrtc/easyrtc.js"></script>
     <script src='dependencies/networked-aframe.min.js'></script>
 
-    <!-- still experimenting, see webdav.html 
-    <script src='dependencies/webdav.js'></script> -->
+    <!-- still experimenting, see webdav.html -->
+    <script src='dependencies/webdav.js'></script> 
 
     <!-- replacing with local copies as CDNs are like unpkg tend to be slow
     <script type="module" src="https://unpkg.com/immers-client/dist/destination.bundle.js"></script>
@@ -53,6 +53,20 @@
 </div>
 
 <script type="module">
+/*
+
+1. Fetch and render friends list with online status and link to current location
+2. Fetch and render one page of the user's activity feed
+3. Send an outgoing text chat message
+
+You should be able to find everything you need to do these on the following documentation pages:
+
+https://immers-space.github.io/immers-client/ImmersHUD.html
+
+https://immers-space.github.io/immers-client/ImmersClient.html
+
+*/
+
 // just text
 import {Runtime, Inspector} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
 import define from "https://api.observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations@2010.js?v=3";
@@ -1661,6 +1675,7 @@ function cloneAndDistribute(){
 function loadPageRange(start=1, end=-1, startPosition={x:0, y:1.3, z:-.7}, stepVector={x:.2, y:0, z:0}){
 	const baseURL = "https://fabien.benetou.fr/pub/home/future_of_text_demo/content/book_as_png/gfg_d-"
 	const extension = ".png"
+
 	// assumes portrait A4-ish
 	var rootEl = AFRAME.scenes[0]
 	if (end<0) end = start
@@ -1688,6 +1703,59 @@ function loadPageRange(start=1, end=-1, startPosition={x:0, y:1.3, z:-.7}, stepV
 		let UI = addNewNote("jxr nextPage('"+el.id+"')", posInterface, "0.1 0.1 0.1", el.id+"_interface")
 		//el.setAttribute("attach","target:#"+el.id+"_interface")
 	}
+}
+
+function writeWebDAV(){
+	const webdavurl = "https://webdav.benetou.fr";
+	const client = window.WebDAV.createClient(webdavurl)
+	async function w(path = "/file.txt"){ return await client.putFileContents(path, "SpaSca test"); }
+	w("/fot.txt") // need new permissions
+}
+
+function getPagesFromWebDAV(){
+	const webdavurl = "https://webdav.benetou.fr";
+	const client = window.WebDAV.createClient(webdavurl)
+	async function getDirectory(path = "/"){ return await client.getDirectoryContents(path); }
+	getDirectory("book_as_png").then( d => d.sort( (a,b) => (a.filename>b.filename)).slice(0,10).map( (c,i) => addPageFromURL(webdavurl+c.filename)))
+}
+
+function addPageFromURL(url){
+	if (url.indexOf(".png")<0) return
+	let el = document.createElement("a-box")
+	el.setAttribute("position", -Math.random()+" "+Math.random()*3 + " -1")
+	el.setAttribute("width", ".1")
+	el.setAttribute("height", ".15")
+	el.setAttribute("depth", ".01")
+	el.setAttribute("src", url)
+	AFRAME.scenes[0].appendChild(el)
+	return el
+}
+
+// same principle to go from nextPage() to openingLinkedPages() from wiki URL
+	// consider screenstack, could add a note to mode further
+
+function loadWikiAsGraph(){
+	fetch(wikiAsImages).then(response => response.json()).then(data => {
+		Object.entries(data.Nodes).slice(0,maxItems).map( v => {
+			let pageName = v[0]
+			let targest = v[1].Targets
+			let el = addPageFromURL(baseLiveURL+pageName.replace(".","_")+imageExtension)
+			el.id = pageName
+			el.classname = "wikipage"
+			// should rely on tryCachedImageOtherwiseRenderLive(pages) instead
+			setTimeout( _ => { 
+				let pos = el.getAttribute("position")
+				let UI = addNewNote("jxr openFromNode('"+el.id+"')", pos, "0.1 0.1 0.1", el.id+"_interface")
+				console.log("should add: addNewNote('jxr openNewNode("+pageName+")')")
+			}, 100 ) // wait for the entity to be actually added
+			// to be coupled with loadCodeFromPage()
+				// see also the idea that each wiki page wouldn't just be descriptive but also have code
+					// related pages
+					// https://fabien.benetou.fr/Fabien/Principle
+					// https://fabien.benetou.fr/CognitiveEnvironments/CognitiveEnvironments
+					// https://fabien.benetou.fr/Cookbook/Cognition
+		})
+	})
 }
 
 function nextPage(id){
@@ -1733,10 +1801,11 @@ function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseA
       </a-assets>
 
       <a-entity id="rig">
-	      <a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
-		      hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
-	      <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
-	      <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
+		<a-sound src="../content/summer-night-ambience.mp3" autoplay=true loop=true volume=0.5></a-sound><!-- warning skipped on Quest, does autoplay there -->
+		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
+			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
+		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
+		<a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
       </a-entity>
 
       <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
@@ -1752,24 +1821,56 @@ function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseA
       <a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadPageRange(1,13)" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadCodeFromPage()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
 
+      <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
+	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
 
-<a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284" scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
-
-	<a-entity id="featureN2">
-	<a-video rotation="0 180 0" position="0 2 10.5" scale=".5 .5 .5" src="../content/features/wrist.mp4"></a-video>
-      <a-text rotation="0 180 0" target value="wrist" position="0 2.25 10.2" scale=".5 .5 .5"></a-text>
-      <a-text rotation="0 180 0" target value="tap on your wrist to activate a shortcut" position="0 1.55 10.2" scale=".1 .1 .1"></a-text>
-      <a-text rotation="0 180 0" target value="jxr shortcut()" position="0 1.35 10.1" scale="0.1 0.1 0.1"></a-text>
-	</a-entity>
-
-	<a-entity id="featureN">
-	<a-image rotation="0 180 0" position="-2 2 10.5" scale=".5 .5 .5" src="../content/features/containers.jpg"></a-image>
-      <a-text rotation="0 180 0" target value="containers" position="-2 2.25 10.2" scale=".5 .5 .5"></a-text>
-      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-2 1.55 10.2" scale=".1 .1 .1"></a-text>
-      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-2 1.35 10.1" scale="0.1 0.1 0.1"></a-text>
-	</a-entity>
+      <a-entity id="featureN">
+	      <a-image rotation="0 180 0" position="-2 2 10.5" scale=".5 .5 .5" src="../content/features/containers.jpg"></a-image>
+	      <a-text rotation="0 180 0" target value="containers" position="-2 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-2 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-2 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+      </a-entity>
+	<a-image rotation="0 180 0" position="-1 2 10.5" scale=".5 .5 .5" src="../content/features/wireframe.jpg"></a-image>
+	<a-image rotation="0 180 0" position="0 2 10.5" scale=".5 .5 .5" src="../content/features/remarkable_sketch.jpg"></a-image>
+	<a-image rotation="0 180 0" position="1 2 10.5" scale=".5 .5 .5" src="../content/features/browsing_history.jpg"></a-image>
+	<a-image rotation="0 180 0" position="2 2 10.5" scale=".5 .5 .5" src="../content/features/codeembedding.jpg"></a-image>
+	<a-image rotation="0 180 0" position="3 2 10.5" scale=".5 .5 .5" src="../content/features/grouping.jpg"></a-image>
+	<a-image rotation="0 180 0" position="4 2 10.5" scale=".5 .5 .5" src="../content/features/inspector.jpg"></a-image>
+	<a-image rotation="0 180 0" position="5 2 10.5" scale=".5 .5 .5" src="../content/features/javascript_with_shortcuts.jpg"></a-image>
+	<a-image rotation="0 180 0" position="6 2 10.5" scale=".5 .5 .5" src="../content/features/load_3D_models.jpg"></a-image>
+	<a-image rotation="0 180 0" position="7 2 10.5" scale=".5 .5 .5" src="../content/features/math_plot.jpg"></a-image>
+	<a-image rotation="0 180 0" position="8 2 10.5" scale=".5 .5 .5" src="../content/features/networked_input.jpg"></a-image>
+	<a-image rotation="0 180 0" position="9 2 10.5" scale=".5 .5 .5" src="../content/features/observable_notebook.jpg"></a-image>
+	<a-text rotation="0 180 0" target="" value="Features" position="4.70348 3.07329 10.2" scale="" text=""></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="-1 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-1 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-1 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="0 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="0 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="0 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="1 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="1 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="1 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="potato" position="2 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="2 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="2 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="3 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="3 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="3 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="4 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="4 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="4 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="5 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="5 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="5 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="6 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="6 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="6 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+	      <a-text rotation="0 180 0" target value="containers" position="-2 2.25 10.5" scale=".5 .5 .5"></a-text>
+	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-2 1.55 10.5" scale=".1 .1 .1"></a-text>
+	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-2 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
 
     </a-scene>
   </body>
