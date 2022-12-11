@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+  <title>SpaSca : Spatial Scaffolding</title>
   <head>
     <!-- Suggestions? https://git.benetou.fr/utopiah/text-code-xr-engine/issues/ -->
 
@@ -7,7 +8,8 @@
     <script src='dependencies/aframe-html.js'></script>
     <script src='dependencies/aframe-mirror.js'></script>
     <script src='dependencies/aframe-troika-text.min.js'></script>
-    <script type="module" src='dependencies/immers-client.js'></script>
+    <!--<script type="module" src='dependencies/immers-client.js'></script>-->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js"></script>
 
     <!-- for input sharing -->
     <script src='dependencies/peerjs.min.js'></script>
@@ -53,19 +55,6 @@
 </div>
 
 <script type="module">
-/*
-
-1. Fetch and render friends list with online status and link to current location
-2. Fetch and render one page of the user's activity feed
-3. Send an outgoing text chat message
-
-You should be able to find everything you need to do these on the following documentation pages:
-
-https://immers-space.github.io/immers-client/ImmersHUD.html
-
-https://immers-space.github.io/immers-client/ImmersClient.html
-
-*/
 
 // just text
 import {Runtime, Inspector} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
@@ -229,11 +218,54 @@ AFRAME.registerComponent('web-url', {
   }
 })
 
+/*
+See federation branch https://git.benetou.fr/utopiah/text-code-xr-engine/src/branch/federation
+
+Started to learn deeper integration with :
+
+1. Fetch and render friends list with online status and link to current location
+
+immersClient.friendsList().then( r => r.map( u => { 
+  console.log(u.profile.displayName); 
+  if (u.profile.avatarImage) { console.log(u.profile.avatarImage) }
+  if (u.locationURL) { console.log(u.locationURL) }
+  if (u.locationName) { console.log(u.locationName) }
+  // unsure what is the difference between location and destination
+} ) )
+// could replace console.log() by addNewNote()
+
+2. Fetch and render one page of the user's activity feed
+
+immersClient.feed().then( console.log )
+
+3. Send an outgoing text chat message
+
+immersClient.sendChatMessage("msg", "public", ["otherutopiah[immers.space]"])
+
+That can then be read via
+
+immersClient.addEventListener("immers-client-new-message", console.log )
+
+See results in https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 for answers
+
+Note that functions can be comabined rather efficiently e.g 
+
+immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
+
+immersClient.sendChatMessage("jxr loadPageRange(3,4)", "public")
+
+assuming both are friends.
+
+Documentation
+    https://immers-space.github.io/immers-client/ImmersHUD.html
+    https://immers-space.github.io/immers-client/ImmersClient.html
+*/
 var immersClient
 setTimeout( _ => {
 	document.querySelector("immers-hud").immersClient.addEventListener("immers-client-connected", _ => {
 		immersClient = document.querySelector("immers-hud").immersClient
 		console.log(immersClient.profile.displayName, "connected")
+		//addNewNote(immersClient.profile.displayName+ " connected")
 	})
 }, 1000)
 /* not sure what's the right way... but timeout works, others don't.
@@ -987,6 +1019,8 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		//selectedElement = clone
 
 		selectedElement = getClosestTargetElement( event.detail.position )
+		// is it truly world position? See https://github.com/aframevr/aframe/issues/5182
+		setFeedbackHUD( AFRAME.utils.coordinates.stringify( event.detail.position ) )
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
 	});
   },
@@ -1822,6 +1856,7 @@ function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseA
       <a-text target value="jxr loadPageRange(1,13)" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr loadCodeFromPage()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
+      <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position -->
 
       <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
 	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
