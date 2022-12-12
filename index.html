@@ -9,7 +9,7 @@
     <script src='dependencies/aframe-mirror.js'></script>
     <script src='dependencies/aframe-troika-text.min.js'></script>
     <!--<script type="module" src='dependencies/immers-client.js'></script>-->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js"></script>
+    <script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>
 
     <!-- for input sharing -->
     <script src='dependencies/peerjs.min.js'></script>
@@ -218,11 +218,11 @@ AFRAME.registerComponent('web-url', {
   }
 })
 
-// See dedicated issue https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 
 var immersClient
-setTimeout( _ => {
+// See dedicated issue https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 
+document.querySelector("#immersbundle").addEventListener('load',(event) => { 
+	immersClient = document.querySelector("immers-hud").immersClient
 	document.querySelector("immers-hud").immersClient.addEventListener("immers-client-connected", _ => {
-		immersClient = document.querySelector("immers-hud").immersClient
 		immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
 		immersClient.friendsList().then( r => {
 			if (r.length>0) addNewNote( "Friends:", "-1 1.65 -0.5") 
@@ -234,7 +234,7 @@ setTimeout( _ => {
 			} )
 		} ) 
 	})
-}, 1000) // unsure when it will be loaded
+});
 
 function ims(msg){ 
 	if (!immersClient) { setFeedbackHUD("not connected via Immers"); return; }
