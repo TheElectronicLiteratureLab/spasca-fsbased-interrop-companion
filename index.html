@@ -8,8 +8,8 @@
     <script src='dependencies/aframe-html.js'></script>
     <script src='dependencies/aframe-mirror.js'></script>
     <script src='dependencies/aframe-troika-text.min.js'></script>
-    <!--<script type="module" src='dependencies/immers-client.js'></script>-->
-    <script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>
+    <script type="module" id=immersbundle src='dependencies/immers-client.js?role=modFull'></script>
+    <!--<script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>-->
 
     <!-- for input sharing -->
     <script src='dependencies/peerjs.min.js'></script>
@@ -222,6 +222,7 @@ var immersClient
 // See dedicated issue https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 
 document.querySelector("#immersbundle").addEventListener('load',(event) => { 
 	immersClient = document.querySelector("immers-hud").immersClient
+	document.querySelector("immers-hud").setAttribute("access-role", "modFull")
 	document.querySelector("immers-hud").immersClient.addEventListener("immers-client-connected", _ => {
 		immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
 		immersClient.friendsList().then( r => {
@@ -243,8 +244,6 @@ function ims(msg){
 // can send code too e.g immersClient.sendChatMessage("jxr loadPageRange(3,4)", "public")
 
 /* not sure what's the right way... but timeout works, others don't.
-document.addEventListener("immers-client-connected", _ => console.log("connected"))
-window.addEventListener("immers-client-connected", _ => console.log("connected"))
 
         immers-client-friends-update or immers-client-new-message to keep track of conversations between recurring meeting? Say you join a room, spend a working session with colleagues then leave. Could these be used to in this context to send reminders to those who subscribed to that event?
 */
