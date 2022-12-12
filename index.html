@@ -266,8 +266,20 @@ setTimeout( _ => {
 		immersClient = document.querySelector("immers-hud").immersClient
 		console.log(immersClient.profile.displayName, "connected")
 		//addNewNote(immersClient.profile.displayName+ " connected")
+		immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
+
+		immersClient.friendsList().then( r => {
+			if (r.length>0) addNewNote( "Friends:", "-1 1.65 -0.5") 
+			r.map( (u,i) => { 
+				let friendData = u.profile.displayName
+				if (u.locationName) friendData += " at " + u.locationName
+				if (u.locationURL) friendData += " (" + u.locationURL + " )"
+				addNewNote( friendData, "-1 " + (1.6-i/20) + " -0.5") // should make this interpretable to join there
+			} )
+		} ) 
 	})
-}, 1000)
+}, 1000) // unsure when it will be loaded
+
 /* not sure what's the right way... but timeout works, others don't.
 document.addEventListener("immers-client-connected", _ => console.log("connected"))
 window.addEventListener("immers-client-connected", _ => console.log("connected"))
