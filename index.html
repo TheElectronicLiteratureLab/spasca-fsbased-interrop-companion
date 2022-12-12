@@ -218,56 +218,12 @@ AFRAME.registerComponent('web-url', {
   }
 })
 
-/*
-See federation branch https://git.benetou.fr/utopiah/text-code-xr-engine/src/branch/federation
-
-Started to learn deeper integration with :
-
-1. Fetch and render friends list with online status and link to current location
-
-immersClient.friendsList().then( r => r.map( u => { 
-  console.log(u.profile.displayName); 
-  if (u.profile.avatarImage) { console.log(u.profile.avatarImage) }
-  if (u.locationURL) { console.log(u.locationURL) }
-  if (u.locationName) { console.log(u.locationName) }
-  // unsure what is the difference between location and destination
-} ) )
-// could replace console.log() by addNewNote()
-
-2. Fetch and render one page of the user's activity feed
-
-immersClient.feed().then( console.log )
-
-3. Send an outgoing text chat message
-
-immersClient.sendChatMessage("msg", "public", ["otherutopiah[immers.space]"])
-
-That can then be read via
-
-immersClient.addEventListener("immers-client-new-message", console.log )
-
-See results in https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 for answers
-
-Note that functions can be comabined rather efficiently e.g 
-
-immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
-
-immersClient.sendChatMessage("jxr loadPageRange(3,4)", "public")
-
-assuming both are friends.
-
-Documentation
-    https://immers-space.github.io/immers-client/ImmersHUD.html
-    https://immers-space.github.io/immers-client/ImmersClient.html
-*/
+// See dedicated issue https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 
 var immersClient
 setTimeout( _ => {
 	document.querySelector("immers-hud").immersClient.addEventListener("immers-client-connected", _ => {
 		immersClient = document.querySelector("immers-hud").immersClient
-		console.log(immersClient.profile.displayName, "connected")
-		//addNewNote(immersClient.profile.displayName+ " connected")
 		immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
-
 		immersClient.friendsList().then( r => {
 			if (r.length>0) addNewNote( "Friends:", "-1 1.65 -0.5") 
 			r.map( (u,i) => { 
@@ -279,6 +235,12 @@ setTimeout( _ => {
 		} ) 
 	})
 }, 1000) // unsure when it will be loaded
+
+function ims(msg){ 
+	if (!immersClient) { setFeedbackHUD("not connected via Immers"); return; }
+	immersClient.sendChatMessage(msg, "public")
+} // shorthand for jxr command, still requires parenthesis and quotes though, could be better to have a dedicated visual shorthand, e.g >>
+// can send code too e.g immersClient.sendChatMessage("jxr loadPageRange(3,4)", "public")
 
 /* not sure what's the right way... but timeout works, others don't.
 document.addEventListener("immers-client-connected", _ => console.log("connected"))
@@ -833,6 +795,7 @@ function appendToFeedbackHUD(txt){
 
 function setFeedbackHUD(txt){
 	document.querySelector("#feedbackhud").setAttribute("value",txt)
+	setTimeout( _ => document.querySelector("#feedbackhud").setAttribute("value","") , 2000) 
 }
 
 function appendToHUD(txt){
@@ -975,7 +938,6 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		if (dist < .1){
 			setFeedbackHUD("close enough, replaced shortcut with "+ selectedElement.getAttribute("value") )
 			wristShortcut = selectedElement.getAttribute("value")
-			setTimeout( _ => setFeedbackHUD(""), 2000) 
 		}
 		selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
 		// unselect current target if any
