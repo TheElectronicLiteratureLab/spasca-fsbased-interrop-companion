@@ -234,7 +234,7 @@ function sendGlbFromEl(el){
 	gltfExporter.parse(
 	    mesh,
 	    function (result) {
-		immersClient.sendModel("testing", new Blob([result]), "public")
+		if (immersClient) immersClient.sendModel("testing", new Blob([result]), "public")
 		console.log("sent blob")
 		// worked as https://immers.benetou.fr/s/639cb4171757b8382c120da1 of type model
 			// with glb as URL https://immers.benetou.fr/media/edf5641922e6371abb3118f56cd20b9b
@@ -288,7 +288,8 @@ document.querySelector("#immersbundle").addEventListener('load',(event) => {
 				let friendData = u.profile.displayName
 				if (u.locationName) friendData += " at " + u.locationName
 				if (u.locationURL) friendData += " (" + u.locationURL + " )"
-				addNewNote( friendData, "-1 " + (1.6-i/20) + " -0.5") // should make this interpretable to join there
+				// addNewNote( friendData, "-1 " + (1.6-i/20) + " -0.5") // should make this interpretable to join there
+				// hidden for workshop
 			} )
 		} ) 
 	})
@@ -995,7 +996,14 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			setFeedbackHUD("close enough, replaced shortcut with "+ selectedElement.getAttribute("value") )
 			wristShortcut = selectedElement.getAttribute("value")
 		}
-		selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
+		if (selectedElement){
+			let content = selectedElement.getAttribute("value")
+			if (content && immersClient && immersClient.connected){
+				immersClient.place.location = { position: AFRAME.utils.coordinates.stringify(event.detail.position), rotation: "0 0 0" };
+				immersClient.sendChatMessage(content, "public"); 
+			}
+			selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
+		}
 		// unselect current target if any
 		selectedElement = null;
 		save()
