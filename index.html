@@ -8,8 +8,9 @@
     <script src='dependencies/aframe-html.js'></script>
     <script src='dependencies/aframe-mirror.js'></script>
     <script src='dependencies/aframe-troika-text.min.js'></script>
-    <script type="module" id=immersbundle src='dependencies/immers-client.js?role=modFull'></script>
+    <script type="module" id=immersbundle src='dependencies/immers-client.js?save=true'></script>
     <!--<script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>-->
+    <script src="https://threejs.org/examples/js/exporters/GLTFExporter.js"></script>
 
     <!-- for input sharing -->
     <script src='dependencies/peerjs.min.js'></script>
@@ -218,13 +219,69 @@ AFRAME.registerComponent('web-url', {
   }
 })
 
+function sendGlbFromEl(el){
+	const gltfExporter = new THREE.GLTFExporter();
+	const mesh = el.object3D
+
+	const options = {
+	    trs: true,
+	    onlyVisible: true,
+	    truncateDrawRange: false,
+	    binary: true,
+	    maxTextureSize: Infinity
+	};
+
+	gltfExporter.parse(
+	    mesh,
+	    function (result) {
+		immersClient.sendModel("testing", new Blob([result]), "public")
+		console.log("sent blob")
+		// worked as https://immers.benetou.fr/s/639cb4171757b8382c120da1 of type model
+			// with glb as URL https://immers.benetou.fr/media/edf5641922e6371abb3118f56cd20b9b
+	    },
+	    function (error) {
+		console.log('An error happened during parsing', error);
+	    },
+	    options
+	);
+}
+
 var immersClient
 // See dedicated issue https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 
 document.querySelector("#immersbundle").addEventListener('load',(event) => { 
 	immersClient = document.querySelector("immers-hud").immersClient
+	document.querySelector('immers-hud').immersClient.sendModel = async function sendModel (name, glb, privacy, icon, to = []) {
+		return this.activities.model(name, glb, icon, to, privacy)
+	} 
 	document.querySelector("immers-hud").setAttribute("access-role", "modFull")
 	document.querySelector("immers-hud").immersClient.addEventListener("immers-client-connected", _ => {
-		immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
+		//immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
+		immersClient.addEventListener("immers-client-new-message", async e => {
+			if (e.detail.message.type == "chat"){
+				let msg = ( await immersClient.activities.getObject( e.detail.message.id ))
+				if (msg.object.context.location )
+					addNewNote( e.detail.message.messageHTML ,msg.object.context.location.position )
+				else 
+					addNewNote( e.detail.message.messageHTML )
+				// could hook on pinchended
+				// immersClient.place.location = { position: "0 1.5 -2", rotation: "0 190 0" };
+				// immersClient.sendChatMessage(textvalue, "public"); 
+			}
+			if (e.detail.message.type == "media" && e.detail.message.mediaType == "image"){
+				console.log("src", e.detail.message.url)
+				let el = document.createElement("a-box")
+				el.setAttribute("position", -Math.random()+" "+Math.random()*3 + " -1")
+				el.setAttribute("width", ".1")
+				el.setAttribute("height", ".15")
+				el.setAttribute("depth", ".01")
+				el.setAttribute("src", e.detail.message.url.href)
+				AFRAME.scenes[0].appendChild(el)
+			}
+			if (e.detail.message.type == "other"){
+				let msg = ( await immersClient.activities.getObject( e.detail.message.id ))
+				console.log("maybe model, see object.type.model==model", msg )
+			}
+		})
 		immersClient.friendsList().then( r => {
 			if (r.length>0) addNewNote( "Friends:", "-1 1.65 -0.5") 
 			r.map( (u,i) => { 
