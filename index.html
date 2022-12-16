@@ -1786,6 +1786,14 @@ function loadCodeFromPage(url="https://fabien.benetou.fr/Analysis/BeyondTheCaseA
 	} )
 }
 
+function loadFromMastodon(statusesURL="https://mastodon.pirateparty.be/api/v1/accounts/56066/statuses"){
+	fetch(statusesURL).then( r => r.json() ).then( t => t.filter( i => i.in_reply_to_id == null ).map( (i,n) => {
+		let div = document.createElement("div")
+		div.innerHTML = i.content
+		addNewNote(div.innerText, "1 "+ (1.2+(n+1)/20) +" -0.4")
+	} ) )
+}
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
