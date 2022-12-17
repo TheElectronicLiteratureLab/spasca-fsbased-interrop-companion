@@ -252,7 +252,7 @@ document.querySelector("#immersbundle").addEventListener('load',(event) => {
 	immersClient = document.querySelector("immers-hud").immersClient
 	document.querySelector('immers-hud').immersClient.sendModel = async function sendModel (name, glb, privacy, icon, to = []) {
 		return this.activities.model(name, glb, icon, to, privacy)
-	} 
+	} // shim until API update
 	document.querySelector("immers-hud").setAttribute("access-role", "modFull")
 	document.querySelector("immers-hud").immersClient.addEventListener("immers-client-connected", _ => {
 		//immersClient.addEventListener("immers-client-new-message", e => addNewNote(e.detail.message.messageHTML) ) 
@@ -260,7 +260,8 @@ document.querySelector("#immersbundle").addEventListener('load',(event) => {
 			if (e.detail.message.type == "chat"){
 				let msg = ( await immersClient.activities.getObject( e.detail.message.id ))
 				if (msg.object.context.location )
-					addNewNote( e.detail.message.messageHTML ,msg.object.context.location.position )
+					addNewNote( e.detail.message.messageHTML, msg.object.context.location.position ,
+								"0.1 0.1 0.1", null, "immerschat", "true", msg.object.context.location.rotation )
 				else 
 					addNewNote( e.detail.message.messageHTML )
 				// could hook on pinchended
@@ -999,7 +1000,10 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		if (selectedElement){
 			let content = selectedElement.getAttribute("value")
 			if (content && immersClient && immersClient.connected){
-				immersClient.place.location = { position: AFRAME.utils.coordinates.stringify(event.detail.position), rotation: "0 0 0" };
+				immersClient.place.location = {
+					position: AFRAME.utils.coordinates.stringify(event.detail.position),
+					rotation: AFRAME.utils.coordinates.stringify( selectedElement.getAttribute("rotation") )
+				};
 				immersClient.sendChatMessage(content, "public"); 
 			}
 			selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
@@ -1235,7 +1239,7 @@ AFRAME.registerComponent('hud', {
 	}
 })
 
-function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes=null, visible="true" ){
+function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes=null, visible="true", rotation="0 0 0" ){
 	var newnote = document.createElement("a-troika-text")
 	newnote.setAttribute("anchor", "left" )
 	newnote.setAttribute("outline-width", "5%" )
@@ -1255,6 +1259,7 @@ function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=nu
 	newnote.setAttribute("value", text )
 	//newnote.setAttribute("font", "sw-test/Roboto-msdf.json")
 	newnote.setAttribute("position", position)
+	newnote.setAttribute("rotation", rotation)
 	newnote.setAttribute("scale", scale)
 	AFRAME.scenes[0].appendChild( newnote )
 	targets.push(newnote)
@@ -1801,6 +1806,18 @@ function addPageFromURL(url){
 	el.setAttribute("src", url)
 	AFRAME.scenes[0].appendChild(el)
 	return el
+}
+
+function getModelsFromWebDAV(){
+	const webdavurl = "https://webdav.benetou.fr";
+	const client = window.WebDAV.createClient(webdavurl)
+	async function getDirectory(path = "/"){ return await client.getDirectoryContents(path); }
+	getDirectory("models").then( d => d.sort( (a,b) => (a.filename>b.filename)).slice(0,10).map( (c,i) => addModelFromURL(webdavurl+c.filename)))
+}
+
+function addModelFromURL(url){
+	return addNewNote("jxr lg "+url+ " 0.001", -Math.random()+" "+Math.random()*3 + " -1")
+	// should try boxing it instead in 1m3
 }
 
 // same principle to go from nextPage() to openingLinkedPages() from wiki URL
