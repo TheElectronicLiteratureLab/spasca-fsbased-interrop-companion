@@ -750,7 +750,7 @@ function getClosestTargetElements( pos, threshold=0.05 ){
 		.filter( t => t.dist < threshold ) 
 		.sort( (a,b) => a.dist > b.dist)
 }
-	
+
 function getClosestTargetElement( pos, threshold=0.05 ){ // 10x lower threshold for flight mode
 	var res = null
 	const matches = getClosestTargetElements( pos, threshold)
@@ -1007,6 +1007,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 				immersClient.sendChatMessage(content, "public"); 
 			}
 			selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:true})
+			selectedElement.emit('released')
 		}
 		// unselect current target if any
 		selectedElement = null;
@@ -1903,6 +1904,7 @@ function displayAllTiles(){
 		n++
 	} )
 	// could consider a new spawner type so that picking a tile clones it first
+		// could do same behavior as on release or on picked, namely register listener then act on event
 }
 // try generating at scale, e.g 2, a landscape to explore based on type
 	// with scale adjusting as jxr line to be the Wondering pills/drinks/mushroom to change scale
@@ -1912,23 +1914,55 @@ function randomTileFull(){
 	return tiles_full[Math.floor(Math.random()*tiles_full.length)]
 }
 
-function generateRandomPlace(){
-	let scale = 1/10
-	// let y = -2 // lifesize, scale 1
-	let y = 1.4 // dollhouse, scale 1/10
-	for (let i=0;i<10;i++){
-		for (let j=0;j<10;j++){
+var tiles_snapping_grid = []
+
+function getClosestTilesSnappingPosition( t, threshold=0.05 ){
+	let point = null
+	let found = tiles_snapping_grid.map( i => { return { pos:i, dist: i.distanceTo(t) } } )
+		.filter( t => t.dist < threshold )
+		.sort( (a,b) => a.dist > b.dist)
+	if (found && found[0]) point = found[0].pos
+	return point
+}
+
+AFRAME.registerComponent('snap-on-pinchended', {
+	init: function(){
+		this.el.addEventListener('released', function (event) {
+			setFeedbackHUD("should snap to iso grid"); // TODO test
+			// if works, generalize and add to https://git.benetou.fr/utopiah/text-code-xr-engine/issues/66
+			// should come back from emit('released')
+			// could rely on getClosestTilesSnappingPosition()
+				// if it works, might check if position is not already used by a tile
+		})
+	}
+})
+
+function generateRandomPlace(max_i=10, max_j=10, scale=1/10, y=1.4){
+	// lifesize,  y :  -2, scale 1
+	// dollhouse, y : 1.4, scale 1/10
+	for (let i=0;i<max_i;i++){
+		for (let j=0;j<max_j;j++){
+			let pos = new THREE.Vector3( (i+(j%2?0:1/2))*scale, y, (j*8.5/10)*scale )
 			el = addGltfFromURLAsTarget( tile_URL+randomTileFull()+tile_extension, 1*scale, 
-				""+(i+(j%2?0:1/2))*scale+" "+y+" -"+(j*8.5/10)*scale)
+				AFRAME.utils.coordinates.stringify( pos ) )
+			tiles_snapping_grid.push( pos )
 			el.className += "tiles"
 		}
 	}
 }
 
+// could add behavior based on class or, maybe easier, add a snapping-after-release component
+// it would register an event listener and the released element would trigger an event
+
 function rescalePlace(scale = 10, yoffset=-1){
 	let places = Array.from( document.querySelectorAll(".tiles") )
-	places.map( e => { scl = e.getAttribute("scale"); e.setAttribute("scale", scl.x*scale+ " " + scl.y*scale + " " + scl.z*scale) } )
-	places.map( e => { pos = e.getAttribute("position"); e.setAttribute("position", pos.x*scale+ " " + (pos.y+yoffset) + " " + pos.z*scale) } )
+	tiles_snapping_grid = []
+	places.map( e => {
+		scl = e.getAttribute("scale"); e.setAttribute("scale", scl.x*scale+ " " + scl.y*scale + " " + scl.z*scale)
+		pos = e.getAttribute("position"); e.setAttribute("position", pos.x*scale+ " " + (pos.y+yoffset) + " " + pos.z*scale)
+		let pos3 = new THREE.Vector3( pos.x*scale, pos.y+yoffset, pos.z*scale )
+		tiles_snapping_grid.push( pos3 )
+	} )
 }
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
