@@ -1327,14 +1327,15 @@ function draw( position ){
 }
 
 // the goal is to associate objects as shape with volume to code snippet
-function addGltfFromURLAsTarget( url, scale=1 ){
+function addGltfFromURLAsTarget( url, scale=1, position="0 1.7 -0.3" ){
 	var el = document.createElement("a-entity")
 	AFRAME.scenes[0].appendChild(el)
 	el.setAttribute("gltf-model", url)
-	el.setAttribute("position", "0 1.7 -0.3") // arbitrary for test
+	el.setAttribute("position", position) 
 	el.setAttribute("scale", scale + " " + scale + " " + scale)
 	targets.push(el)
 
+	return el
 	// consider https://sketchfab.com/developers/download-api/downloading-models/javascript
 }
 
@@ -1876,6 +1877,60 @@ function loadFromMastodon(statusesURL="https://mastodon.pirateparty.be/api/v1/ac
 	} ) )
 }
 
+const tile_URL = "../content/KenneyHexTiles/"
+const tile_extension = ".glb"
+const tiles = ["building_cabin", "building_castle", "building_dock", "building_farm", "building_house", "building_market", "building_mill", "building_mine", "building_sheep", "building_smelter", "building_tower", "building_village", "building_wall", "building_water", "dirt", "dirt_lumber", "grass", "grass_forest", "grass_hill", "path_corner", "path_cornerSharp", "path_crossing", "path_end", "path_intersectionA", "path_intersectionB", "path_intersectionC", "path_intersectionD", "path_intersectionE", "path_intersectionF", "path_intersectionG", "path_intersectionH", "path_start", "path_straight", "river_corner", "river_cornerSharp", "river_crossing", "river_end", "river_intersectionA", "river_intersectionB", "river_intersectionC", "river_intersectionD", "river_intersectionE", "river_intersectionF", "river_intersectionG", "river_intersectionH", "river_start", "river_straight", "sand", "sand_rocks", "stone", "stone_hill", "stone_mountain", "stone_rocks", "unit_boat", "unit_house", "unit_houseLarge", "unit_mill", "unit_tower", "unit_tree", "unit_wallTower", "water", "water_island", "water_rocks",]
+const tiles_types_full = [ "building_", "river_", "sand", "stone", "water"]
+const tiles_types_parts = [ "unit_", "path_" ]
+const tiles_types = [ ...tiles_types_full, ...tiles_types_parts]
+const tiles_full = tiles.filter( t => { let present = false; tiles_types_full.map(m => { if (t.indexOf(m)>-1) present = true; }); return present} )
+
+function displayAllTiles(){
+	const scale = 1/10
+	let last_type = null
+	tiles.map( (t) => {
+		let x = -1*scale
+		if (!last_type) n = 0
+		tiles_types.map( (tile_type,ttn) => {
+			if (t.indexOf(tile_type) > -1) {
+				x = ttn/10 
+				if (tile_type != last_type) n = 0
+				last_type = tile_type
+			}
+		} )
+		let el = addGltfFromURLAsTarget( tile_URL+t+tile_extension, .09, ""+x+" 0.7 -"+n*scale )
+		// el.class = ...
+		n++
+	} )
+	// could consider a new spawner type so that picking a tile clones it first
+}
+// try generating at scale, e.g 2, a landscape to explore based on type
+	// with scale adjusting as jxr line to be the Wondering pills/drinks/mushroom to change scale
+		// cf similar commands to move a class, consequently could add class after addGltfFromURLAsTarget
+
+function randomTileFull(){
+	return tiles_full[Math.floor(Math.random()*tiles_full.length)]
+}
+
+function generateRandomPlace(){
+	let scale = 1/10
+	// let y = -2 // lifesize, scale 1
+	let y = 1.4 // dollhouse, scale 1/10
+	for (let i=0;i<10;i++){
+		for (let j=0;j<10;j++){
+			el = addGltfFromURLAsTarget( tile_URL+randomTileFull()+tile_extension, 1*scale, 
+				""+(i+(j%2?0:1/2))*scale+" "+y+" -"+(j*8.5/10)*scale)
+			el.className += "tiles"
+		}
+	}
+}
+
+function rescalePlace(scale = 10, yoffset=-1){
+	let places = Array.from( document.querySelectorAll(".tiles") )
+	places.map( e => { scl = e.getAttribute("scale"); e.setAttribute("scale", scl.x*scale+ " " + scl.y*scale + " " + scl.z*scale) } )
+	places.map( e => { pos = e.getAttribute("position"); e.setAttribute("position", pos.x*scale+ " " + (pos.y+yoffset) + " " + pos.z*scale) } )
+}
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
@@ -1909,15 +1964,17 @@ function loadFromMastodon(statusesURL="https://mastodon.pirateparty.be/api/v1/ac
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
-	<a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/virtual_reality_meta_room_2022.glb" scale="" position="-0.10754 0.2 6.25885" rotation="0 90 0"></a-entity>
+      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/virtual_reality_meta_room_2022.glb" scale="" position="-0.10754 0.2 6.25885" rotation="0 90 0"></a-entity>
 
+<!--
+-->
       <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
-      <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
+      <a-entity light="type: directional; color: #FFF; intensity: 1.4" position="-0.5 1 1"></a-entity>
       <a-sky hide-on-enter-ar src="../content/nebula.jpg"></a-sky>
 
-      <a-text target value="instructions : pinch numbers then > to open a page " position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr loadPageRange(1,13)" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr loadCodeFromPage()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="instructions : pinch generateRandomPlace then adjust tiles" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr generateRandomPlace()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position -->
 
