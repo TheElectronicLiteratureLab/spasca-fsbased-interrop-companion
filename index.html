@@ -1894,6 +1894,11 @@ const tiles_types_parts = [ "unit_", "path_" ]
 const tiles_types = [ ...tiles_types_full, ...tiles_types_parts]
 const tiles_full = tiles.filter( t => { let present = false; tiles_types_full.map(m => { if (t.indexOf(m)>-1) present = true; }); return present} )
 
+// could become a dedicated asset set, e.g asset-metadata.json in that directory
+
+// consider also a set of assets, e.g this one but also another kit from the same artist
+// consider the other direction, i.e how a single glTF could become a set of tiles
+
 function displayAllTiles(){
 	const scale = 1/10
 	let last_type = null
@@ -1908,6 +1913,7 @@ function displayAllTiles(){
 			}
 		} )
 		let el = addGltfFromURLAsTarget( tile_URL+t+tile_extension, .09, ""+x+" 0.7 -"+n*scale )
+		// fine tuning should also be per asset set
 		// el.class = ...
 		n++
 	} )
