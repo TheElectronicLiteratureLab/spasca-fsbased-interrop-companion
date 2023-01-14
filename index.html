@@ -1929,6 +1929,7 @@ AFRAME.registerComponent('snap-on-pinchended', {
 	init: function(){
 		this.el.addEventListener('released', function (event) {
 			setFeedbackHUD("should snap to iso grid"); // TODO test
+			console.log('dropped',el,'to snap')
 			// if works, generalize and add to https://git.benetou.fr/utopiah/text-code-xr-engine/issues/66
 			// should come back from emit('released')
 			// could rely on getClosestTilesSnappingPosition()
@@ -1945,8 +1946,9 @@ function generateRandomPlace(max_i=10, max_j=10, scale=1/10, y=1.4){
 			let pos = new THREE.Vector3( (i+(j%2?0:1/2))*scale, y, (j*8.5/10)*scale )
 			el = addGltfFromURLAsTarget( tile_URL+randomTileFull()+tile_extension, 1*scale, 
 				AFRAME.utils.coordinates.stringify( pos ) )
-			tiles_snapping_grid.push( pos )
+			el.setAttribute('snap-on-pinchended', '')
 			el.className += "tiles"
+			tiles_snapping_grid.push( pos )
 		}
 	}
 }
