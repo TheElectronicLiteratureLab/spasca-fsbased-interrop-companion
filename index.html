@@ -1559,6 +1559,14 @@ function toggleVisibilityEntitiesFromClass(classname){
 		entities.map( e => e.setAttribute("visible", "true"))
 }
 
+function pushLeftClass(classname, value=.1){
+	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.x -= value)
+}
+
+function pushRightClass(classname, value=.1){
+	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.x += value)
+}
+
 function pushUpClass(classname, value=.1){
 	Array.from( document.querySelectorAll("."+classname) ).map( e => e.object3D.position.y += value)
 }
@@ -1925,11 +1933,13 @@ function getClosestTilesSnappingPosition( t, threshold=0.05 ){
 	return point
 }
 
+var tile_snapping_enabled = true
+
 AFRAME.registerComponent('snap-on-pinchended', {
 	init: function(){
+		let el = this.el
 		this.el.addEventListener('released', function (event) {
-			setFeedbackHUD("should snap to iso grid"); // TODO test
-			console.log('dropped',el,'to snap')
+			if (tile_snapping_enabled) el.setAttribute("rotation", "0 0 0")
 			// if works, generalize and add to https://git.benetou.fr/utopiah/text-code-xr-engine/issues/66
 			// should come back from emit('released')
 			// could rely on getClosestTilesSnappingPosition()
@@ -1989,7 +1999,7 @@ function rescalePlace(scale = 10, yoffset=-1){
       </a-assets>
 
       <a-entity id="rig">
-		<a-sound src="../content/summer-night-ambience.mp3" autoplay=true loop=true volume=0.5></a-sound><!-- warning skipped on Quest, does autoplay there -->
+		<a-sound src="../content/summer-night-ambience.mp3" autoplay=true loop=true volume=0.2></a-sound><!-- warning skipped on Quest, does autoplay there -->
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
 		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
@@ -2000,68 +2010,31 @@ function rescalePlace(scale = 10, yoffset=-1){
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
-      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/virtual_reality_meta_room_2022.glb" scale="" position="-0.10754 0.2 6.25885" rotation="0 90 0"></a-entity>
-
-<!--
--->
       <a-entity light="type: ambient; color: #BBB; intensity: 0.6"></a-entity>
       <a-entity light="type: directional; color: #FFF; intensity: 1.4" position="-0.5 1 1"></a-entity>
-      <a-sky hide-on-enter-ar src="../content/nebula.jpg"></a-sky>
+
+      <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
+	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
+      <a-sky hide-on-enter-ar color="lightblue"></a-sky>
+      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/KenneyHexTiles/grass.glb" scale="100 100 100" position="0 -20 0" rotation="0 0 0"></a-entity>
 
       <a-text target value="instructions : pinch generateRandomPlace then adjust tiles" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr generateRandomPlace()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
-      <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position -->
+      <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr toggleVisibilityEntitiesFromClass('hidableenvironment')" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-text>
 
-      <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
-	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
+      <a-text target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr pushRightClass('tiles')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr pushUpClass('tiles')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr pushDownClass('tiles')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr pushBackClass('tiles')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr pushFrontClass('tiles')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
 
-      <a-entity id="featureN">
-	      <a-image rotation="0 180 0" position="-2 2 10.5" scale=".5 .5 .5" src="../content/features/containers.jpg"></a-image>
-	      <a-text rotation="0 180 0" target value="containers" position="-2 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-2 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-2 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-      </a-entity>
-	<a-image rotation="0 180 0" position="-1 2 10.5" scale=".5 .5 .5" src="../content/features/wireframe.jpg"></a-image>
-	<a-image rotation="0 180 0" position="0 2 10.5" scale=".5 .5 .5" src="../content/features/remarkable_sketch.jpg"></a-image>
-	<a-image rotation="0 180 0" position="1 2 10.5" scale=".5 .5 .5" src="../content/features/browsing_history.jpg"></a-image>
-	<a-image rotation="0 180 0" position="2 2 10.5" scale=".5 .5 .5" src="../content/features/codeembedding.jpg"></a-image>
-	<a-image rotation="0 180 0" position="3 2 10.5" scale=".5 .5 .5" src="../content/features/grouping.jpg"></a-image>
-	<a-image rotation="0 180 0" position="4 2 10.5" scale=".5 .5 .5" src="../content/features/inspector.jpg"></a-image>
-	<a-image rotation="0 180 0" position="5 2 10.5" scale=".5 .5 .5" src="../content/features/javascript_with_shortcuts.jpg"></a-image>
-	<a-image rotation="0 180 0" position="6 2 10.5" scale=".5 .5 .5" src="../content/features/load_3D_models.jpg"></a-image>
-	<a-image rotation="0 180 0" position="7 2 10.5" scale=".5 .5 .5" src="../content/features/math_plot.jpg"></a-image>
-	<a-image rotation="0 180 0" position="8 2 10.5" scale=".5 .5 .5" src="../content/features/networked_input.jpg"></a-image>
-	<a-image rotation="0 180 0" position="9 2 10.5" scale=".5 .5 .5" src="../content/features/observable_notebook.jpg"></a-image>
-	<a-text rotation="0 180 0" target="" value="Features" position="4.70348 3.07329 10.2" scale="" text=""></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="-1 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-1 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-1 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="0 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="0 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="0 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="1 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="1 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="1 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="potato" position="2 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="2 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="2 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="3 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="3 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="3 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="4 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="4 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="4 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="5 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="5 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="5 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="6 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="6 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="6 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
-	      <a-text rotation="0 180 0" target value="containers" position="-2 2.25 10.5" scale=".5 .5 .5"></a-text>
-	      <a-text rotation="0 180 0" target value="use the dxr prefix to send data to containers\n(requires backend)" position="-2 1.55 10.5" scale=".1 .1 .1"></a-text>
-	      <a-text rotation="0 180 0" target value="dxr python print(7)" position="-2 1.35 10.5" scale="0.1 0.1 0.1"></a-text>
+      <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
+	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
+	-->
 
     </a-scene>
   </body>
