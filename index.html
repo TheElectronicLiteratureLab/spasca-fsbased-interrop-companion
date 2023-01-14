@@ -1886,15 +1886,26 @@ function loadFromMastodon(statusesURL="https://mastodon.pirateparty.be/api/v1/ac
 	} ) )
 }
 
-const tile_URL = "../content/KenneyHexTiles/"
 const tile_extension = ".glb"
-const tiles = ["building_cabin", "building_castle", "building_dock", "building_farm", "building_house", "building_market", "building_mill", "building_mine", "building_sheep", "building_smelter", "building_tower", "building_village", "building_wall", "building_water", "dirt", "dirt_lumber", "grass", "grass_forest", "grass_hill", "path_corner", "path_cornerSharp", "path_crossing", "path_end", "path_intersectionA", "path_intersectionB", "path_intersectionC", "path_intersectionD", "path_intersectionE", "path_intersectionF", "path_intersectionG", "path_intersectionH", "path_start", "path_straight", "river_corner", "river_cornerSharp", "river_crossing", "river_end", "river_intersectionA", "river_intersectionB", "river_intersectionC", "river_intersectionD", "river_intersectionE", "river_intersectionF", "river_intersectionG", "river_intersectionH", "river_start", "river_straight", "sand", "sand_rocks", "stone", "stone_hill", "stone_mountain", "stone_rocks", "unit_boat", "unit_house", "unit_houseLarge", "unit_mill", "unit_tower", "unit_tree", "unit_wallTower", "water", "water_island", "water_rocks",]
-const tiles_types_full = [ "building_", "river_", "sand", "stone", "water"]
-const tiles_types_parts = [ "unit_", "path_" ]
-const tiles_types = [ ...tiles_types_full, ...tiles_types_parts]
-const tiles_full = tiles.filter( t => { let present = false; tiles_types_full.map(m => { if (t.indexOf(m)>-1) present = true; }); return present} )
 
-// could become a dedicated asset set, e.g asset-metadata.json in that directory
+// could become a dedicated asset sets, e.g asset-metadata.json in that directory
+const available_asset_kits = [
+	{
+		tile_URL : "../content/asset_kits/KenneyHexTiles/",
+		tiles : ["building_cabin", "building_castle", "building_dock", "building_farm", "building_house", "building_market", "building_mill", "building_mine", "building_sheep", "building_smelter", "building_tower", "building_village", "building_wall", "building_water", "dirt", "dirt_lumber", "grass", "grass_forest", "grass_hill", "path_corner", "path_cornerSharp", "path_crossing", "path_end", "path_intersectionA", "path_intersectionB", "path_intersectionC", "path_intersectionD", "path_intersectionE", "path_intersectionF", "path_intersectionG", "path_intersectionH", "path_start", "path_straight", "river_corner", "river_cornerSharp", "river_crossing", "river_end", "river_intersectionA", "river_intersectionB", "river_intersectionC", "river_intersectionD", "river_intersectionE", "river_intersectionF", "river_intersectionG", "river_intersectionH", "river_start", "river_straight", "sand", "sand_rocks", "stone", "stone_hill", "stone_mountain", "stone_rocks", "unit_boat", "unit_house", "unit_houseLarge", "unit_mill", "unit_tower", "unit_tree", "unit_wallTower", "water", "water_island", "water_rocks",],
+		tiles_types_full : [ "building_", "river_", "sand", "stone", "water"],
+		tiles_types_parts : [ "unit_", "path_" ],
+		hex_type : true,
+	},{
+		tile_URL : "../content/asset_kits/KenneyRetroMedieval/",
+		tiles_types_full : ["floor", "column", "tower", "wall"],
+		tiles_types_parts : ["battlement"],
+		tiles : [ "battlement", "battlement_cornerInner", "battlement_cornerOuter", "battlement_half", "column", "columnPaint", "columnPaint_damaged", "column_damaged", "detail_barrel", "detail_crate", "detail_crateSmall", "fence", "floor", "floor_flat", "floor_stairs", "floor_stairsCornerInner", "floor_stairsCornerOuter", "floor_steps", "floor_stepsCornerInner", "floor_stepsCornerOuter", "overhang", "overhang_fence", "overhang_round", "roof", "roof_corner", "roof_edge", "structure", "structure_poles", "structure_wall", "tower", "towerPaint", "towerPaint_base", "tower_base", "tower_edge", "tower_top", "wall", "wallFortified", "wallFortifiedPaint", "wallFortifiedPaint_gate", "wallFortifiedPaint_half", "wallFortified_gate", "wallFortified_gateHalf", "wallFortified_half", "wallPaint", "wallPaint_detail", "wallPaint_flat", "wallPaint_gate", "wallPaint_half", "wall_detail", "wall_flat", "wall_flatGate", "wall_gate", "wall_gateHalf", "wall_half", "wall_low" ],
+		hex_type : false,
+	}
+]
+
+var selected_asset_kit = 1
 
 // consider also a set of assets, e.g this one but also another kit from the same artist
 // consider the other direction, i.e how a single glTF could become a set of tiles
@@ -1902,9 +1913,10 @@ const tiles_full = tiles.filter( t => { let present = false; tiles_types_full.ma
 function displayAllTiles(){
 	const scale = 1/10
 	let last_type = null
-	tiles.map( (t) => {
+	available_asset_kits[selected_asset_kit].tiles.map( (t) => {
 		let x = -1*scale
 		if (!last_type) n = 0
+		const tiles_types = [ ...available_asset_kits[selected_asset_kit].tiles_types_full, ...available_asset_kits[selected_asset_kit].tiles_types_parts]
 		tiles_types.map( (tile_type,ttn) => {
 			if (t.indexOf(tile_type) > -1) {
 				x = ttn/10 
@@ -1912,7 +1924,9 @@ function displayAllTiles(){
 				last_type = tile_type
 			}
 		} )
-		let el = addGltfFromURLAsTarget( tile_URL+t+tile_extension, .09, ""+x+" 0.7 -"+n*scale )
+		let el = addGltfFromURLAsTarget( available_asset_kits[selected_asset_kit].tile_URL+t+tile_extension, 
+			.09,
+			""+x+" 0.7 -"+n*scale )
 		// fine tuning should also be per asset set
 		// el.class = ...
 		n++
@@ -1925,6 +1939,7 @@ function displayAllTiles(){
 		// cf similar commands to move a class, consequently could add class after addGltfFromURLAsTarget
 
 function randomTileFull(){
+	const tiles_full = available_asset_kits[selected_asset_kit].tiles.filter( t => { let present = false; available_asset_kits[selected_asset_kit].tiles_types_full.map(m => { if (t.indexOf(m)>-1) present = true; }); return present} )
 	return tiles_full[Math.floor(Math.random()*tiles_full.length)]
 }
 
@@ -1959,9 +1974,14 @@ function generateRandomPlace(max_i=10, max_j=10, scale=1/10, y=1.4){
 	// dollhouse, y : 1.4, scale 1/10
 	for (let i=0;i<max_i;i++){
 		for (let j=0;j<max_j;j++){
-			let pos = new THREE.Vector3( (i+(j%2?0:1/2))*scale, y, (j*8.5/10)*scale )
-			el = addGltfFromURLAsTarget( tile_URL+randomTileFull()+tile_extension, 1*scale, 
-				AFRAME.utils.coordinates.stringify( pos ) )
+			let offset_if_hex = 0
+			if (available_asset_kits[selected_asset_kit].hex_type && j%2) offset_if_hex = 1/2
+			let pos = new THREE.Vector3( (i+offset_if_hex)*scale, y, (j*8.5/10)*scale )
+			el = addGltfFromURLAsTarget( 
+				available_asset_kits[selected_asset_kit].tile_URL+randomTileFull()+tile_extension, 
+				1*scale, 
+				AFRAME.utils.coordinates.stringify( pos )
+			)
 			el.setAttribute('snap-on-pinchended', '')
 			el.className += "tiles"
 			tiles_snapping_grid.push( pos )
@@ -2022,7 +2042,7 @@ function rescalePlace(scale = 10, yoffset=-1){
       <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
 	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
       <a-sky hide-on-enter-ar color="lightblue"></a-sky>
-      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/KenneyHexTiles/grass.glb" scale="100 100 100" position="0 -20 0" rotation="0 0 0"></a-entity>
+      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/asset_kits/KenneyHexTiles/grass.glb" scale="100 100 100" position="0 -20 0" rotation="0 0 0"></a-entity>
 
       <a-text target value="instructions : pinch generateRandomPlace then adjust tiles" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr generateRandomPlace()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
