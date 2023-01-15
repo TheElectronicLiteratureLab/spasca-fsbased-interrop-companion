@@ -2003,6 +2003,17 @@ function rescalePlace(scale = 10, yoffset=-1){
 	} )
 }
 
+function addScreenshot(){
+	screenshotcanvas = document.querySelector('a-scene').components.screenshot.getCanvas('perspective')	
+	var sel = document.createElement("a-image")	
+	AFRAME.scenes[0].appendChild(sel) 	
+	sel.setAttribute("src", screenshotcanvas.toDataURL() )
+	sel.setAttribute("height", .1)
+	sel.setAttribute("width", .2)
+	sel.setAttribute("position", "0 1.4 -0.1")
+	targets.push(sel)
+}
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
@@ -2045,6 +2056,8 @@ function rescalePlace(scale = 10, yoffset=-1){
       <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/asset_kits/KenneyHexTiles/grass.glb" scale="100 100 100" position="0 -20 0" rotation="0 0 0"></a-entity>
 
       <a-text target value="instructions : pinch generateRandomPlace then adjust tiles" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr addScreenshot()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-text>
+
       <a-text target value="jxr generateRandomPlace()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
