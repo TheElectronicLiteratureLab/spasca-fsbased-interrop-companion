@@ -1960,11 +1960,20 @@ AFRAME.registerComponent('snap-on-pinchended', {
 	init: function(){
 		let el = this.el
 		this.el.addEventListener('released', function (event) {
-			if (tile_snapping_enabled) el.setAttribute("rotation", "0 0 0")
+			if (tile_snapping_enabled) {
+				el.setAttribute("rotation", "0 0 0")
+				// could limit to an axis or two, e.g here y axis probably should be kept or at least adjust to next 1/6th rotation
+				// could snap to invisible grid too, e.g every 1 or 1/10th unit 
+				var pos = AFRAME.utils.coordinates.parse( el.getAttribute("position") )
+				pos.x = pos.x.toFixed(1) // i.e .1m so 1/10th of a meter here, 10cm
+				pos.y = pos.y.toFixed(1)
+				pos.z = pos.z.toFixed(1)
+				el.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
 			// if works, generalize and add to https://git.benetou.fr/utopiah/text-code-xr-engine/issues/66
 			// should come back from emit('released')
 			// could rely on getClosestTilesSnappingPosition()
 				// if it works, might check if position is not already used by a tile
+			}
 		})
 	}
 })
@@ -2056,13 +2065,14 @@ function addScreenshot(){
       <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/asset_kits/KenneyHexTiles/grass.glb" scale="100 100 100" position="0 -20 0" rotation="0 0 0"></a-entity>
 
       <a-text target value="instructions : pinch generateRandomPlace then adjust tiles" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr addScreenshot()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-text>
 
       <a-text target value="jxr generateRandomPlace()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr toggleVisibilityEntitiesFromClass('hidableenvironment')" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr displayAllTiles()" position="0 1.25 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr addScreenshot()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-text>
 
       <a-text target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr pushRightClass('tiles')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
