@@ -1968,6 +1968,9 @@ AFRAME.registerComponent('snap-on-pinchended', {
 				pos.x = pos.x.toFixed(1) // i.e .1m so 1/10th of a meter here, 10cm
 				pos.y = pos.y.toFixed(1)
 				pos.z = pos.z.toFixed(1)
+				// could check first if that "spot" is "free", e.g not other targets on that position
+					// but then if not, what? move to another of the closest 6th closest points? (2 vertical, 2 horizontal, 2 depth) or even 8th with diagonales?
+						// if not? now what? move until there is a free spot?
 				el.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
 			// if works, generalize and add to https://git.benetou.fr/utopiah/text-code-xr-engine/issues/66
 			// should come back from emit('released')
