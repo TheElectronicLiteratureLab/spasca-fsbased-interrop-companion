@@ -2026,6 +2026,26 @@ function addScreenshot(){
 	targets.push(sel)
 }
 
+function addPrimitive( name, position="0 1.4 -0.2" ){
+	let el = document.createElement("a-"+name) // e.g box or sphere
+	let el_outline = document.createElement("a-"+name) // e.g box or sphere
+	AFRAME.scenes[0].appendChild(el)
+	el.appendChild(el_outline)
+	el.setAttribute("position", position)
+	el.setAttribute("scale", ".1 .1 .1")
+	el_outline.setAttribute("scale", "1.01 1.01 1.01")
+	el_outline.setAttribute("color", "gray")
+	el_outline.setAttribute("wireframe", "true")
+}
+
+functions addAllPrimitives(){
+	Object.getOwnPropertyNames(AFRAME.primitives.primitives)
+	// thanks to https://github.com/Utopiah/aframe-inVR-blocks-based-editor/blob/master/aframe-invr-inspect.js
+		.map( i => i.replace("a-",""))
+		.filter( i => i != "camera") // should add more, e.g sky, light, etc
+		.map( (i,j) => addPrimitive( i, ""+ j/7 + " 1.4 -0.5" ) )
+}
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
