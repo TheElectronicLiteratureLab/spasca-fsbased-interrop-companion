@@ -1960,7 +1960,7 @@ AFRAME.registerComponent('snap-on-pinchended', {
 	init: function(){
 		let el = this.el
 		this.el.addEventListener('released', function (event) {
-			if (tile_snapping_enabled) {
+			if (tile_snapping_enabled) { // might generalize the name as now used for compound primitives too
 				el.setAttribute("rotation", "0 0 0")
 				// could limit to an axis or two, e.g here y axis probably should be kept or at least adjust to next 1/6th rotation
 				// could snap to invisible grid too, e.g every 1 or 1/10th unit 
@@ -1972,6 +1972,17 @@ AFRAME.registerComponent('snap-on-pinchended', {
 					// but then if not, what? move to another of the closest 6th closest points? (2 vertical, 2 horizontal, 2 depth) or even 8th with diagonales?
 						// if not? now what? move until there is a free spot?
 				el.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
+
+				if (el.className == "compound_object"){
+					let thresholdDistance = 0.2 // based on object size
+					targets.filter( i => (
+						(i.className == el.className)
+						&& el.getAttribute("position").distanceTo(i.getAttribute("position")) == 0.2)
+						&& el.getAttribute("position").y == i.getAttribute("position").y
+						&& el.getAttribute("position").z == i.getAttribute("position").z
+						).map( _ => document.querySelector("#snapping-sound").components.sound.playSound() )
+				} // very restrictive, also doesn't repulse away
+
 			// if works, generalize and add to https://git.benetou.fr/utopiah/text-code-xr-engine/issues/66
 			// should come back from emit('released')
 			// could rely on getClosestTilesSnappingPosition()
@@ -2017,13 +2028,14 @@ function rescalePlace(scale = 10, yoffset=-1){
 
 function addScreenshot(){
 	screenshotcanvas = document.querySelector('a-scene').components.screenshot.getCanvas('perspective')	
-	var sel = document.createElement("a-image")	
+	var sel = document.createElement("a-image") // could use a flat box instead, or use it as a frame
 	AFRAME.scenes[0].appendChild(sel) 	
 	sel.setAttribute("src", screenshotcanvas.toDataURL() )
 	sel.setAttribute("height", .1)
 	sel.setAttribute("width", .2)
 	sel.setAttribute("position", "0 1.4 -0.1")
 	targets.push(sel)
+	return sel
 }
 
 function newPrimitiveWithOutline( name="box", position="0 0 0", scale=".1 .1 .1" ){
@@ -2042,7 +2054,7 @@ function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	var el = document.createElement("a-entity")	
 	el.setAttribute("position", position)
 	AFRAME.scenes[0].appendChild(el)
-	el.id = "compound_object_" + name
+	el.id = "compound_object_" + Date.now()
 	el.className = "compound_object" 
 	let parts = []
 	parts.push( newPrimitiveWithOutline("box",           "0 0 0",     ".2 .1 .1") )
@@ -2053,6 +2065,8 @@ function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	parts.push( newPrimitiveWithOutline("box", "-.125 0 -0.0375", ".05 .05 .025") )
 	parts.map( p => el.appendChild(p) )
 	targets.push(el)
+	el.setAttribute('snap-on-pinchended', true) // could set the parameter here, e.g sound if close to same type
+	return el
 }
 
 function addPrimitive( name, position="0 1.4 -0.2" ){
@@ -2063,6 +2077,7 @@ function addPrimitive( name, position="0 1.4 -0.2" ){
 	el.className = "template_object" 
 	targets.push(el)
 	// should have a dedicated cloning component activated on primary pinchstarted
+	return el
 }
 
 function addAllPrimitives(){
@@ -2076,12 +2091,20 @@ function addAllPrimitives(){
 		.map( (i,j) => addPrimitive( i, ""+ j/7 + " 1.4 -0.5" ) )
 }
 
+function startExperience(){
+        //AFRAME.scenes[0].enterVR();
+	document.querySelector("#snapping-sound").components.sound.playSound();
+	document.querySelector("#mainbutton").style.display = "none"
+}
+
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
+ <button id=mainbutton style="z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
+
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
 	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json keyboard >
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
@@ -2098,7 +2121,8 @@ function addAllPrimitives(){
       </a-assets>
 
       <a-entity id="rig">
-		<a-sound src="../content/summer-night-ambience.mp3" autoplay=true loop=true volume=0.2></a-sound><!-- warning skipped on Quest, does autoplay there -->
+		<a-sound src="../content/street-crowd-ambience.mp3" autoplay=true loop=true volume=0.2></a-sound><!-- warning skipped on Quest, does autoplay there -->
+		<a-sound id="snapping-sound" src="url(../content/magnets_snap.mp3)"></a-sound>
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
 		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
@@ -2114,18 +2138,16 @@ function addAllPrimitives(){
 
       <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
 	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
-      <a-sky hide-on-enter-ar color="lightblue"></a-sky>
-      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/asset_kits/KenneyHexTiles/grass.glb" scale="100 100 100" position="0 -20 0" rotation="0 0 0"></a-entity>
+      <a-sky hide-on-enter-ar color="white"></a-sky>
+      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/AR_Market.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
+      <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/SKY_Market_day.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
+      <a-text target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
 
-      <a-text target value="instructions : pinch generateRandomPlace then adjust tiles" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
-
-      <a-text target value="jxr addAllPrimitives()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr addCompoundPrimitiveExample()" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr addAllPrimitives()" position="0 1.60 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr toggleVisibilityEntitiesFromClass('hidableenvironment')" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr displayAllTiles()" position="0 1.25 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr addScreenshot()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-text>
 
       <a-text target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr pushRightClass('tiles')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
