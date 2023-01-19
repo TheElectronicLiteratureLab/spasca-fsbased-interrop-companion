@@ -2026,23 +2026,53 @@ function addScreenshot(){
 	targets.push(sel)
 }
 
-function addPrimitive( name, position="0 1.4 -0.2" ){
-	let el = document.createElement("a-"+name) // e.g box or sphere
-	let el_outline = document.createElement("a-"+name) // e.g box or sphere
-	AFRAME.scenes[0].appendChild(el)
+function newPrimitiveWithOutline( name="box", position="0 0 0", scale=".1 .1 .1" ){
+	let el = document.createElement("a-"+name)
+	let el_outline = document.createElement("a-"+name)
 	el.appendChild(el_outline)
+	el.setAttribute("scale", scale)
 	el.setAttribute("position", position)
-	el.setAttribute("scale", ".1 .1 .1")
 	el_outline.setAttribute("scale", "1.01 1.01 1.01")
 	el_outline.setAttribute("color", "gray")
 	el_outline.setAttribute("wireframe", "true")
+	return el
 }
 
-functions addAllPrimitives(){
+function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
+	var el = document.createElement("a-entity")	
+	el.setAttribute("position", position)
+	AFRAME.scenes[0].appendChild(el)
+	el.id = "compound_object_" + name
+	el.className = "compound_object" 
+	let parts = []
+	parts.push( newPrimitiveWithOutline("box",           "0 0 0",     ".2 .1 .1") )
+	parts.push( newPrimitiveWithOutline("box",        ".125 0 0",  ".05 .05 .05") )
+	parts.push( newPrimitiveWithOutline("box",  "-.125 0.0375 0",  ".05 .025 .1") )
+	parts.push( newPrimitiveWithOutline("box", "-.125 -0.0375 0",  ".05 .025 .1") )
+	parts.push( newPrimitiveWithOutline("box",  "-.125 0 0.0375", ".05 .05 .025") )
+	parts.push( newPrimitiveWithOutline("box", "-.125 0 -0.0375", ".05 .05 .025") )
+	parts.map( p => el.appendChild(p) )
+	targets.push(el)
+}
+
+function addPrimitive( name, position="0 1.4 -0.2" ){
+	let el = newPrimitiveWithOutline( name )
+	el.setAttribute("position", position)
+	AFRAME.scenes[0].appendChild(el)
+	el.id = "template_object_" + name
+	el.className = "template_object" 
+	targets.push(el)
+	// should have a dedicated cloning component activated on primary pinchstarted
+}
+
+function addAllPrimitives(){
+	const other_primitives = ["camera", "cursor", "sky", "light", "sound", "videosphere"]
+	const other_primitives_with_param_needed = ["text", "gltf-model", "obj-model", "troika-text"]
 	Object.getOwnPropertyNames(AFRAME.primitives.primitives)
 	// thanks to https://github.com/Utopiah/aframe-inVR-blocks-based-editor/blob/master/aframe-invr-inspect.js
 		.map( i => i.replace("a-",""))
-		.filter( i => i != "camera") // should add more, e.g sky, light, etc
+		.filter( i => other_primitives.indexOf(i) < 0 )
+		.filter( i => other_primitives_with_param_needed.indexOf(i) < 0 ) // temporarilty disabled
 		.map( (i,j) => addPrimitive( i, ""+ j/7 + " 1.4 -0.5" ) )
 }
 
@@ -2089,7 +2119,7 @@ functions addAllPrimitives(){
 
       <a-text target value="instructions : pinch generateRandomPlace then adjust tiles" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
 
-      <a-text target value="jxr generateRandomPlace()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr addAllPrimitives()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-text>
