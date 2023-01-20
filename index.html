@@ -1062,8 +1062,9 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		//selectedElement = clone
 
 		selectedElement = getClosestTargetElement( event.detail.position )
+		if (selectedElement) selectedElement.emit("picked")
 		// is it truly world position? See https://github.com/aframevr/aframe/issues/5182
-		setFeedbackHUD( AFRAME.utils.coordinates.stringify( event.detail.position ) )
+		// setFeedbackHUD( AFRAME.utils.coordinates.stringify( event.detail.position ) )
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
 	});
   },
@@ -1971,7 +1972,8 @@ AFRAME.registerComponent('snap-on-pinchended', {
 				// could check first if that "spot" is "free", e.g not other targets on that position
 					// but then if not, what? move to another of the closest 6th closest points? (2 vertical, 2 horizontal, 2 depth) or even 8th with diagonales?
 						// if not? now what? move until there is a free spot?
-				el.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
+				el.setAttribute("animation__snap"+Date.now(), "property: position; to: "+AFRAME.utils.coordinates.stringify(pos)+"; dur: 200;");
+				//el.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
 
 				if (el.className == "compound_object"){
 					let thresholdDistance = 0.2 // based on object size
@@ -2076,9 +2078,25 @@ function addPrimitive( name, position="0 1.4 -0.2" ){
 	el.id = "template_object_" + name
 	el.className = "template_object" 
 	targets.push(el)
-	// should have a dedicated cloning component activated on primary pinchstarted
+	el.setAttribute('clone-on-primarypinchstarted', true)
 	return el
 }
+
+AFRAME.registerComponent('clone-on-primarypinchstarted', { 
+  init: function () {
+	let el = this.el
+	this.el.addEventListener('picked', function (event) {
+		var clone = selectedElement.cloneNode(true)
+		clone.removeAttribute('clone-on-primarypinchstarted')
+		clone.setAttribute( "scale", selectedElement.getAttribute("scale") ) // somehow lost?
+		clone.id += "_clone" + Date.now()
+		clone.className = "cloned"
+		targets.push(clone)
+		AFRAME.scenes[0].appendChild(clone)
+		selectedElement = clone 
+	})
+  }
+})
 
 function addAllPrimitives(){
 	const other_primitives = ["camera", "cursor", "sky", "light", "sound", "videosphere"]
@@ -2092,7 +2110,8 @@ function addAllPrimitives(){
 }
 
 function startExperience(){
-        //AFRAME.scenes[0].enterVR();
+        if (AFRAME.utils.device.checkHeadsetConnected())
+		AFRAME.scenes[0].enterVR();
 	document.querySelector("#snapping-sound").components.sound.playSound();
 	document.querySelector("#mainbutton").style.display = "none"
 }
