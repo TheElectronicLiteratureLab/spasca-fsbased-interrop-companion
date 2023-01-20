@@ -2053,9 +2053,26 @@ function newPrimitiveWithOutline( name="box", position="0 0 0", scale=".1 .1 .1"
 }
 
 function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
+	let el = generateCompoundPrimitiveExample(position)
+	AFRAME.scenes[0].appendChild(el)
+	targets.push(el)
+	el.setAttribute('snap-on-pinchended', true) // could set the parameter here, e.g sound if close to same type
+	return el
+}
+
+function addBlockCodeExample(){
+	el = addNewNote("hi")
+	el.setAttribute("color", "black")
+	el.setAttribute("outline-color", "white")
+	a = generateCompoundPrimitiveExample()
+	el.appendChild(a)
+	a.setAttribute("position", "0.1 0 -0.051")
+	el.setAttribute("position", "0 1.4 -0.2");
+}
+
+function generateCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	var el = document.createElement("a-entity")	
 	el.setAttribute("position", position)
-	AFRAME.scenes[0].appendChild(el)
 	el.id = "compound_object_" + Date.now()
 	el.className = "compound_object" 
 	let parts = []
@@ -2066,8 +2083,6 @@ function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	parts.push( newPrimitiveWithOutline("box",  "-.125 0 0.0375", ".05 .05 .025") )
 	parts.push( newPrimitiveWithOutline("box", "-.125 0 -0.0375", ".05 .05 .025") )
 	parts.map( p => el.appendChild(p) )
-	targets.push(el)
-	el.setAttribute('snap-on-pinchended', true) // could set the parameter here, e.g sound if close to same type
 	return el
 }
 
@@ -2162,10 +2177,11 @@ function startExperience(){
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/SKY_Market_day.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
       <a-text target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-text>
 
-      <a-text target value="jxr addCompoundPrimitiveExample()" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr addBlockCodeExample()" position="0 1.65 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr addAllPrimitives()" position="0 1.60 -0.1" scale="0.1 0.1 0.1"></a-text>
-      <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr addCompoundPrimitiveExample()" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-text>
 
       <a-text target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
