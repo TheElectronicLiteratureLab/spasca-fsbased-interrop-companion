@@ -2049,6 +2049,7 @@ function newPrimitiveWithOutline( name="box", position="0 0 0", scale=".1 .1 .1"
 	el_outline.setAttribute("scale", "1.01 1.01 1.01")
 	el_outline.setAttribute("color", "gray")
 	el_outline.setAttribute("wireframe", "true")
+	el_outline.className = "outline_object" 
 	return el
 }
 
@@ -2132,6 +2133,11 @@ function startExperience(){
 }
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
+
+function removeOutlineFromEntity( el ){
+	[...el.querySelectorAll(".outline_object")].map( i => i.remove() )
+}
+
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
