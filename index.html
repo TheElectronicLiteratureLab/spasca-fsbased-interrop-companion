@@ -1241,15 +1241,19 @@ AFRAME.registerComponent('hud', {
 	}
 })
 
-function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes=null, visible="true", rotation="0 0 0" ){
+function addNewNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes="notes", visible="true", rotation="0 0 0" ){
 	var newnote = document.createElement("a-troika-text")
 	newnote.setAttribute("anchor", "left" )
 	newnote.setAttribute("outline-width", "5%" )
 	newnote.setAttribute("outline-color", "black" )
 	newnote.setAttribute("visible", visible )
 
-	if (id) newnote.id = id
-	if (classes) newnote.className += classes
+	if (id) 
+		newnote.id = id
+	else
+		newnote.id = "note_" + Date.now() // not particularly descriptive but content might change later on
+	if (classes)
+		newnote.className += classes
 	newnote.setAttribute("side", "double" )
 	var userFontColor = AFRAME.utils.getUrlParameter('fontcolor')
 	if (userFontColor && userFontColor != "") 
@@ -2138,6 +2142,23 @@ function removeOutlineFromEntity( el ){
 	[...el.querySelectorAll(".outline_object")].map( i => i.remove() )
 }
 
+function getIdFromPick(){
+	let id = null
+	let pp = selectedElements.filter( e => e.primary )
+	if (pp && pp[pp.length-1] && pp[pp.length-1].element ){
+		if (!pp[pp.length-1].element.id) pp[pp.length-1].element.id= "missingid_"+Date.now() 
+		id = pp[pp.length-1].element.id
+		setFeedbackHUD(id)
+	}
+	return id
+}
+
+function changeColorLastId(){
+	let id = getIdFromPick() // applies on primary only
+	console.log("id?",id)
+	if (id) document.querySelector("#"+id).setAttribute("color", "red")
+}
+
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
@@ -2189,6 +2210,8 @@ function removeOutlineFromEntity( el ){
       <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target id="getfromid_color" value="jxr changeColorLastId()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target id="getfromid_id" value="jxr getIdFromPick()" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-text>
 
       <a-text target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr pushRightClass('tiles')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
