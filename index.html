@@ -2176,6 +2176,21 @@ function changeColorLastId(){
 	if (id) document.querySelector("#"+id).setAttribute("color", "red")
 }
 
+function changeColorNextPinch(){
+	//let id = getIdFromPick() // applies on primary only
+		// does not work anymore ... but could listen to selectedElements changes via an observer but deprecated
+		// proxy could be nice but requires to modify push() calls first
+	let lastPrimary = selectedElements.filter( e => e.primary ).length
+
+	let checkForNewPinches = setInterval( _ => {
+		if (selectedElements.filter( e => e.primary ).length > lastPrimary){
+			let id = getIdFromPick() // applies on primary only
+			if (id) document.querySelector("#"+id).setAttribute("color", "red")
+			clearInterval(checkForNewPinches)
+		}
+	}, 50) // relatively cheap check, filtering on small array
+}
+
 /*
 
 generalize selector to pick last Nth rather than very last
@@ -2256,6 +2271,7 @@ consider pick then apply, i.e changeColorLastId() but for next Id
       <a-text target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target id="getfromclass_color" value="jxr changeColorLastClass()" position="0 1.15 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target id="getfromclass_id" value="jxr getClassFromPick()" position="0 1.10 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target id="changeColorNextPinch" value="jxr changeColorNextPinch()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-text>
 
       <a-text target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr pushRightClass('tiles')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
