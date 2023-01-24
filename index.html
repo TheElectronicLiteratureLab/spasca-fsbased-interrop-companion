@@ -1050,6 +1050,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			})
 			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
 		}
+		if (selectedElement) selectedElement.emit("moved")
 	});
 	this.el.addEventListener('pinchstarted', function (event) {
 		primaryPinchStarted = true
@@ -1964,6 +1965,29 @@ var tile_snapping_enabled = true
 AFRAME.registerComponent('snap-on-pinchended', {
 	init: function(){
 		let el = this.el
+		let clone
+		this.el.addEventListener('picked', function (event) {
+			if (tile_snapping_enabled) {
+				clone = el.object3D.clone() // worked with AFrame version but didnt get complex geometry
+				AFRAME.scenes[0].object3D.add( clone )
+				clone.traverse( c => {
+					if (c.type == "Mesh") {
+						c.material = c.material.clone()
+						c.material.opacity = .5
+						c.material.transparent = true
+					}
+				 } )
+			}
+		})
+		this.el.addEventListener('moved', function (event) {
+			if (tile_snapping_enabled) {
+				var pos = AFRAME.utils.coordinates.parse( el.getAttribute("position") )
+				pos.x = pos.x.toFixed(1) 
+				pos.y = pos.y.toFixed(1)
+				pos.z = pos.z.toFixed(1)
+				clone.position.set(pos.x, pos.y, pos.z)
+			}
+		})
 		this.el.addEventListener('released', function (event) {
 			if (tile_snapping_enabled) { // might generalize the name as now used for compound primitives too
 				el.setAttribute("rotation", "0 0 0")
@@ -1978,6 +2002,8 @@ AFRAME.registerComponent('snap-on-pinchended', {
 						// if not? now what? move until there is a free spot?
 				el.setAttribute("animation__snap"+Date.now(), "property: position; to: "+AFRAME.utils.coordinates.stringify(pos)+"; dur: 200;");
 				//el.setAttribute("position", AFRAME.utils.coordinates.stringify(pos))
+				//if (clone) clone.remove()
+				if (clone) AFRAME.scenes[0].object3D.remove( clone )
 
 				if (el.className == "compound_object"){
 					let thresholdDistance = 0.2 // based on object size
