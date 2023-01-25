@@ -2091,14 +2091,16 @@ function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	return el
 }
 
-function addBlockCodeExample(text="hi"){
-	el = addNewNote( text )
+function addBlockCodeExample(text="hi", pos="0 1.4 -0.2"){
+	let el = addNewNote( text )
 	el.setAttribute("color", "black")
 	el.setAttribute("outline-color", "white")
-	a = generateCompoundPrimitiveExample()
-	el.appendChild(a)
-	a.setAttribute("position", "0.1 0 -0.051")
-	el.setAttribute("position", "0 1.4 -0.2");
+	el.setAttribute("position", pos)
+	let compountPrim = generateCompoundPrimitiveExample()
+	compountPrim.setAttribute("position", "0.1 0 -0.051")
+	el.appendChild(compountPrim)
+	// el.setAttribute('snap-on-pinchended', true) 
+	return el
 }
 
 function generateCompoundPrimitiveExample(position="0 1.4 -0.2"){
