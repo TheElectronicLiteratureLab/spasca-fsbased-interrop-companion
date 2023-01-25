@@ -2091,10 +2091,10 @@ function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	return el
 }
 
-function addBlockCodeExample(text="hi", pos="0 1.4 -0.2"){
+function addBlockCodeExample(text="hi", pos="0 1.4 -0.2", color="black", outlineColor="white"){
 	let el = addNewNote( text )
-	el.setAttribute("color", "black")
-	el.setAttribute("outline-color", "white")
+	el.setAttribute("color", color)
+	el.setAttribute("outline-color", outlineColor)
 	el.setAttribute("position", pos)
 	let compountPrim = generateCompoundPrimitiveExample()
 	compountPrim.setAttribute("position", "0.1 0 -0.051")
