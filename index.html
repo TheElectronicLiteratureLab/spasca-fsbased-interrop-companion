@@ -2091,8 +2091,8 @@ function addCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	return el
 }
 
-function addBlockCodeExample(){
-	el = addNewNote("hi")
+function addBlockCodeExample(text="hi"){
+	el = addNewNote( text )
 	el.setAttribute("color", "black")
 	el.setAttribute("outline-color", "white")
 	a = generateCompoundPrimitiveExample()
