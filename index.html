@@ -2219,6 +2219,36 @@ function changeColorNextPinch(){
 	}, 50) // relatively cheap check, filtering on small array
 }
 
+// see demo ~30min in during https://www.youtube.com/watch?v=X9bQ-6oWKc4
+// should link to the right code already written
+	// see also cloneAndDistribute() & observe() but there is another one... between pinches
+		// observe being a shortcut to bindVariableValueToNewNote(variableName)
+
+let pointsFromMovement = []
+function nextMovementToPoints(){
+	pointsFromMovement = [] // could also add them to a larger array with timestamps
+	let el = document.querySelector('[pinchprimary]')
+	el.addEventListener('pinchended', function addThenRemove(event) { 
+		addPointToPointsFromMovement(event)
+		// could add a timeout so that if no pinchended happens after e.g 10sec one doesn't forget
+		el.removeEventListener('pinchended', addThenRemove)
+		el.removeEventListener('pinchstarted', addPointToPointsFromMovement)
+		el.removeEventListener('pinchmoved', addPointToPointsFromMovement)
+	});
+	el.addEventListener('pinchmoved', addPointToPointsFromMovement );
+	el.addEventListener('pinchstarted', addPointToPointsFromMovement );
+	function addPointToPointsFromMovement( event){
+		pointsFromMovement.push( event.detail.position )
+	}
+
+	/*
+		2) [points[0], points[points.length-1]]
+			// could be used as a vector between start and end point to give e.g direction or distance
+		1) [points[0]]
+		could also otherwise down sample
+	*/
+}
+
 /*
 
 generalize selector to pick last Nth rather than very last
@@ -2294,6 +2324,8 @@ consider pick then apply, i.e changeColorLastId() but for next Id
       <a-text target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target value="jxr nextMovementToPoints()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
+
       <a-text target id="getfromid_color" value="jxr changeColorLastId()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target id="getfromid_id" value="jxr getIdFromPick()" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-text>
