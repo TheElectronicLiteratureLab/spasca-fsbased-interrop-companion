@@ -1288,34 +1288,37 @@ function interpretAny( code ){
 	})
 }
 
+var pastPoints = []
 function draw( position ){
-	var drawingMoment = +Date.now()
-	var pos = AFRAME.utils.coordinates.stringify( position )
+	let drawingMoment = +Date.now() // might not be fast enough to get a UUID
+	let uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+	// from https://stackoverflow.com/a/44078785/1442164
+	let pos = AFRAME.utils.coordinates.stringify( position )
 	// add sphere per point
-	var el = document.createElement("a-sphere")
+	let el = document.createElement("a-sphere")
+	let drawing
 	el.setAttribute("position", pos)
 	el.setAttribute("radius", 0.001)
 	el.setAttribute("color", "lightblue")
 	el.setAttribute("dateadded", drawingMoment )
 	// if previous point exist, draw line between both
-	var pastPoints = Array.from( document.querySelectorAll("[dateadded]") )
-		.sort( (a,b) => a.getAttribute("dateadded") - b.getAttribute("dateadded") )
 	if (pastPoints.length) {
-		var previousPoint = pastPoints[0]
-		var drawing = previousPoint.parentElement
-		var oldpos = AFRAME.utils.coordinates.stringify( previousPoint.getAttribute("position") )
-		drawing.setAttribute("line__"+ drawingMoment, `start: ${oldpos}; end : ${pos};`)
+		let previousPoint = pastPoints[pastPoints.length-1] // should check time, e.g max 1s
+		drawing = previousPoint.element.parentElement
+		let oldpos = AFRAME.utils.coordinates.stringify( previousPoint.position )
+		drawing.setAttribute("line__"+ uniqueId, `start: ${oldpos}; end : ${pos};`)
 	} else {
-		var drawing = document.createElement("a-entity")
+		drawing = document.createElement("a-entity")
 		drawing.className = "drawing"
 		AFRAME.scenes[0].appendChild( drawing )
 	}
 	drawing.appendChild( el )
 	// if sufficiently close to another sphere (the first) close the loop
 	if (pastPoints.length>1) {
-		var lastPoint = pastPoints[pastPoints.length-1]
-		var oldpos = AFRAME.utils.coordinates.stringify( lastPoint.getAttribute("position") )
-		if (lastPoint.getAttribute("position").distanceTo( position) < 0.1) // threshold
+		let lastPoint = pastPoints[pastPoints.length-1]
+		let oldpos = AFRAME.utils.coordinates.stringify( lastPoint.position )
+		let lastPosV3 = new THREE.Vector3().copy( lastPoint.position )
+		if (lastPosV3.distanceTo( position ) < 0.1) // threshold
 			drawing.setAttribute("line__"+ drawingMoment + "_closeloop", `start: ${oldpos}; end : ${pos};`)
 			// then enter extrude mode (assume they are on 1 plane)
 			// should also prevent from adding points to the current drawing
@@ -1324,6 +1327,7 @@ function draw( position ){
 				// intersection of kbd and hand tracked 6DoF being the primary usage
 	}
 
+	pastPoints.push({position:pos, element:el, timestamp: drawingMoment})
 	/* test values, must wait .1 second between otherwise there is no known position
 		(most likely AFrame to threejs delay)
 	draw( new THREE.Vector3(-0.04, 1.7, -1) );
