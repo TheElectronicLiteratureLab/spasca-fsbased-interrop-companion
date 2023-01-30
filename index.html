@@ -2225,7 +2225,7 @@ function changeColorNextPinch(){
 	// see also cloneAndDistribute() & observe() but there is another one... between pinches
 		// observe being a shortcut to bindVariableValueToNewNote(variableName)
 let pointsFromMovement = []
-function nextMovementToPoints(){
+function nextMovementToPoints(debut=false){
 	pointsFromMovement = [] // could also add them to a larger array with timestamps
 	let el = document.querySelector('[pinchprimary]')
 	el.addEventListener('pinchended', function addThenRemove(event) { 
@@ -2238,14 +2238,19 @@ function nextMovementToPoints(){
 	el.addEventListener('pinchmoved', addPointToPointsFromMovement );
 	el.addEventListener('pinchstarted', addPointToPointsFromMovement );
 	function addPointToPointsFromMovement( event){
-		pointsFromMovement.push( event.detail.position )
+		pointsFromMovement.push( event.detail.position.clone() )
 	}
 
 	/*
-		2) [points[0], points[points.length-1]]
-			// could be used as a vector between start and end point to give e.g direction or distance
-		1) [points[0]]
+		could be a promise also
+
+		see examples for debugging/dev 
+			testPoints = await fetch("pointsFromMovementExample.json").then( r => r.json() )
 		could also otherwise down sample
+		let first = new THREE.Vector3(  ).copy( testPoints[0] )
+		let last = new THREE.Vector3(  ).copy( testPoints[testPoints.length-1]) 
+		let distance = first.distanceTo( last )
+		let direction = new THREE.Vector3().subVectors( last, first ).normalize()
 	*/
 }
 
