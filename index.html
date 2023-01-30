@@ -2223,7 +2223,6 @@ function changeColorNextPinch(){
 // should link to the right code already written
 	// see also cloneAndDistribute() & observe() but there is another one... between pinches
 		// observe being a shortcut to bindVariableValueToNewNote(variableName)
-
 let pointsFromMovement = []
 function nextMovementToPoints(){
 	pointsFromMovement = [] // could also add them to a larger array with timestamps
@@ -2247,6 +2246,33 @@ function nextMovementToPoints(){
 		1) [points[0]]
 		could also otherwise down sample
 	*/
+}
+
+function addDropZone(position="0 1.4 -0.6", callback=setFeedbackHUD, radius=0.11){
+	let el = document.createElement("a-sphere")
+	el.setAttribute("wireframe", true)
+	el.setAttribute("radius", radius)
+	el.setAttribute("position", position)
+	el.id = "dropzone_"+Date.now()
+	AFRAME.scenes[0].appendChild( el )
+	let sphere = new THREE.Sphere( AFRAME.utils.coordinates.parse( position ), radius )
+	// could become movable but would then need to move the matching sphere too
+		// could be a child of that entity
+	let pincher = document.querySelector('[pinchprimary]')
+	pincher.addEventListener('pinchended', function (event) { 
+		if (selectedElements.length){
+			let lastDrop = selectedElements[selectedElements.length-1]
+			if ((Date.now() - lastDrop.timestamp) < 1000){
+				if (sphere.containsPoint( lastDrop.element.getAttribute("position"))){
+					// should be a threejs sphere proper, not a mesh
+					console.log("called back" )
+					callback( lastDrop.selectedElement )
+				}
+			}
+		}
+	})
+	// never unregister
+	return el
 }
 
 /*
@@ -2332,6 +2358,7 @@ consider pick then apply, i.e changeColorLastId() but for next Id
       <a-text target id="getfromclass_color" value="jxr changeColorLastClass()" position="0 1.15 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target id="getfromclass_id" value="jxr getClassFromPick()" position="0 1.10 -0.1" scale="0.1 0.1 0.1"></a-text>
       <a-text target id="changeColorNextPinch" value="jxr changeColorNextPinch()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-text>
+      <a-text target id="adddropzone" value="jxr addDropZone()" position="0 1.00 -0.1" scale="0.1 0.1 0.1"></a-text>
 
       <a-text target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
       <a-text target value="jxr pushRightClass('tiles')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-text>
