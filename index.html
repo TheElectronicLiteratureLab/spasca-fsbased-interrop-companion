@@ -2245,17 +2245,25 @@ function nextMovementToPoints(debut=false){
 		pointsFromMovement.push( event.detail.position.clone() )
 	}
 
-	/*
-		could be a promise also
+/*
+could be a promise also
 
-		see examples for debugging/dev 
-			testPoints = await fetch("pointsFromMovementExample.json").then( r => r.json() )
-		could also otherwise down sample
-		let first = new THREE.Vector3(  ).copy( testPoints[0] )
-		let last = new THREE.Vector3(  ).copy( testPoints[testPoints.length-1]) 
-		let distance = first.distanceTo( last )
-		let direction = new THREE.Vector3().subVectors( last, first ).normalize()
-	*/
+//see examples for debugging/dev 
+testPoints = await fetch("pointsFromMovementExample.json").then( r => r.json() )
+
+//could also otherwise down sample
+let first = new THREE.Vector3(  ).copy( testPoints[0] )
+let last = new THREE.Vector3(  ).copy( testPoints[testPoints.length-1]) 
+let distance = first.distanceTo( last )
+let direction = new THREE.Vector3().subVectors( last, first ).normalize()
+
+//example of adding on curve
+testPoints.map( p => addNewNote("something "+Math.random(), p) )
+
+//example of animating from start to end
+nn = addNewNote("something", testPoints[0]);
+nn.setAttribute("animation", {property: "position" , to: AFRAME.utils.coordinates.stringify(testPoints[testPoints.length-1]) } )
+*/
 }
 
 function addDropZone(position="0 1.4 -0.6", callback=setFeedbackHUD, radius=0.11){
