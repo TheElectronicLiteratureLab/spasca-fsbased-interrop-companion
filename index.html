@@ -2139,17 +2139,21 @@ AFRAME.registerComponent('clone-on-primarypinchstarted', {
   init: function () {
 	let el = this.el
 	this.el.addEventListener('picked', function (event) {
-		var clone = selectedElement.cloneNode(true)
-		clone.removeAttribute('clone-on-primarypinchstarted')
-		clone.setAttribute( "scale", selectedElement.getAttribute("scale") ) // somehow lost?
-		clone.id += "_clone" + Date.now()
-		clone.className = "cloned"
-		targets.push(clone)
-		AFRAME.scenes[0].appendChild(clone)
-		selectedElement = clone 
+		selectedElement = instanciateFromPrimitive( selectedElement )
 	})
   }
 })
+
+function instanciateFromPrimitive(element){
+	var clone = element.cloneNode(true)
+	clone.removeAttribute('clone-on-primarypinchstarted')
+	clone.setAttribute( "scale", element.getAttribute("scale") ) // somehow lost?
+	clone.id += "_clone" + Date.now()
+	clone.className = "cloned"
+	targets.push(clone)
+	AFRAME.scenes[0].appendChild(clone)
+	return clone
+}
 
 function addAllPrimitives(){
 	const other_primitives = ["camera", "cursor", "sky", "light", "sound", "videosphere"]
@@ -2196,6 +2200,16 @@ function getClassFromPick(){ // should be classes, for now assuming one
 		setFeedbackHUD(classFound)
 	}
 	return classFound
+}
+
+function getArrayFromClass(classname){
+	return Array.from( document.querySelectorAll("."+classname) )
+}
+
+function applyToClass(classname, callback, value){
+// example applyToClass("template_object", (e, val ) => e.setAttribute("scale", val), ".1 .1 .2")
+	getArrayFromClass(classname).map( e =>  callback(e, value))
+// could instead become a jxr shortcut, namely apply a set attribute to a class of entities
 }
 
 function changeColorLastClass(){
