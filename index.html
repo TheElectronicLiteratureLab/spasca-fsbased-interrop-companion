@@ -2349,46 +2349,52 @@ function addGrid(){ // not actually correct but does the job
 	AFRAME.scenes[0].appendChild( plot )
 }
 
-function emptyPinchToMove(){ // functions call by event listener should be within this scope
-                                // thus hopefully not conflicting with other listeners
+// functions call by event listener should be within this scope
+// thus hopefully not conflicting with other listeners
+function emptyPinchToMove(){
 	const startRadius = .00001
 	const maxRadius = .1
 	const maxDist = .05
+	const resetPosition = "0 9999 0"
+	let previousPosition
 	let controlSphere = document.createElement("a-sphere")
 	let r = startRadius 
 	controlSphere.setAttribute("radius", r) 
 	controlSphere.setAttribute("color", "blue")
-	controlSphere.setAttribute("position", "0 9999 0")
+	controlSphere.setAttribute("wireframe", "true")
+	controlSphere.setAttribute("position", resetPosition)
 	AFRAME.scenes[0].appendChild( controlSphere )
 	//targets.push(controlSphere) // keeping it out for specific control for now but should consider generalization
         let el = document.querySelector('[pinchprimary]')
         el.addEventListener('pinchended', function end(event) {
-		// add moving sphere then hide it far away, could also disable it
-		// could also no unregister but check for empty selectedElement
-//                el.removeEventListener('pinchended', end)
-//                el.removeEventListener('pinchstarted', pinched)
-//                el.removeEventListener('pinchmoved', moved)
+		// el.removeEventListener('pinchended', end)
+		// el.removeEventListener('pinchstarted', pinched)
+		// el.removeEventListener('pinchmoved', moved)
 		r = startRadius
 		controlSphere.setAttribute("radius", r) 
-        });
+		controlSphere.setAttribute("position", resetPosition)
+        })
         el.addEventListener('pinchmoved', moved );
         function moved(event){
 		if (selectedElement) return
 		controlSphere.setAttribute("position", AFRAME.utils.coordinates.stringify( event.detail.position) )
 		if (r >= maxDist){
 			// start be movable after .05 diam
-			pushBackClass("hidableenvironment")
-			pushBackClass("keyboard")
-			// not sufficient but a start
-			// only moving forward rather than compared to previous moment
+			if (previousPosition){
+				diff = previousPosition.sub(event.detail.position).clone()
+				pushBackClass("hidableenvironment", diff.z)
+				pushRightClass("hidableenvironment", diff.x)
+				// could rely on getArrayFromClass(classname) to then move on these 2 dimensions
+			}
 		} 
 		if (r < maxRadius) {
 			r += 0.01
 			controlSphere.setAttribute("radius", r) 
 		}
+		previousPosition = event.detail.position.clone()
         }
         el.addEventListener('pinchstarted', pinched );
-        function pinched( event){
+        function pinched(event){
         }
 }
 
