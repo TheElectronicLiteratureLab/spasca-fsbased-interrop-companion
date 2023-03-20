@@ -2281,6 +2281,8 @@ nn.setAttribute("animation", {property: "position" , to: AFRAME.utils.coordinate
 }
 
 function addDropZone(position="0 1.4 -0.6", callback=setFeedbackHUD, radius=0.11){
+// consider how this behavior could be similar to the wrist watch shortcut
+// namely binding it to a jxr function
 	let el = document.createElement("a-sphere")
 	el.setAttribute("wireframe", true)
 	el.setAttribute("radius", radius)
@@ -2330,6 +2332,22 @@ consider pick then apply, i.e changeColorLastId() but for next Id
 
 */
 
+function addGrid(){ // not actually correct but does the job
+	plot = document.createElement("a-entity")
+	var idx = 0
+	for (var x=-5;x<=5;x++)
+		for (var y=0;y<=3;y++)
+			for (var z=-5;z<=5;z++){
+				xp=-x
+				yp=-y
+				zp=-z
+				plot.setAttribute("line__"+ ++idx, `start: ${x} ${y} ${z}; end : ${xp} ${y} ${z}; opacity: 1;`)
+				plot.setAttribute("line__"+ ++idx, `start: ${x} ${y} ${z}; end : ${x} ${yp} ${z}; opacity: 1;`)
+				plot.setAttribute("line__"+ ++idx, `start: ${x} ${y} ${z}; end : ${x} ${y} ${zp}; opacity: 1;`)
+			}
+	plot.id = "grid"
+	AFRAME.scenes[0].appendChild( plot )
+}
 
 </script>
 <div id="observablehq-key">
