@@ -2349,6 +2349,49 @@ function addGrid(){ // not actually correct but does the job
 	AFRAME.scenes[0].appendChild( plot )
 }
 
+function emptyPinchToMove(){ // functions call by event listener should be within this scope
+                                // thus hopefully not conflicting with other listeners
+	const startRadius = .00001
+	const maxRadius = .1
+	const maxDist = .05
+	let controlSphere = document.createElement("a-sphere")
+	let r = startRadius 
+	controlSphere.setAttribute("radius", r) 
+	controlSphere.setAttribute("color", "blue")
+	controlSphere.setAttribute("position", "0 9999 0")
+	AFRAME.scenes[0].appendChild( controlSphere )
+	//targets.push(controlSphere) // keeping it out for specific control for now but should consider generalization
+        let el = document.querySelector('[pinchprimary]')
+        el.addEventListener('pinchended', function end(event) {
+		// add moving sphere then hide it far away, could also disable it
+		// could also no unregister but check for empty selectedElement
+//                el.removeEventListener('pinchended', end)
+//                el.removeEventListener('pinchstarted', pinched)
+//                el.removeEventListener('pinchmoved', moved)
+		r = startRadius
+		controlSphere.setAttribute("radius", r) 
+        });
+        el.addEventListener('pinchmoved', moved );
+        function moved(event){
+		if (selectedElement) return
+		controlSphere.setAttribute("position", AFRAME.utils.coordinates.stringify( event.detail.position) )
+		if (r >= maxDist){
+			// start be movable after .05 diam
+			pushBackClass("hidableenvironment")
+			pushBackClass("keyboard")
+			// not sufficient but a start
+			// only moving forward rather than compared to previous moment
+		} 
+		if (r < maxRadius) {
+			r += 0.01
+			controlSphere.setAttribute("radius", r) 
+		}
+        }
+        el.addEventListener('pinchstarted', pinched );
+        function pinched( event){
+        }
+}
+
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
@@ -2394,13 +2437,7 @@ function addGrid(){ // not actually correct but does the job
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/SKY_Market_day.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target value="jxr addBlockCodeExample()" position="0 1.65 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr addAllPrimitives()" position="0 1.60 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr addCompoundPrimitiveExample()" position="0 1.55 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr rescalePlace(1/10, 1)" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr rescalePlace()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr tile_snapping_enabled = !tile_snapping_enabled" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr nextMovementToPoints()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr emptyPinchToMove()" position="0 1.65 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="getfromid_color" value="jxr changeColorLastId()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="getfromid_id" value="jxr getIdFromPick()" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
