@@ -2382,8 +2382,8 @@ function emptyPinchToMove(){
 			// start be movable after .05 diam
 			if (previousPosition){
 				diff = previousPosition.sub(event.detail.position).clone()
-				pushBackClass("hidableenvironment", diff.z)
-				pushRightClass("hidableenvironment", diff.x)
+				pushBackClass("hidableenvironment", diff.z*10) // consider something exponential instead
+				pushRightClass("hidableenvironment", diff.x*10)
 				// could rely on getArrayFromClass(classname) to then move on these 2 dimensions
 			}
 		} 
