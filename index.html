@@ -2396,6 +2396,22 @@ function emptyPinchToMove(){
         el.addEventListener('pinchstarted', pinched );
         function pinched(event){
         }
+
+	let previousPositionSecondary
+        let elSecondary = document.querySelector('[pinchsecondary]')
+        elSecondary.addEventListener('pinchmoved', movedSecondary );
+        function movedSecondary(event){
+		if (selectedElement) return
+		if (previousPositionSecondary){
+			angle = previousPositionSecondary.sub(event.detail.position).clone()
+			applyToClass("hidableenvironment", (e, val ) => {
+				let rot = e.getAttribute("rotation")
+				e.setAttribute("rotation", ""+rot.x+" "+(rot.y+val*90)+" "+rot.z)
+				// rotating from the center of the model, not the player position
+			}, angle.x)
+		}
+		previousPositionSecondary = event.detail.position.clone()
+        }
 }
 
 </script>
