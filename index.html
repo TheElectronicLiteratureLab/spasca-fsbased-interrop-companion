@@ -2404,11 +2404,22 @@ function emptyPinchToMove(){
 		if (selectedElement) return
 		if (previousPositionSecondary){
 			angle = previousPositionSecondary.sub(event.detail.position).clone()
+			let axis = new THREE.Vector3( 0, 1, 0 );
 			applyToClass("hidableenvironment", (e, val ) => {
-				let rot = e.getAttribute("rotation")
-				e.setAttribute("rotation", ""+rot.x+" "+(rot.y+val*90)+" "+rot.z)
+				//let rot = e.getAttribute("rotation")
+				//e.setAttribute("rotation", ""+rot.x+" "+(rot.y+val*90)+" "+rot.z)
 				// rotating from the center of the model, not the player position
-			}, angle.x)
+let obj = e.object3D
+obj.position.sub(val.point)
+obj.position.applyAxisAngle( axis, val.angle ) // no offset but reset when pinching again
+//obj.position.applyAxisAngle( axis, obj.rotation.y+val.angle ) // rotates with offset
+obj.position.add(val.point)
+obj.rotateOnAxis(axis, val.angle)
+// cf https://stackoverflow.com/questions/42812861/three-js-pivot-point/42866733#42866733
+// does reset on each new pinch though
+
+// might be a threejs vs AFrame rotation setup?
+			}, {angle:angle.x, point:event.detail.position.clone()})
 		}
 		previousPositionSecondary = event.detail.position.clone()
         }
