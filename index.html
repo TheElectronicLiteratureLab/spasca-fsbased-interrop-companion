@@ -2448,6 +2448,26 @@ AFRAME.registerComponent('refresh-text-content-from-wiki-page', {
 	}
 });
 
+function sendPerspectiveToServer(){
+	let pagename
+	let = forcedPagename = AFRAME.utils.getUrlParameter('roomname')
+	forcedPagename?pagename=forcedPagename:pagename="TestingPairCollaboration"
+	document.querySelector('a-scene').components.screenshot.getCanvas('perspective').toBlob( blob => { 
+	  let img = new File([blob], pagename+".jpg", { type: "image/jpeg"});
+
+	  form = new FormData();
+	  form.append('authpw', 'upload_pass_for_api');
+	  form.append('n', 'PIMVRdata.TestFormUpoad');
+	  form.append('action', 'postupload');
+	  form.append('uploadfile', img);
+
+	  fetch('https://fabien.benetou.fr/PIMVRdata/TestFormUpoad', {
+	    method: 'POST',
+	    body: form
+	  });
+	}, "image/jpeg", 0.8);
+}
+
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
