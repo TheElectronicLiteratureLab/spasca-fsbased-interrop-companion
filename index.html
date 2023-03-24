@@ -2425,6 +2425,29 @@ obj.rotateOnAxis(axis, val.angle)
         }
 }
 
+AFRAME.registerComponent('refresh-text-content-from-wiki-page', {
+	schema: {
+		pagename: {type: 'string', default: 'FoT'},
+	},
+	init:function(){
+		this.added = []
+		let = forcedPagename = AFRAME.utils.getUrlParameter('roomname')
+		forcedPagename?this.pagename=forcedPagename:this.pagename=this.data.pagename
+	},
+	tick: function(){
+		let generatorName = this.attrName
+		fetch("https://fabien.benetou.fr/PIMVRdata/"+ this.pagename +"?action=source#" + Date.now()).then(res => res.text() ).then(res => {
+			res.split("\n").slice(0,maxItemsFromSources).map( (n,i) => {
+				found = this.added.find((str) => str === n)
+				if (typeof found === 'undefined'){
+					this.added.push(n)
+					addNewNote( n, "-1 "+(1+i/10)+" -2.5", ".1 .1 .1", null, generatorName ) 
+				}
+			})
+		})
+	}
+});
+
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
@@ -2433,6 +2456,7 @@ obj.rotateOnAxis(axis, val.angle)
  <button id=mainbutton style="z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
 
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
+	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
 	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json keyboard >
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"

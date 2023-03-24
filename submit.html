@@ -35,7 +35,13 @@ function replaceWithThisText(element){
 document.querySelector("textarea").value = element.innerText
 }
 	
-const url = 'https://fabien.benetou.fr/PIMVRdata/FoT?action='
+let pagename
+const queryString = window.location.search
+const urlParams = new URLSearchParams(queryString)
+let = forcedPagename = urlParams.get('roomname')
+forcedPagename?pagename=forcedPagename:pagename='FoT'
+
+const url = 'https://fabien.benetou.fr/PIMVRdata/'+pagename+'?action='
 function sendtovr(cabin){
 text = document.querySelector("textarea").value
 document.querySelector("textarea").value = ''
