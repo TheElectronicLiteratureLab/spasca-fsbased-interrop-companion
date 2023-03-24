@@ -18,6 +18,9 @@ Examples, tap to add, optionally modify and send :
 <li><a onclick=replaceWithThisText(this)>jxr toggleVisibilityEntitiesFromClass('fot')</a></li>
 </ul>
 
+Share this URL to the browser using e.g <a id="shareablelink" href="https://hmd.link">hmd.link</a> on the same WiFi network.
+<hr>
+<iframe width="100%" id="pastcommands"></iframe>
 <hr>
 <br>
 Documentation as :
@@ -30,6 +33,7 @@ Documentation as :
 <li><a href=qrcode.png>QRcode</a> of this page to share with others also on mobile.</li>
 <li><a href=https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/?background=../content/future_of_text_symposium/HORN-2001-FutureOfHumanCognomeCL.png&fontcolor=lightgray>background</a> as URL parameter. Feel free to use your own content.</li>
 </ul>
+
 <script>
 function replaceWithThisText(element){
 document.querySelector("textarea").value = element.innerText
@@ -41,7 +45,12 @@ const urlParams = new URLSearchParams(queryString)
 let = forcedPagename = urlParams.get('roomname')
 forcedPagename?pagename=forcedPagename:pagename='FoT'
 
-const url = 'https://fabien.benetou.fr/PIMVRdata/'+pagename+'?action='
+const baseURL = 'https://fabien.benetou.fr/PIMVRdata/'+pagename
+const url = baseURL+'?action='
+
+document.getElementById("pastcommands").src = baseURL+'?action=source'
+document.getElementById("shareablelink").href = "https://hmd.link/?https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/?roomname="+pagename
+
 function sendtovr(cabin){
 text = document.querySelector("textarea").value
 document.querySelector("textarea").value = ''
