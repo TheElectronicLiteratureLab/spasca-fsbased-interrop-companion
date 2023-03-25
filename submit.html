@@ -22,6 +22,9 @@ Share this URL to the browser using e.g <a id="shareablelink" href="https://hmd.
 <hr>
 <iframe width="100%" id="pastcommands"></iframe>
 <hr>
+Remote preview, if available :<br/>
+<img height="400px" id="remotepreview" />
+<hr>
 <br>
 Documentation as :
 
@@ -32,6 +35,7 @@ Documentation as :
 <li>open-source <a href=https://git.benetou.fr/utopiah/text-code-xr-engine/issues>code repository</a> of the code and to make your own suggestions via issues. </li>
 <li><a href=qrcode.png>QRcode</a> of this page to share with others also on mobile.</li>
 <li><a href=https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/?background=../content/future_of_text_symposium/HORN-2001-FutureOfHumanCognomeCL.png&fontcolor=lightgray>background</a> as URL parameter. Feel free to use your own content.</li>
+<li>to create a room to work together in, add or change the ?roomname=<b>YourRoomName</b> in the browser URL
 </ul>
 
 <script>
@@ -50,6 +54,13 @@ const url = baseURL+'?action='
 
 document.getElementById("pastcommands").src = baseURL+'?action=source'
 document.getElementById("shareablelink").href = "https://hmd.link/?https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/?roomname="+pagename
+
+function refreshPreview(){
+	document.getElementById("remotepreview").src = "https://fabien.benetou.fr/uploads/PIMVRdata/"+pagename+".jpg#"+Date.now()
+}
+
+// seems to get cached properly, i.e only transferring when update
+setInterval( _ => refreshPreview(), 1000)
 
 function sendtovr(cabin){
 text = document.querySelector("textarea").value
