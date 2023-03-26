@@ -2488,11 +2488,22 @@ function doublePinchToScale(){
         }
 }
 
+function makeAnchorsVisibleOnTargets(){
+	targets.map( t => {
+		let controlSphere = document.createElement("a-sphere")
+		controlSphere.setAttribute("radius", 0.05) 
+		controlSphere.setAttribute("color", "blue")
+		controlSphere.setAttribute("wireframe", "true")
+		t.appendChild( controlSphere )
+	}) // could provide a proxy to be able to monitor efficiently
+}
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 	doublePinchToScale()
 	emptyPinchToMove()
+	makeAnchorsVisibleOnTargets()
   }
 })
 
