@@ -2468,6 +2468,28 @@ function sendPerspectiveToServer(){
 	}, "image/jpeg", 0.8);
 }
 
+function doublePinchToScale(){
+	let initialPositionSecondary
+        let elSecondary = document.querySelector('[pinchsecondary]')
+        elSecondary.addEventListener('pinchmoved', movedSecondary );
+        function movedSecondary(event){
+		if (!selectedElement) return
+		let scale = initialPositionSecondary.distanceTo(event.detail.position)
+		selectedElement.setAttribute("scale", ""+scale+" "+scale+" "+scale+" ")
+        }
+        elSecondary.addEventListener('pinchstarted', startedSecondary );
+        function startedSecondary(event){
+		initialPositionSecondary = event.detail.position.clone()
+        }
+}
+
+// used for testing
+AFRAME.registerComponent('startfunctions', {
+  init: function () {
+	doublePinchToScale()
+  }
+})
+
 </script>
 <div id="observablehq-key">
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
@@ -2477,6 +2499,7 @@ function sendPerspectiveToServer(){
 
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
 	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
+	startfunctions
 	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json keyboard >
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
