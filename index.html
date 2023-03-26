@@ -2498,37 +2498,57 @@ function makeAnchorsVisibleOnTargets(){
 	}) // could provide a proxy to be able to monitor efficiently
 }
 
+function startMesher(){
+	let meshPoints = []
+	let meshEl = document.createElement("a-entity")
+	AFRAME.scenes[0].appendChild( meshEl )
+
+        let el = document.querySelector('[pinchprimary]')
+        el.addEventListener('pinchended', function end(event) {
+		if (selectedElement) return
+		let currentPos = AFRAME.utils.coordinates.stringify( event.detail.position) 
+		let controlSphere = document.createElement("a-sphere")
+		controlSphere.class = "meshvertex"
+		controlSphere.setAttribute("radius", 0.01) 
+		controlSphere.setAttribute("color", "green")
+		controlSphere.setAttribute("wireframe", "true")
+		controlSphere.setAttribute("segments-width", 8)
+		controlSphere.setAttribute("segments-height", 8)
+		controlSphere.setAttribute("position", currentPos)
+		meshEl.appendChild( controlSphere )
+		meshPoints.push(controlSphere)
+		if (meshPoints.length>1){
+			let previousPos = AFRAME.utils.coordinates.stringify( 
+				meshPoints[meshPoints.length-2].getAttribute("position") )
+			meshEl.setAttribute("line__l"+meshPoints.length,
+				`start: ${previousPos}; end : ${currentPos}; opacity: 1; color:white;`)
+			if (meshPoints.length>2){
+				let ranked = meshPoints
+					.slice(0,-1)
+					.map( t => { return { el: t, dist : event.detail.position.distanceTo(t.getAttribute("position") ) } })
+					.sort( (a,b) => a.dist - b.dist)
+				let triangle = document.createElement("a-triangle")
+				triangle.setAttribute("vertex-a", currentPos)
+				triangle.setAttribute("vertex-b", 
+					AFRAME.utils.coordinates.stringify( ranked[0].el.getAttribute("position") ))
+				triangle.setAttribute("vertex-c", 
+					AFRAME.utils.coordinates.stringify( ranked[1].el.getAttribute("position") ))
+				triangle.setAttribute("material", "side:double")
+				meshEl.appendChild( triangle )
+
+			}
+		}
+        })
+}
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
-startExperience()
-	doublePinchToScale()
-	emptyPinchToMove()
-	makeAnchorsVisibleOnTargets()
-	addNewNote("hello world", "0 1 -.5")
-setTimeout( _ => 
-	applyToClass("notes", (el, val ) => {
-console.log(el.object3D.children[0])
-// consider https://threejs.org/docs/?q=.BoundingBoxHelper#api/en/math/Box3
-
-const box = new THREE.BoxHelper( el.object3D.children[0], 0xffff00 );
-bbox=el.object3D.children[0].geometry.boundingBox
-
-p = document.createElement("a-plane")
-p.setAttribute("rotation", "90 0 0")
-p.setAttribute("width", bbox.max.x-bbox.min.x)
-p.setAttribute("height", bbox.max.y-bbox.min.y)
-el.appendChild(p)
-
-return
-		const geometry = new THREE.PlaneGeometry( el.object3D.children[0].geometry.parameters.width*1.1,
-		el.object3D.children[0].geometry.parameters.height*1.1 );
-		const material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
-		const plane = new THREE.Mesh( geometry, material );
-		plane.position.z = -.1
-		el.object3D.add( plane );
-	}, "")
-)
+	//startExperience()
+	//doublePinchToScale()
+	//emptyPinchToMove()
+	//makeAnchorsVisibleOnTargets()
+	startMesher()
   }
 })
 
