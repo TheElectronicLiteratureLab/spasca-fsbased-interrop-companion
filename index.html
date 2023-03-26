@@ -1526,6 +1526,7 @@ AFRAME.registerComponent('glossary', {
 
 AFRAME.registerComponent('fot', {
 	init:function(){
+		this.tick = AFRAME.utils.throttleTick(this.tick, 500, this);
 	},
 	tick: function(){
 		let generatorName = this.attrName
@@ -2433,6 +2434,7 @@ AFRAME.registerComponent('refresh-text-content-from-wiki-page', {
 		this.added = []
 		let = forcedPagename = AFRAME.utils.getUrlParameter('roomname')
 		forcedPagename?this.pagename=forcedPagename:this.pagename=this.data.pagename
+		this.tick = AFRAME.utils.throttleTick(this.tick, 500, this);
 	},
 	tick: function(){
 		let generatorName = this.attrName
@@ -2470,16 +2472,19 @@ function sendPerspectiveToServer(){
 
 function doublePinchToScale(){
 	let initialPositionSecondary
+	let initialScale
         let elSecondary = document.querySelector('[pinchsecondary]')
         elSecondary.addEventListener('pinchmoved', movedSecondary );
         function movedSecondary(event){
 		if (!selectedElement) return
-		let scale = initialPositionSecondary.distanceTo(event.detail.position)
+		let scale = initialScale * initialPositionSecondary.distanceTo(event.detail.position) * 50
 		selectedElement.setAttribute("scale", ""+scale+" "+scale+" "+scale+" ")
         }
         elSecondary.addEventListener('pinchstarted', startedSecondary );
         function startedSecondary(event){
 		initialPositionSecondary = event.detail.position.clone()
+		if (!selectedElement) return
+		initialScale = AFRAME.utils.coordinates.parse( selectedElement.getAttribute("scale") ).x
         }
 }
 
