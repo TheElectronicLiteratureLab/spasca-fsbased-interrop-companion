@@ -2500,6 +2500,8 @@ function makeAnchorsVisibleOnTargets(){
 
 function startMesher(){
 	let meshPoints = []
+	let meshTriangles = []
+	let offset
 	let meshEl = document.createElement("a-entity")
 	meshEl.className += "meshed"
 	AFRAME.scenes[0].appendChild( meshEl )
@@ -2507,6 +2509,8 @@ function startMesher(){
         let elSecondary = document.querySelector('[pinchsecondary]')
         elSecondary.addEventListener('pinchended', endedSecondary );
 	function endedSecondary(){
+		targets.push(meshEl)
+		//makeAnchorsVisibleOnTargets() // too large here
 		applyToClass("meshvertex", (e, val ) => e.setAttribute("visible", val), "false")
 		el.removeEventListener('pinchended', end)
 		elSecondary.removeEventListener('pinchended', endedSecondary );
@@ -2517,7 +2521,12 @@ function startMesher(){
 
 	function end(event) {
 		if (selectedElement) return
-		let currentPos = AFRAME.utils.coordinates.stringify( event.detail.position) 
+		let pos = event.detail.position.clone()
+		if (meshPoints.length==0){
+			meshOffset = event.detail.position.clone()
+			meshEl.getAttribute("position").add(meshOffset)
+		}
+		let currentPos = AFRAME.utils.coordinates.stringify( pos.sub(meshOffset) )
 		let controlSphere = document.createElement("a-sphere")
 		controlSphere.className += "meshvertex"
 		controlSphere.setAttribute("radius", 0.01) 
@@ -2537,7 +2546,7 @@ function startMesher(){
 			meshEl.removeAttribute("line")
 			let ranked = meshPoints
 				.slice(0,-1)
-				.map( t => { return { el: t, dist : event.detail.position.distanceTo(t.getAttribute("position") ) } })
+				.map( t => { return { el: t, dist : pos.distanceTo(t.getAttribute("position") ) } })
 				.sort( (a,b) => a.dist - b.dist)
 			let triangle = document.createElement("a-triangle")
 			triangle.setAttribute("vertex-a", currentPos)
@@ -2547,6 +2556,7 @@ function startMesher(){
 				AFRAME.utils.coordinates.stringify( ranked[1].el.getAttribute("position") ))
 			triangle.setAttribute("material", "side:double")
 			meshEl.appendChild( triangle )
+			meshTriangles.push( triangle )
 		}
         }
 }
@@ -2611,12 +2621,8 @@ AFRAME.registerComponent('startfunctions', {
 
       <a-troika-text anchor=left target value="jxr emptyPinchToMove()" position="0 1.65 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target id="getfromid_color" value="jxr changeColorLastId()" position="0 1.35 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="getfromid_id" value="jxr getIdFromPick()" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="getfromclass_color" value="jxr changeColorLastClass()" position="0 1.15 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="getfromclass_id" value="jxr getClassFromPick()" position="0 1.10 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="changeColorNextPinch" value="jxr changeColorNextPinch()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="startmesher" value="jxr startMesher()" position="0 1.00 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target value="jxr pushLeftClass('meshed')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
