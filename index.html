@@ -2501,14 +2501,25 @@ function makeAnchorsVisibleOnTargets(){
 function startMesher(){
 	let meshPoints = []
 	let meshEl = document.createElement("a-entity")
+	meshEl.className += "meshed"
 	AFRAME.scenes[0].appendChild( meshEl )
 
+        let elSecondary = document.querySelector('[pinchsecondary]')
+        elSecondary.addEventListener('pinchended', endedSecondary );
+	function endedSecondary(){
+		applyToClass("meshvertex", (e, val ) => e.setAttribute("visible", val), "false")
+		el.removeEventListener('pinchended', end)
+		elSecondary.removeEventListener('pinchended', endedSecondary );
+	}
+
         let el = document.querySelector('[pinchprimary]')
-        el.addEventListener('pinchended', function end(event) {
+        el.addEventListener('pinchended', end)
+
+	function end(event) {
 		if (selectedElement) return
 		let currentPos = AFRAME.utils.coordinates.stringify( event.detail.position) 
 		let controlSphere = document.createElement("a-sphere")
-		controlSphere.class = "meshvertex"
+		controlSphere.className += "meshvertex"
 		controlSphere.setAttribute("radius", 0.01) 
 		controlSphere.setAttribute("color", "green")
 		controlSphere.setAttribute("wireframe", "true")
@@ -2517,28 +2528,27 @@ function startMesher(){
 		controlSphere.setAttribute("position", currentPos)
 		meshEl.appendChild( controlSphere )
 		meshPoints.push(controlSphere)
-		if (meshPoints.length>1){
+		if (meshPoints.length==2){
 			let previousPos = AFRAME.utils.coordinates.stringify( 
 				meshPoints[meshPoints.length-2].getAttribute("position") )
-			meshEl.setAttribute("line__l"+meshPoints.length,
-				`start: ${previousPos}; end : ${currentPos}; opacity: 1; color:white;`)
-			if (meshPoints.length>2){
-				let ranked = meshPoints
-					.slice(0,-1)
-					.map( t => { return { el: t, dist : event.detail.position.distanceTo(t.getAttribute("position") ) } })
-					.sort( (a,b) => a.dist - b.dist)
-				let triangle = document.createElement("a-triangle")
-				triangle.setAttribute("vertex-a", currentPos)
-				triangle.setAttribute("vertex-b", 
-					AFRAME.utils.coordinates.stringify( ranked[0].el.getAttribute("position") ))
-				triangle.setAttribute("vertex-c", 
-					AFRAME.utils.coordinates.stringify( ranked[1].el.getAttribute("position") ))
-				triangle.setAttribute("material", "side:double")
-				meshEl.appendChild( triangle )
-
-			}
+			meshEl.setAttribute("line", `start: ${previousPos}; end : ${currentPos}; opacity: 1; color:white;`)
 		}
-        })
+		if (meshPoints.length>2){
+			meshEl.removeAttribute("line")
+			let ranked = meshPoints
+				.slice(0,-1)
+				.map( t => { return { el: t, dist : event.detail.position.distanceTo(t.getAttribute("position") ) } })
+				.sort( (a,b) => a.dist - b.dist)
+			let triangle = document.createElement("a-triangle")
+			triangle.setAttribute("vertex-a", currentPos)
+			triangle.setAttribute("vertex-b", 
+				AFRAME.utils.coordinates.stringify( ranked[0].el.getAttribute("position") ))
+			triangle.setAttribute("vertex-c", 
+				AFRAME.utils.coordinates.stringify( ranked[1].el.getAttribute("position") ))
+			triangle.setAttribute("material", "side:double")
+			meshEl.appendChild( triangle )
+		}
+        }
 }
 
 // used for testing
@@ -2607,14 +2617,14 @@ AFRAME.registerComponent('startfunctions', {
       <a-troika-text anchor=left target id="getfromclass_color" value="jxr changeColorLastClass()" position="0 1.15 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="getfromclass_id" value="jxr getClassFromPick()" position="0 1.10 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="changeColorNextPinch" value="jxr changeColorNextPinch()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="adddropzone" value="jxr addDropZone()" position="0 1.00 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="startmesher" value="jxr startMesher()" position="0 1.00 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target value="jxr pushLeftClass('tiles')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushRightClass('tiles')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushUpClass('tiles')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushDownClass('tiles')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushBackClass('tiles')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushFrontClass('tiles')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushLeftClass('meshed')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushRightClass('meshed')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushUpClass('meshed')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushDownClass('meshed')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushBackClass('meshed')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushFrontClass('meshed')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
 
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
