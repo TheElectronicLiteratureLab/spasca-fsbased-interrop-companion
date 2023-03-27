@@ -20,6 +20,8 @@
     <script src="https://naf.benetou.fr/easyrtc/easyrtc.js"></script>
     <script src='dependencies/networked-aframe.min.js'></script>
 
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+
     <!-- still experimenting, see webdav.html -->
     <script src='dependencies/webdav.js'></script> 
 
@@ -2510,6 +2512,7 @@ function startMesher(){
         elSecondary.addEventListener('pinchended', endedSecondary );
 	function endedSecondary(){
 		targets.push(meshEl)
+		meshEl.setAttribute('dynamic-body', "")
 		//makeAnchorsVisibleOnTargets() // too large here
 		applyToClass("meshvertex", (e, val ) => e.setAttribute("visible", val), "false")
 		el.removeEventListener('pinchended', end)
@@ -2561,6 +2564,22 @@ function startMesher(){
         }
 }
 
+AFRAME.registerComponent('dynamic-unless-picked', {
+	init: function(){
+		let el = this.el
+		el.setAttribute('dynamic-body', "")
+		this.el.addEventListener('picked', function (event) {
+			el.removeAttribute('dynamic-body')
+			el.setAttribute('static-body', "")
+		})
+		this.el.addEventListener('released', function (event) {
+			el.removeAttribute('static-body')
+			el.setAttribute('dynamic-body', "")
+		})
+	}
+	// should unregister on remove
+})
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
@@ -2582,6 +2601,7 @@ AFRAME.registerComponent('startfunctions', {
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
 	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
 	startfunctions
+	physics="debug:true"
 	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json keyboard >
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
@@ -2636,6 +2656,15 @@ AFRAME.registerComponent('startfunctions', {
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
 	-->
       <a-console position="0 1.5 -2" font-size="34" height=1 skip-intro=true></a-console>
+
+  <!-- Floor -->
+  <a-plane rotation="-90 0 0" scale="5 5 5" position="0 1 0" opacity=.5 static-body></a-plane>
+
+  <!-- Immovable box -->
+  <a-box static-body position="0 0.5 -5" width="3" height="1" depth="1"></a-box>
+
+  <!-- Dynamic box -->
+  <a-box dynamic-unless-picked position="0 1.4 -.3" target scale=".1 .1 .1"></a-box>
 
     </a-scene>
   </body>
