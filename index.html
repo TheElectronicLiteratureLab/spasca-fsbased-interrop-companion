@@ -22,7 +22,7 @@
     <script src='dependencies/socket.io.slim.js'></script>
     <script src="https://naf.benetou.fr/easyrtc/easyrtc.js"></script>
     <script src='dependencies/networked-aframe.min.js'></script>
--->
+    -->
 
     <script src="dependencies/aframe-physics-system.min.js"></script>
 
@@ -1053,7 +1053,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		if (selectedElement && !groupingMode) {
 			selectedElement.setAttribute("position", event.detail.position)
 			document.querySelector("#rightHand").object3D.traverse( e => {
-				if (e.name == "b_"+sides[primarySide][0]+"_wrist"){
+				if (e.name == "ring-finger-tip"){
 					selectedElement.object3D.rotation.copy( e.rotation )
 				}
 			})
@@ -2201,7 +2201,6 @@ function highlight(code = `console.log("Here is your code."); var x = 5;`, langu
 }
 
 document.body.addEventListener( "highlighterready", (e) => { 
-	console.log(highlighter)
 	fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
 }, false);
 
