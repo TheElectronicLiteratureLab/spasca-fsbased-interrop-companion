@@ -4,8 +4,8 @@
   <head>
     <!-- Suggestions? https://git.benetou.fr/utopiah/text-code-xr-engine/issues/ -->
 
-    <script src='dependencies/aframe.min.js'></script>
-    <!--<script src='dependencies/aframe.offline.min.js'></script>-->
+    <!--<script src='dependencies/aframe.min.js'></script>-->
+    <script src='dependencies/aframe.offline.min.js'></script>
     <script src="dependencies/a-console.js"></script>
     <script src='dependencies/aframe-html.js'></script>
     <script src='dependencies/aframe-mirror.js'></script>
@@ -1053,8 +1053,9 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		if (selectedElement && !groupingMode) {
 			selectedElement.setAttribute("position", event.detail.position)
 			document.querySelector("#rightHand").object3D.traverse( e => {
-				if (e.name == "b_"+sides[primarySide][0]+"_wrist")
-					selectedElement.setAttribute("rotation", e.rotation._x*180/3.14 + " " + e.rotation._y*180/3.14 + " " + e.rotation._z*180/3.14)
+				if (e.name == "b_"+sides[primarySide][0]+"_wrist"){
+					selectedElement.object3D.rotation.copy( e.rotation )
+				}
 			})
 			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
 		}
@@ -2177,13 +2178,15 @@ function addAllPrimitives(){
 		.map( (i,j) => addPrimitive( i, ""+ j/7 + " 1.4 -0.5" ) )
 }
 
+const eventHighlighterReady = new Event("highlighterready");
 var highlighter
 shiki.setCDN('../content/shiki/') // see https://github.com/shikijs/shiki#specify-a-custom-root-directory
-shiki.getHighlighter({ theme: 'monokai', langs: ['javascript' ] }).then(h => highlighter = h )
+shiki.getHighlighter({ theme: 'monokai', langs: ['javascript' ] }).then(h => { highlighter = h; document.body.dispatchEvent(eventHighlighterReady); } )
 	// see https://github.com/shikijs/shiki/blob/main/docs/languages.md 
 
 function highlight(code = `console.log("Here is your code."); var x = 5;`, language='javascript'){
-	if (!highlighter) return {} // should also warn
+	if (!highlighter) return null
+	// check set colorRange if the result is {} which is the case when shiki highlighter isn't ready or available
 	const tokens = highlighter.codeToThemedTokens(code, language)
 	let pos=0
 	let colorRange={}
@@ -2197,14 +2200,16 @@ function highlight(code = `console.log("Here is your code."); var x = 5;`, langu
 	return colorRange
 }
 
+document.body.addEventListener( "highlighterready", (e) => { 
+	console.log(highlighter)
+	fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
+}, false);
 
 function startExperience(){
 	//addCodeEditor(" \n\nqwe qwe qwe qwe qwe qwe qwe qweqweqwe\n\n\na", "")
 	//addCodeEditor()
-	fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
 	//fetch("https://fabien.benetou.fr/Tools/Docker?action=source").then(r=>r.text()).then( page => { addCodeEditor( page, "" ) })
-        if (AFRAME.utils.device.checkHeadsetConnected())
-		AFRAME.scenes[0].enterVR();
+        //if (AFRAME.utils.device.checkHeadsetConnected()) AFRAME.scenes[0].enterVR();
 	//document.querySelector("#snapping-sound").components.sound.playSound();
 	document.querySelector("#mainbutton").style.display = "none"
 }
@@ -2538,7 +2543,6 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	codeEditor.element.setAttribute("troika-text", {value: content})
 	codeEditor.element.setAttribute("troika-text", {depthOffset: .1})
 	if (language?.length > 0 && language != "none") codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language)})
-	// shouldn't set colorRange if the result is {} which is the case when shiki highlighter isn't ready or available
 
 	addBackdropToTroikaElement( codeEditor.element )
 	addGuttersToTroikaElement( codeEditor.element )
@@ -2997,7 +3001,7 @@ AFRAME.registerComponent('startfunctions', {
     <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
     <div id="observablehq-result_as_html-ab4c1560"></div>
 </div>
- <button id=mainbutton style="z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
+ <button id=mainbutton style="display:none; z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
 
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
 	startfunctions
@@ -3056,7 +3060,7 @@ AFRAME.registerComponent('startfunctions', {
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
 	-->
-      <a-console position="0 1.5 -2" font-size="34" height=1 skip-intro=true></a-console>
+      <a-console position="0 1.1 -0.8" rotation="-45 0 0" font-size="34" height=0.5 skip-intro=true></a-console>
 
   <!-- Floor -->
   <a-plane rotation="-90 0 0" scale="5 5 5" position="0 1 0" opacity=.5 static-body></a-plane>
@@ -3069,9 +3073,5 @@ AFRAME.registerComponent('startfunctions', {
 
     </a-scene>
   </body>
-<script>
-setTimeout( _=>startExperience(), 1000)
-// should wait for shiki instead but faster to test on desktop like that
-	// should actually display without highlight first and add as callback when ready
 </script>
 </html>
