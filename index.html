@@ -5,6 +5,7 @@
     <!-- Suggestions? https://git.benetou.fr/utopiah/text-code-xr-engine/issues/ -->
 
     <script src='dependencies/aframe.min.js'></script>
+    <!--<script src='dependencies/aframe.offline.min.js'></script>-->
     <script src="dependencies/a-console.js"></script>
     <script src='dependencies/aframe-html.js'></script>
     <script src='dependencies/aframe-mirror.js'></script>
@@ -121,7 +122,7 @@ const zeroVector3 = new THREE.Vector3()
 var bbox = new THREE.Box3()
 bbox.min.copy( zeroVector3 )
 bbox.max.copy( zeroVector3 )
-var selectionBox = new THREE.BoundingBoxHelper( bbox.object3D, 0x0000ff);
+var selectionBox = new THREE.BoxHelper( bbox.object3D, 0x0000ff);
 var groupHelpers = []
 var primaryPinchStarted = false
 var visible = true
@@ -816,7 +817,7 @@ function addBackgroundBoxToTextElements( textElements ){
 
 function addBoundingBoxToTextElement( el ){
 	var meshEl = el.object3D.children.filter( e => (e.type == "Mesh") )[0]
-	var helper = new THREE.BoundingBoxHelper(meshEl, 0xff0000);
+	var helper = new THREE.BoxHelper(meshEl, 0xff0000);
 		// otherwise doesn't work with icon...
 	helper.update();
 	AFRAME.scenes[0].object3D.add(helper);
@@ -1053,7 +1054,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			selectedElement.setAttribute("position", event.detail.position)
 			document.querySelector("#rightHand").object3D.traverse( e => {
 				if (e.name == "b_"+sides[primarySide][0]+"_wrist")
-					selectedElement.setAttribute("rotation", e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14)
+					selectedElement.setAttribute("rotation", e.rotation._x*180/3.14 + " " + e.rotation._y*180/3.14 + " " + e.rotation._z*180/3.14)
 			})
 			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
 		}
@@ -2200,7 +2201,7 @@ function highlight(code = `console.log("Here is your code."); var x = 5;`, langu
 function startExperience(){
 	//addCodeEditor(" \n\nqwe qwe qwe qwe qwe qwe qwe qweqweqwe\n\n\na", "")
 	//addCodeEditor()
-	fetch("https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
+	fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
 	//fetch("https://fabien.benetou.fr/Tools/Docker?action=source").then(r=>r.text()).then( page => { addCodeEditor( page, "" ) })
         if (AFRAME.utils.device.checkHeadsetConnected())
 		AFRAME.scenes[0].enterVR();
@@ -3035,7 +3036,7 @@ AFRAME.registerComponent('startfunctions', {
       <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
 	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
       <a-sky hide-on-enter-ar color="white"></a-sky>
-      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/AR_Market.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
+      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/AR_Market_optimized.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/SKY_Market_day.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
 
