@@ -5,17 +5,15 @@
     <!-- Suggestions? https://git.benetou.fr/utopiah/text-code-xr-engine/issues/ -->
 
     <script src='dependencies/aframe.min.js'></script>
-    <script src="https://cdn.jsdelivr.net/gh/kylebakerio/a-console@1.0.2/a-console.js"></script>
+    <script src="dependencies/a-console.js"></script>
     <script src='dependencies/aframe-html.js'></script>
     <script src='dependencies/aframe-mirror.js'></script>
     <script src='dependencies/aframe-troika-text.min.js'></script>
     <script type="module" id=immersbundle src='dependencies/immers-client.js?save=true'></script>
     <!--<script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>-->
-    <script src="https://threejs.org/examples/js/exporters/GLTFExporter.js"></script>
+    <!--<script src="https://threejs.org/examples/js/exporters/GLTFExporter.js"></script>-->
 
-
-    <script src="https://unpkg.com/shiki"></script>
-
+    <script src="dependencies/shiki0.14.1.js"></script>
 
     <!-- for input sharing -->
     <script src='dependencies/peerjs.min.js'></script>
@@ -2177,6 +2175,7 @@ function addAllPrimitives(){
 }
 
 var highlighter
+shiki.setCDN('../content/shiki/') // see https://github.com/shikijs/shiki#specify-a-custom-root-directory
 shiki.getHighlighter({ theme: 'monokai', langs: ['javascript' ] }).then(h => highlighter = h )
 	// see https://github.com/shikijs/shiki/blob/main/docs/languages.md 
 
