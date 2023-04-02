@@ -13,6 +13,10 @@
     <!--<script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>-->
     <script src="https://threejs.org/examples/js/exporters/GLTFExporter.js"></script>
 
+
+    <script src="https://unpkg.com/shiki"></script>
+
+
     <!-- for input sharing -->
     <script src='dependencies/peerjs.min.js'></script>
     <!-- for content sharing, using NAF -->
@@ -1221,6 +1225,7 @@ function parseKeys(status, key){
 	}
 }
 
+var keyboardInputTarget = 'hud'
 AFRAME.registerComponent('hud', {
 	init: function(){
 		var feedbackHUDel= document.createElement("a-troika-text")
@@ -1237,9 +1242,11 @@ AFRAME.registerComponent('hud', {
 		this.el.appendChild( typingHUDel )
 		hudTextEl = typingHUDel // should rely on the id based selector now
 		document.addEventListener('keyup', function(event) {
+			if (keyboardInputTarget != 'hud') return
 			parseKeys('keyup', event.key)
 		});
 		document.addEventListener('keydown', function(event) {
+			if (keyboardInputTarget != 'hud') return
 			parseKeys('keydown', event.key)
 		});
 	}
@@ -2169,11 +2176,401 @@ function addAllPrimitives(){
 		.map( (i,j) => addPrimitive( i, ""+ j/7 + " 1.4 -0.5" ) )
 }
 
+var highlighter
+shiki.getHighlighter({ theme: 'monokai', langs: ['javascript' ] }).then(h => highlighter = h )
+	// see https://github.com/shikijs/shiki/blob/main/docs/languages.md 
+
+function highlight(code = `console.log("Here is your code."); var x = 5;`, language='javascript'){
+	if (!highlighter) return {} // should also warn
+	const tokens = highlighter.codeToThemedTokens(code, language)
+	let pos=0
+	let colorRange={}
+	tokens.map( line => {
+		line.map( (t,i) => {
+			colorRange[pos] = t.color/*.replace("#","0x")*/
+			pos+=t.content.length
+		})
+		pos++
+	})
+	return colorRange
+}
+
+
 function startExperience(){
+	//addCodeEditor(" \n\nqwe qwe qwe qwe qwe qwe qwe qweqweqwe\n\n\na", "")
+	//addCodeEditor()
+	fetch("https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
+	//fetch("https://fabien.benetou.fr/Tools/Docker?action=source").then(r=>r.text()).then( page => { addCodeEditor( page, "" ) })
         if (AFRAME.utils.device.checkHeadsetConnected())
 		AFRAME.scenes[0].enterVR();
-	document.querySelector("#snapping-sound").components.sound.playSound();
+	//document.querySelector("#snapping-sound").components.sound.playSound();
 	document.querySelector("#mainbutton").style.display = "none"
+}
+
+// should consider multiple instances instead
+let codeEditor = {
+	element: null,
+	line: 0,
+	page: null,
+	startWindowRange: 0,
+	lengthWindowRange: 20,
+	scrollInterval: null,
+	currentlyDisplayedText: "",
+	caret: null
+}
+
+function nextLineCodeEditor(lines=1){ // can be negative to scroll up
+	if (codeEditor.line+lines < 0) return
+	codeEditor.line+=lines
+	let content=codeEditor.page.split("\n").slice(codeEditor.line,codeEditor.line+codeEditor.lengthWindowRange).join("\n"); 
+	codeEditor.currentlyDisplayedText=content
+	codeEditor.element.setAttribute("troika-text", {value: content})
+	codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
+	// should respect language set, can be empty
+	let gutterEl = document.getElementById("leftgutter")
+	if (gutterEl){
+		let lineNumbers = "\n"
+		for (let i=codeEditor.line+1;i<=codeEditor.line+codeEditor.lengthWindowRange;i++){
+			for (let pad=0;pad<String(getNumberOfLinesFromCodeEditor()).length-String(i).length; pad++)
+				lineNumbers+="_"
+			lineNumbers+=i+"\n"
+		}
+		gutterEl.setAttribute("troika-text", {value: lineNumbers})
+	}
+
+	let rightGutterEl = document.getElementById("rightgutter")
+	if (rightGutterEl){
+		b = rightGutterEl.parentElement.object3D.children[0]._textRenderInfo.blockBounds
+		w = b[2]-b[0]
+		h = b[3]-b[1]
+		let scrollBarHeight = codeEditor.lengthWindowRange/codeEditor.page.match(/\n/g).length * h
+		let scrollBarVerticalOffset = codeEditor.line/codeEditor.page.match(/\n/g).length * h
+		if (scrollBarHeight < .1) scrollBarHeight = .1
+		rightGutterEl.object3D.position.y= h/2-scrollBarHeight/2 - scrollBarVerticalOffset
+	}
+}
+
+function nextPageCodeEditor(){
+	nextLineCodeEditor(codeEditor.lengthWindowRange)
+}
+
+function previousPageCodeEditor(){
+	nextLineCodeEditor(-codeEditor.lengthWindowRange)
+}
+
+function stopScrollCodeEditor(){
+	codeEditor.scrollInterval = clearInterval( codeEditor.scrollInterval )
+}
+
+function startScrollCodeEditor(){
+	if (!codeEditor.scrollInterval) codeEditor.scrollInterval = setInterval( _ => nextLineCodeEditor(), 100)
+}
+
+function highlightAllOccurences(keyword="function"){
+	let indices = []
+	let lastfound = codeEditor.currentlyDisplayedText.indexOf(keyword,0)
+	while (lastfound>-1) {
+		indices.push(lastfound)
+		lastfound = codeEditor.currentlyDisplayedText.indexOf(keyword,lastfound+keyword.length)
+	}
+	indices.map( pos => {
+		let offset = (codeEditor.currentlyDisplayedText.slice(0,pos).match(/[\n\t ]/g)||[]).length
+		pos-=offset
+		highlightString(pos, keyword.length)
+	})
+}
+
+function hightlightNextKeyword(keyword="function"){
+	let pos = codeEditor.currentlyDisplayedText.indexOf(keyword)
+	// invisible characters... some still left
+	let offset = (codeEditor.currentlyDisplayedText.slice(0,pos).match(/[\n\t ]/g)||[]).length
+	pos-=offset
+	highlightString(pos, keyword.length)
+}
+
+function highlightString(pos, length){
+	for (let c=pos;c<pos+length;c++) highlightChar( c )
+}
+
+// WARNING this is limited to visible characters, i.e not " " or "\t" or "\n"
+// should instead allow to highlight " " and "\t" both looking the same
+function highlightChar(pos=0, name=null){ // could have multiple selection
+	let b = Array.from( codeEditor.element.object3D.children[0].geometry.attributes.aTroikaGlyphBounds.array ).slice(pos*4,pos*4+4)
+	let w = b[2]-b[0]
+	let h = b[3]-b[1] // could be used to check for same line, if so could make a single block from beginning to end
+
+	let g = new THREE.BoxGeometry( w, h, .01  );
+	let m = new THREE.MeshBasicMaterial( {color: 0xffffff, opacity: 0.8, transparent: true} );
+	let c = new THREE.Mesh( g, m )
+	if (name) c.name = name
+	codeEditor.element.object3D.add( c );  
+
+	c.position.x= b[0]+w/2
+	c.position.y= b[1]+h/2
+	c.position.z= .01
+}
+
+function highlightUnderChar(pos=0, name=null){
+	let b = Array.from( codeEditor.element.object3D.children[0].geometry.attributes.aTroikaGlyphBounds.array ).slice(pos*4,pos*4+4)
+	// note that this skips invisible char and thus desync codeEditor.caret from actual position
+		// but, for now at least, " " and "\t" seems to be of equal value and "\n" does not shift on the current line
+		// currently we could count the invisible moving ones on this line and negative offset horizontally
+	let currentLineNumber = (codeEditor.currentlyDisplayedText.slice(0, pos ).match(/\n/g)||[]).length
+	let currentPositionOnLine = codeEditor.currentlyDisplayedText.slice(0, pos ).length
+		- codeEditor.currentlyDisplayedText.split("\n").slice(0,currentLineNumber).join("\n").length
+	console.log(currentPositionOnLine)
+// might need a special case for the beginning of the line... or rather maybe the position here is different, it's the number of the glyph
+// e.g "   x" x is not 3 but 0
+// we could also count then from the string but we don't have that, just pos as parameter. Some extra information might be needed.
+
+	let currentLineContent = codeEditor.currentlyDisplayedText.split("\n")[currentLineNumber].slice(0, currentPositionOnLine)
+	let invisibleOnCurrentLine = (currentLineContent.slice(0, currentPositionOnLine).match(/[\t ]/g)||[]).length
+	const spaceSize = .046 // hardcoded but changes per front so should be measured instead
+		// can be done via temptroikaobject.element.object3D.children[0].geometry.attributes.aTroikaGlyphBounds.array[0] for value " _"
+			// as a kind of calibration
+	let w = b[2]-b[0]
+	let h = b[3]-b[1] // could be used to check for same line, if so could make a single block from beginning to end
+//console.log(invisibleOnCurrentLine, currentLineContent)
+
+	let g = new THREE.BoxGeometry( w, .01, .01  );
+	let m = new THREE.MeshBasicMaterial( {color: 0xffffff, opacity: 0.8, transparent: true} );
+	let c = new THREE.Mesh( g, m )
+	if (name) c.name = name
+	codeEditor.element.object3D.add( c );
+
+	c.position.x= b[0]+w/2-invisibleOnCurrentLine*spaceSize
+	c.position.y= b[1]-.01
+	c.position.z= .01
+}
+
+function moveCaretToNextVisibleChar(){
+	addCaretToCodeEditor( ++codeEditor.caret )
+	// might be able to reach non visible one by remove an offset
+}
+
+function addCaretToCodeEditor(pos=0){
+	if (codeEditor.caret) removeCaretFromCodeEditor()
+	highlightUnderChar(pos, "caret")
+	codeEditor.caret = pos
+}
+
+function removeCaretFromCodeEditor(){
+	codeEditor.element.object3D.getObjectByName("caret").removeFromParent()
+}
+
+function clearCodeEditorContent(){
+	updateCodeEditorWithContent( "" )
+}
+
+// should support a range, note the entire document (or window?)
+function searchAndReplaceInCodeEditor(before, after){
+	updateCodeEditorWithContent( codeEditor.currentlyDisplayedText.replaceAll(before, after))
+	// note that it desyncs from page so page should only be seen as the initial source
+		// this though would break scrolling which is based on page
+		// consequently page should be modified
+}
+
+function updateCodeEditorWithContent(content){
+	if (!codeEditor.element) return
+	codeEditor.currentlyDisplayedText=content
+	codeEditor.element.setAttribute("troika-text", {value: content})
+	codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
+	// should respect language set, can be empty
+}
+
+function addBackdropToTroikaElement( el ){
+	el.addEventListener("object3dset", e => {
+		el.object3D.children[0].addEventListener("synccomplete", e => {
+			// this can be used for resizing but without add the element
+			if (document.getElementById("leftgutter")) return // already added, should unregister
+
+			b = el.object3D.children[0]._textRenderInfo.blockBounds
+			w = b[2]-b[0]
+			h = b[3]-b[1]
+
+			g = new THREE.BoxGeometry( w, h, .01  );
+			m = new THREE.MeshBasicMaterial( {color: 0, opacity: 0.9, transparent: true} );
+			c = new THREE.Mesh( g, m );
+			el.object3D.add( c );  
+			c.name = "backdrop"
+			c.position.z=-.01
+			c.position.x= w/2
+		})
+	})
+}
+
+function addGuttersToTroikaElement( el ){
+	el.addEventListener("object3dset", e => {
+		el.object3D.children[0].addEventListener("synccomplete", e => {
+			if (document.getElementById("leftgutter")) return 
+			// already added, should unregister, can be removed to allow dynamic resizing BUT should skip adding element
+	
+			b = el.object3D.children[0]._textRenderInfo.blockBounds
+			w = b[2]-b[0]
+			h = b[3]-b[1]
+
+			gutterWidth = .2 * String(getNumberOfLinesFromCodeEditor()).length
+			//should adjust width based on number of lines in total first
+			g = new THREE.BoxGeometry( gutterWidth, h, .01  );
+			m = new THREE.MeshBasicMaterial( {color: 0x333333, opacity: 0.9, transparent: true} );
+			c = new THREE.Mesh( g, m );
+			el.object3D.add( c );  
+			c.name = "leftgutter"
+			c.position.z=-.01
+			c.position.x= -gutterWidth/2
+			//c.rotation.y= .2 // looks nice but have to consider text on top first, could apply rotation to text too
+			var leftGutter = document.createElement("a-troika-text")
+			leftGutter.setAttribute("anchor", "left" )
+			leftGutter.setAttribute("outline-width", "5%" )
+			leftGutter.setAttribute("outline-color", "black" )
+			let lineNumbers = "\n"
+			for (let i=codeEditor.line+1;i<=codeEditor.line+codeEditor.lengthWindowRange;i++){
+				for (let pad=0;pad<String(getNumberOfLinesFromCodeEditor()).length-String(i).length; pad++)
+					lineNumbers+="_" // not using a fixed width font now so " " is smaller
+				lineNumbers+=i+"\n"
+			}
+			lineNumbers.slice(0,-1)
+			leftGutter.setAttribute("troika-text", {value: lineNumbers})
+			leftGutter.setAttribute("troika-text", {textIndent: -.5})
+			leftGutter.id = "leftgutter"
+			codeEditor.element.appendChild( leftGutter )
+			// should be updated when scrolling
+	
+			gutterWidth = .1
+			g = new THREE.BoxGeometry( gutterWidth, h, .01  );
+			m = new THREE.MeshBasicMaterial( {color: 0x333333, opacity: 0.9, transparent: true} );
+			c = new THREE.Mesh( g, m );
+			el.object3D.add( c );  
+			c.name = "rightgutter"
+			c.position.z=-.01
+			c.position.x= w+gutterWidth/2
+			//c.rotation.y= -.2 // looks nice but have to consider text on top first
+	
+			var rightGutter = document.createElement("a-cylinder")
+			// height proportional to the visible content to the terminal size
+			let scrollBarHeight = codeEditor.lengthWindowRange/getNumberOfLinesFromCodeEditor() * h
+			let scrollBarVerticalOffset = codeEditor.line/getNumberOfLinesFromCodeEditor() * h
+			if (scrollBarHeight < .1) scrollBarHeight = .1
+			rightGutter.setAttribute("height", scrollBarHeight )
+			rightGutter.setAttribute("radius", .01 )
+			rightGutter.id = "rightgutter"
+			// should become a constrained target (moving only on y axis and clamped)
+			codeEditor.element.appendChild( rightGutter )
+			// so... rightgutter vs rightGutter ... somehow changing to the "correct" one breaks the editor itself (?!)
+			rightgutter.object3D.position.x= w+gutterWidth/2
+			rightgutter.object3D.position.y= h/2-scrollBarHeight/2 - scrollBarVerticalOffset
+			// offset by line position proportional also then updated when scrolling
+			
+			gutterHeight = .3
+			g = new THREE.BoxGeometry( w, gutterHeight, .01  );
+			m = new THREE.MeshBasicMaterial( {color: 0x333333, opacity: 0.9, transparent: true} );
+			c = new THREE.Mesh( g, m );
+			el.object3D.add( c );  
+			c.name = "middlegutter"
+			c.position.z=-.01
+			c.position.y= -h/2-gutterHeight/2
+			c.position.x= w/2
+			//c.rotation.x= -.2 // looks nice but have to consider text on top first
+			// should add the commands here
+			var middleGutter = document.createElement("a-troika-text")
+			middleGutter.setAttribute("anchor", "left" )
+			middleGutter.setAttribute("outline-width", "5%" )
+			middleGutter.setAttribute("outline-color", "black" )
+			middleGutter.setAttribute("troika-text", {value: ":(will add commands here)"})
+			//middleGutter.setAttribute("troika-text", {textIndent: -.3})
+			middleGutter.id = "middlegutter"
+			codeEditor.element.appendChild( middleGutter )
+			middleGutter.object3D.position.y= -h/2-gutterHeight/2
+			// should disable the overlay first, see parseKeys
+				// see listeners in 'hud'
+			let enteringCommand = false
+			document.addEventListener('keydown', function(event) {
+				if (keyboardInputTarget != 'codeeditor') return
+				if (event.key == ":"){
+					enteringCommand = true
+					//let middlegutter = document.getElementById("middlegutter")
+					middleGutter.setAttribute("troika-text", {value: ":(started typing command)"})
+					// should add text here until esc or enter is pressed
+				} else if (enteringCommand) {
+					if (event.key == "Escape"){
+						enteringCommand = false
+						middleGutter.setAttribute("troika-text", {value: "(cancel, ready to receive new command)"})
+					} else if (event.key == "Enter"){
+						enteringCommand = false
+						middleGutter.setAttribute("troika-text", {value: "(executed, ready to receive new command)"})
+						// could rely only on searchAndReplaceInCodeEditor(before, after) for now
+							// which BTW should support a range, note the entire document (or window?)
+					} else {
+						middleGutter.setAttribute("troika-text", {value: 
+							middleGutter.getAttribute("troika-text").value
+							+ event.key})
+					}
+				}
+			});
+		})
+	})
+}
+
+function getNumberOfLinesFromCodeEditor(){
+	let newLines = codeEditor.page.match(/\n/g)
+	if (!newLines) return 1 // undefined or 0
+	return newLines.length
+}
+
+// add jxr command on top of the editor e.g "jxr focusCodeEditor()" which would replace keyboard input
+	// switching keyboardInputTarget to 'codeeditor' then to 'hud' when done
+	// should also support clipboard or even a more direct way to have impact
+	// could save remotely (e.g wiki) or locally in localStorage
+function addCodeEditor(page="jxr console.log('hello world')", language="javascript", position="-.5 1.6 -.7", name="codeditor" ){
+	// could also add empty but with column and row for sizing
+	// for now supporting only 1 code editor, despite the name parameter
+	codeEditor.page = page
+	codeEditor.line = codeEditor.startWindowRange
+	let numberOfLines = getNumberOfLinesFromCodeEditor()
+	if (numberOfLines<codeEditor.lengthWindowRange) codeEditor.lengthWindowRange = numberOfLines
+
+	content=codeEditor.page.split("\n").slice(codeEditor.line,codeEditor.line+codeEditor.lengthWindowRange).join("\n"); 
+	codeEditor.currentlyDisplayedText=content
+
+	if (!codeEditor.element) codeEditor.element = addNewNote(content, position, "0.1 0.1 0.1", name, "tool")
+	codeEditor.element.setAttribute("troika-text", {value: content})
+	codeEditor.element.setAttribute("troika-text", {depthOffset: .1})
+	if (language?.length > 0 && language != "none") codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language)})
+	// shouldn't set colorRange if the result is {} which is the case when shiki highlighter isn't ready or available
+
+	addBackdropToTroikaElement( codeEditor.element )
+	addGuttersToTroikaElement( codeEditor.element )
+	
+	let scrollbarPicked = false
+	let previousPosition
+	let p = document.querySelector('[pinchprimary]')
+	let target = new THREE.Vector3(); // create once an reuse it
+	p.addEventListener('pinchended', pinchPrimaryScrollbarEnded );
+	function pinchPrimaryScrollbarEnded(event){
+		//p.removeEventListener('pinchended', pinchPrimaryScrollbarEnded)
+		//p.removeEventListener('pinchmoved', pinchPrimaryScrollbarMoved)
+		//p.removeEventListener('pinchstarted', pinchPrimaryScrollbarStarted)
+		if (!scrollbarPicked) return
+		scrollbarPicked = false
+	}
+	p.addEventListener('pinchmoved', pinchPrimaryScrollbarMoved );
+	function pinchPrimaryScrollbarMoved(event){
+		if (!scrollbarPicked) return
+		if (previousPosition.y>event.detail.position.y)
+			nextLineCodeEditor(1)
+		else
+			nextLineCodeEditor(-1)
+		previousPosition = event.detail.position.clone()
+	}
+	p.addEventListener('pinchstarted', pinchPrimaryScrollbarStarted );
+	function pinchPrimaryScrollbarStarted(event){
+		let rightGutterEl = document.getElementById("rightgutter")
+		previousPosition = event.detail.position.clone()
+		rightGutterEl.object3D.getWorldPosition( target );
+		if (previousPosition.distanceTo(target)<0.1) scrollbarPicked = true
+	}
+	
+	return codeEditor.element
 }
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
@@ -2501,6 +2898,7 @@ function makeAnchorsVisibleOnTargets(){
 }
 
 function startMesher(){
+// consider preview triangle from primary moved
 	let meshPoints = []
 	let meshTriangles = []
 	let offset
@@ -2512,7 +2910,8 @@ function startMesher(){
         elSecondary.addEventListener('pinchended', endedSecondary );
 	function endedSecondary(){
 		targets.push(meshEl)
-		meshEl.setAttribute('dynamic-body', "")
+		meshEl.setAttribute('dynamic-body', "shape:hull")
+		// using 'dynamic-unless-picked' crashes the browser
 		//makeAnchorsVisibleOnTargets() // too large here
 		applyToClass("meshvertex", (e, val ) => e.setAttribute("visible", val), "false")
 		el.removeEventListener('pinchended', end)
@@ -2587,7 +2986,7 @@ AFRAME.registerComponent('startfunctions', {
 	//doublePinchToScale()
 	//emptyPinchToMove()
 	//makeAnchorsVisibleOnTargets()
-	startMesher()
+	//startMesher()
   }
 })
 
@@ -2668,4 +3067,9 @@ AFRAME.registerComponent('startfunctions', {
 
     </a-scene>
   </body>
+<script>
+setTimeout( _=>startExperience(), 1000)
+// should wait for shiki instead but faster to test on desktop like that
+	// should actually display without highlight first and add as callback when ready
+</script>
 </html>
