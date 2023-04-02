@@ -9,7 +9,7 @@
     <script src='dependencies/aframe-html.js'></script>
     <script src='dependencies/aframe-mirror.js'></script>
     <script src='dependencies/aframe-troika-text.min.js'></script>
-    <script type="module" id=immersbundle src='dependencies/immers-client.js?save=true'></script>
+    <!--<script type="module" id=immersbundle src='dependencies/immers-client.js?save=true'></script>-->
     <!--<script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>-->
     <!--<script src="https://threejs.org/examples/js/exporters/GLTFExporter.js"></script>-->
 
@@ -17,12 +17,13 @@
 
     <!-- for input sharing -->
     <script src='dependencies/peerjs.min.js'></script>
-    <!-- for content sharing, using NAF -->
+    <!-- for content sharing, using NAF 
     <script src='dependencies/socket.io.slim.js'></script>
     <script src="https://naf.benetou.fr/easyrtc/easyrtc.js"></script>
     <script src='dependencies/networked-aframe.min.js'></script>
+-->
 
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+    <script src="dependencies/aframe-physics-system.min.js"></script>
 
     <!-- still experimenting, see webdav.html -->
     <script src='dependencies/webdav.js'></script> 
@@ -51,7 +52,7 @@
 
 <div style='position:fixed;z-index:1; top: 0%; left: 0%; border-bottom: 70px solid transparent; border-left: 70px solid #eee; '>
 	<a href="https://git.benetou.fr/utopiah/text-code-xr-engine/issues/">
-		<img style='position:fixed;left:10px;' title='code repository' src='https://git.benetou.fr/assets/img/logo.svg/'>
+		<img style='position:fixed;left:10px;' title='code repository' src='gitea_logo.svg'>
 	</a>
 </div>
 
@@ -61,7 +62,7 @@
 </div>
 
 <script type="module">
-
+/*
 // just text
 import {Runtime, Inspector} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
 import define from "https://api.observablehq.com/@utopiah/from-pim-to-2d-to-3d-to-xr-explorations@2010.js?v=3";
@@ -79,10 +80,10 @@ new Runtime().module(define2, name => {
 });
 // setTimeout( _ => document.querySelector("#gui3d").setAttribute("html", "html:#observablehq-key;cursor:#cursor;" ) , 2000)
   // <a-entity id="gui3d" class="observableui" position="0 1.5 -.4"></a-entity>
+*/
 </script>
 
 <script>
-
 /*
 
 motion to data
@@ -253,6 +254,7 @@ function sendGlbFromEl(el){
 
 var immersClient
 // See dedicated issue https://git.benetou.fr/utopiah/text-code-xr-engine/issues/47 
+if (false) // disabled for offline tests
 document.querySelector("#immersbundle").addEventListener('load',(event) => { 
 	immersClient = document.querySelector("immers-hud").immersClient
 	document.querySelector('immers-hud').immersClient.sendModel = async function sendModel (name, glb, privacy, icon, to = []) {
@@ -2997,12 +2999,12 @@ AFRAME.registerComponent('startfunctions', {
  <button id=mainbutton style="z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
 
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
-	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
 	startfunctions
 	physics="debug:true"
 	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json keyboard >
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
+	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
 	-->
       <a-assets>
 	      <template id="avatar-template"> <a-cylinder opacity=.3 scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
