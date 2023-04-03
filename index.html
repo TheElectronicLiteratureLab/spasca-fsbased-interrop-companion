@@ -930,7 +930,7 @@ AFRAME.registerComponent('wristattachsecondary',{
 		  // localToWorld?
 	(primarySide == 0) ? secondarySide = 1 : secondarySide = 0
 	var worldPosition=this.worldPosition;
-	this.el.object3D.traverse( e => { if (e.name == "b_"+sides[secondarySide][0]+"_wrist") {
+	this.el.object3D.traverse( e => { if (e.name == "wrist") {
 		worldPosition.copy(e.position);e.parent.updateMatrixWorld();e.parent.localToWorld(worldPosition)
 		rotation = e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14
 		this.data.target.setAttribute("rotation", rotation)
