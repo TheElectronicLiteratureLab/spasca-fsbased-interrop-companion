@@ -2984,6 +2984,16 @@ AFRAME.registerComponent('dynamic-unless-picked', {
 	// should unregister on remove
 })
 
+AFRAME.registerComponent('collider-check', {
+  dependencies: ['raycaster'],
+
+  init: function () {
+    this.el.addEventListener('raycaster-intersection', function (e) {
+      console.log('Player hit something!',e.detail);
+    });
+  }
+});
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
@@ -3029,7 +3039,9 @@ AFRAME.registerComponent('startfunctions', {
 		<a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
       </a-entity>
 
-      <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
+      <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink">
+	  <a-entity collider-check raycaster="objects: .collidable; showLine:true;" ></a-entity>
+</a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
@@ -3049,12 +3061,12 @@ AFRAME.registerComponent('startfunctions', {
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="startmesher" value="jxr startMesher()" position="0 1.00 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target value="jxr pushLeftClass('meshed')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushRightClass('meshed')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushUpClass('meshed')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushDownClass('meshed')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushBackClass('meshed')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushFrontClass('meshed')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text class="collidable" anchor=left target value="jxr pushLeftClass('meshed')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text class="collidable" anchor=left target value="jxr pushRightClass('meshed')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text class="collidable" anchor=left target value="jxr pushUpClass('meshed')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text class="collidable" anchor=left target value="jxr pushDownClass('meshed')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text class="collidable" anchor=left target value="jxr pushBackClass('meshed')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text class="collidable" anchor=left target value="jxr pushFrontClass('meshed')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
 
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
