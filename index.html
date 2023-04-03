@@ -654,6 +654,7 @@ function plot(equation,variablename="x",scale=5,step=1){
 AFRAME.registerComponent('target', {
   init: function () {
 	targets.push( this.el )
+	this.el.classList.add("collidable")
   }
 })
 
@@ -3061,12 +3062,12 @@ AFRAME.registerComponent('startfunctions', {
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="startmesher" value="jxr startMesher()" position="0 1.00 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text class="collidable" anchor=left target value="jxr pushLeftClass('meshed')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text class="collidable" anchor=left target value="jxr pushRightClass('meshed')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text class="collidable" anchor=left target value="jxr pushUpClass('meshed')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text class="collidable" anchor=left target value="jxr pushDownClass('meshed')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text class="collidable" anchor=left target value="jxr pushBackClass('meshed')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text class="collidable" anchor=left target value="jxr pushFrontClass('meshed')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushLeftClass('meshed')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushRightClass('meshed')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushUpClass('meshed')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushDownClass('meshed')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushBackClass('meshed')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushFrontClass('meshed')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
 
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
