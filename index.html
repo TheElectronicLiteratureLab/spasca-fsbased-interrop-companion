@@ -2202,7 +2202,7 @@ function highlight(code = `console.log("Here is your code."); var x = 5;`, langu
 }
 
 document.body.addEventListener( "highlighterready", (e) => { 
-	fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
+	//fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
 }, false);
 
 function startExperience(){
@@ -2223,7 +2223,8 @@ let codeEditor = {
 	lengthWindowRange: 20,
 	scrollInterval: null,
 	currentlyDisplayedText: "",
-	caret: null
+	caret: null,
+	language: null,
 }
 
 function nextLineCodeEditor(lines=1){ // can be negative to scroll up
@@ -2232,8 +2233,7 @@ function nextLineCodeEditor(lines=1){ // can be negative to scroll up
 	let content=codeEditor.page.split("\n").slice(codeEditor.line,codeEditor.line+codeEditor.lengthWindowRange).join("\n"); 
 	codeEditor.currentlyDisplayedText=content
 	codeEditor.element.setAttribute("troika-text", {value: content})
-	codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
-	// should respect language set, can be empty
+	if (codeEditor.language) codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
 	let gutterEl = document.getElementById("leftgutter")
 	if (gutterEl){
 		let lineNumbers = "\n"
@@ -2381,8 +2381,7 @@ function updateCodeEditorWithContent(content){
 	if (!codeEditor.element) return
 	codeEditor.currentlyDisplayedText=content
 	codeEditor.element.setAttribute("troika-text", {value: content})
-	codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
-	// should respect language set, can be empty
+	if (codeEditor.language) codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
 }
 
 function addBackdropToTroikaElement( el ){
@@ -2531,7 +2530,20 @@ function getNumberOfLinesFromCodeEditor(){
 function addCodeEditor(page="jxr console.log('hello world')", language="javascript", position="-.5 1.6 -.7", name="codeditor" ){
 	// could also add empty but with column and row for sizing
 	// for now supporting only 1 code editor, despite the name parameter
-	codeEditor.page = page
+
+	let forcedLines = ''
+	const width = 50
+	let pos = 0
+	let content = page
+	while ( pos < page.length ){
+		let potentialine = content.slice(pos, pos+width)
+		console.log(potentialine.lastIndexOf(' ') )
+		forcedLines += potentialine.trim() + '\n'
+		pos+=width
+// should check for caesure 
+	}
+
+	codeEditor.page = forcedLines //.slice(0,-1) // remove trailing newline
 	codeEditor.line = codeEditor.startWindowRange
 	let numberOfLines = getNumberOfLinesFromCodeEditor()
 	if (numberOfLines<codeEditor.lengthWindowRange) codeEditor.lengthWindowRange = numberOfLines
@@ -2540,12 +2552,17 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	codeEditor.currentlyDisplayedText=content
 
 	if (!codeEditor.element) codeEditor.element = addNewNote(content, position, "0.1 0.1 0.1", name, "tool")
+	codeEditor.element.classList.add('reader')
 	codeEditor.element.setAttribute("troika-text", {value: content})
 	codeEditor.element.setAttribute("troika-text", {depthOffset: .1})
-	if (language?.length > 0 && language != "none") codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language)})
+	codeEditor.element.setAttribute("rotation", "30 0 0")
+	if (language?.length > 0 && language != "none") {
+		codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language)})
+		codeEditor.language = language
+	}
 
 	addBackdropToTroikaElement( codeEditor.element )
-	addGuttersToTroikaElement( codeEditor.element )
+	//addGuttersToTroikaElement( codeEditor.element )
 	
 	let scrollbarPicked = false
 	let previousPosition
@@ -3008,27 +3025,19 @@ AFRAME.registerComponent('collider-check', {
   }
 });
 
-AFRAME.registerComponent('startfunctions', {
-  init: function () {
-	// load a rigger avatar from e.g RPM with a basic interaction script and few pre-recorded sentence with model details, e.g speaker id
-		// bare minimum in complexity and weight to explain itself and kickstart the process
-	// rely on jxr and hand interactions
-	// add eye and head following, few basic animations (pre-recorded or not) e.g nodding or moving
-	// see the inspection mechanism written
-		// add the bones visible
-		// wireframe all with different colours and add geometry on bones and all positions, attached even
-	// see past branches
-		// mannequin
-		// stt
-	// could provide predetermined behavior e.g blinked, nodding, delayed tracking, etc
-		// a kind of phase of "populating" what capabilities are available, a bit like Metzinger's self model
-  }
-})
-
+// should generalize to selector, like pushDownClass and related
+function tiltUpId(id){ tiltId(id, 0.1) }
+function tiltDownId(id){ tiltId(id, -0.1) }
+function tiltId(id, value){
+	document.getElementById(id).object3D.position.y+=value;
+	document.getElementById(id).object3D.rotation.x+=value; 
+}
 
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
+	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( page => { addCodeEditor( page, '', '-0.22 1.4 -.4' ) })
+		// should become a component instead
 	//startExperience()
 	//doublePinchToScale()
 	//emptyPinchToMove()
@@ -3046,8 +3055,7 @@ AFRAME.registerComponent('startfunctions', {
 
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
 	startfunctions
-	physics="debug:true"
-	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json keyboard >
+	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json>
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
 	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
@@ -3063,8 +3071,6 @@ AFRAME.registerComponent('startfunctions', {
       </a-assets>
 
       <a-entity id="rig">
-		<a-sound src="../content/street-crowd-ambience.mp3" autoplay=true loop=true volume=0.2></a-sound><!-- warning skipped on Quest, does autoplay there -->
-		<a-sound id="snapping-sound" src="url(../content/magnets_snap.mp3)"></a-sound>
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
 		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
@@ -3082,37 +3088,32 @@ AFRAME.registerComponent('startfunctions', {
 
       <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
 	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
-      <a-sky hide-on-enter-ar color="white"></a-sky>
-      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/AR_Market_optimized.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
-      <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" gltf-model="../content/SourceCityToolkit/SKY_Market_day.glb" scale="1 1 1" position="17 -10 -4" rotation="0 0 0"></a-entity>
-      <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 1.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-sky hide-on-enter-ar color="black"></a-sky>
+      <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" ></a-entity>
+      <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
+      <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target value="jxr emptyPinchToMove()" position="0 1.65 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target class="reader" value="jxr previousPageCodeEditor()" position="-0.5 1.25 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target class="reader" value="jxr nextPageCodeEditor()" position="0 1.25 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="startmesher" value="jxr startMesher()" position="0 1.00 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target value="jxr pushLeftClass('meshed')" position=" -0.2 1.55 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushRightClass('meshed')" position=" -0.2 1.50 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushUpClass('meshed')" position=" -0.2 1.45 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushDownClass('meshed')" position=" -0.2 1.40 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushBackClass('meshed')" position=" -0.2 1.35 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target value="jxr pushFrontClass('meshed')" position=" -0.2 1.30 0.1" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr tiltUpId('codeditor')" position=" -0.3 1.65 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr tiltDownId('codeditor')" position=" -0.3 1.60 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+
+      <a-troika-text anchor=left target value="jxr pushLeftClass('reader')" position=" -0.3 1.55 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushRightClass('reader')" position=" -0.3 1.50 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushUpClass('reader')" position=" -0.3 1.45 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushDownClass('reader')" position=" -0.3 1.40 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushBackClass('reader')" position=" -0.3 1.35 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target value="jxr pushFrontClass('reader')" position=" -0.3 1.30 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
 
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
-	-->
       <a-console position="0 1.1 -0.8" rotation="-45 0 0" font-size="34" height=0.5 skip-intro=true></a-console>
+	-->
 
-  <!-- Floor -->
-  <a-plane rotation="-90 0 0" scale="5 5 5" position="0 1 0" opacity=.5 static-body></a-plane>
-
-  <!-- Immovable box -->
-  <a-box static-body position="0 0.5 -5" width="3" height="1" depth="1"></a-box>
-
-  <!-- Dynamic box -->
-  <a-box dynamic-unless-picked position="0 1.4 -.3" target scale=".1 .1 .1"></a-box>
 
     </a-scene>
   </body>
