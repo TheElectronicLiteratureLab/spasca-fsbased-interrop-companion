@@ -2529,21 +2529,27 @@ function getNumberOfLinesFromCodeEditor(){
 	// could save remotely (e.g wiki) or locally in localStorage
 function addCodeEditor(page="jxr console.log('hello world')", language="javascript", position="-.5 1.6 -.7", name="codeditor" ){
 	// could also add empty but with column and row for sizing
-	// for now supporting only 1 code editor, despite the name parameter
+	// for now supporting only 1 scode editor, despite the name parameter
+page='this is a single line test'
 
 	let forcedLines = ''
 	const width = 50
 	let pos = 0
 	let content = page
+	let line = ''
+	let parts =  page.split(' ')
+	let n = 0
 	while ( pos < page.length ){
+		while ( line.length < width && parts[n]){
+			line += parts[n++] + ' '
+		}
 		let potentialine = content.slice(pos, pos+width)
-		console.log(potentialine.lastIndexOf(' ') )
-		forcedLines += potentialine.trim() + '\n'
-		pos+=width
-// should check for caesure 
+		forcedLines += line.trim() + '\n'
+		pos+=line.length
+		line = ''
 	}
 
-	codeEditor.page = forcedLines //.slice(0,-1) // remove trailing newline
+	codeEditor.page = forcedLines
 	codeEditor.line = codeEditor.startWindowRange
 	let numberOfLines = getNumberOfLinesFromCodeEditor()
 	if (numberOfLines<codeEditor.lengthWindowRange) codeEditor.lengthWindowRange = numberOfLines
