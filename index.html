@@ -2203,6 +2203,15 @@ function highlight(code = `console.log("Here is your code."); var x = 5;`, langu
 
 document.body.addEventListener( "highlighterready", (e) => { 
 	//fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
+
+	fetch( 'colorme.js').then(r=>r.text()).then( src => {
+		let parts = 5 // can't handle odd splits...
+		let pl = src.length/parts
+		for (let n=0; n<parts; n++ ){
+			addCodeEditor( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
+			console.log( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
+		}
+	})
 }, false);
 
 function startExperience(){
@@ -2542,6 +2551,8 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	let line = ''
 	let parts =  page.split(' ')
 	let n = 0
+
+/*
 	while ( pos < page.length ){
 		while ( line.length < width && parts[n]){
 			line += parts[n++] + ' '
@@ -2553,6 +2564,8 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	}
 
 	codeEditor.page = forcedLines
+*/
+	codeEditor.page = page
 	codeEditor.line = codeEditor.startWindowRange
 	let numberOfLines = getNumberOfLinesFromCodeEditor(codeEditor, )
 	if (numberOfLines<codeEditor.lengthWindowRange) codeEditor.lengthWindowRange = numberOfLines
@@ -3045,14 +3058,15 @@ function tiltId(id, value){
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
-
+/*
 	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
 		let parts = 4 // can't handle odd splits...
 		let pl = src.length/parts
 		for (let n=0; n<parts; n++ ){
-			addCodeEditor( src.slice(n*pl,(n+1)*pl), '', '-0.22 '+(2-n/10)+' -.4' )
+			addCodeEditor( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
 		}
 	})
+*/
 		// should become a component instead
 	//startExperience()
 	//doublePinchToScale()
