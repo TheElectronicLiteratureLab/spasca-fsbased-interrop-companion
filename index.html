@@ -2209,7 +2209,7 @@ document.body.addEventListener( "highlighterready", (e) => {
 		let pl = src.length/parts
 		for (let n=0; n<parts; n++ ){
 			addCodeEditor( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
-			console.log( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
+			//console.log( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
 		}
 	})
 }, false);
@@ -2389,7 +2389,8 @@ function updateCodeEditorWithContent(codeEditor, content){
 	if (codeEditor.language) codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
 }
 
-function addBackdropToTroikaElement( codeEditor, el ){
+function addBackdropToTroikaElement( codeEditor ){
+	let el = codeEditor.element
 	el.addEventListener("object3dset", e => {
 		el.object3D.children[0].addEventListener("synccomplete", e => {
 			// this can be used for resizing but without add the element
@@ -2410,7 +2411,8 @@ function addBackdropToTroikaElement( codeEditor, el ){
 	})
 }
 
-function addGuttersToTroikaElement( codeEditor, el ){
+function addGuttersToTroikaElement( codeEditor ){
+	let el = codeEditor.element
 	el.addEventListener("object3dset", e => {
 		el.object3D.children[0].addEventListener("synccomplete", e => {
 			if (codeEditor.element.querySelector(".leftgutter")) return 
@@ -2420,7 +2422,7 @@ function addGuttersToTroikaElement( codeEditor, el ){
 			w = b[2]-b[0]
 			h = b[3]-b[1]
 
-			gutterWidth = .2 * String(getNumberOfLinesFromCodeEditor()).length
+			gutterWidth = .2 * String(getNumberOfLinesFromCodeEditor(codeEditor)).length
 			//should adjust width based on number of lines in total first
 			g = new THREE.BoxGeometry( gutterWidth, h, .01  );
 			m = new THREE.MeshBasicMaterial( {color: 0x333333, opacity: 0.9, transparent: true} );
@@ -2435,7 +2437,7 @@ function addGuttersToTroikaElement( codeEditor, el ){
 			leftGutter.setAttribute("outline-color", "black" )
 			let lineNumbers = "\n"
 			for (let i=codeEditor.line+1;i<=codeEditor.line+codeEditor.lengthWindowRange;i++){
-				for (let pad=0;pad<String(getNumberOfLinesFromCodeEditor()).length-String(i).length; pad++)
+				for (let pad=0;pad<String(getNumberOfLinesFromCodeEditor(codeEditor)).length-String(i).length; pad++)
 					lineNumbers+="_" // not using a fixed width font now so " " is smaller
 				lineNumbers+=i+"\n"
 			}
@@ -2466,8 +2468,8 @@ function addGuttersToTroikaElement( codeEditor, el ){
 			// should become a constrained target (moving only on y axis and clamped)
 			codeEditor.element.appendChild( rightGutter )
 			// so... rightgutter vs rightGutter ... somehow changing to the "correct" one breaks the editor itself (?!)
-			rightgutter.object3D.position.x= w+gutterWidth/2
-			rightgutter.object3D.position.y= h/2-scrollBarHeight/2 - scrollBarVerticalOffset
+			rightGutter.object3D.position.x= w+gutterWidth/2
+			rightGutter.object3D.position.y= h/2-scrollBarHeight/2 - scrollBarVerticalOffset
 			// offset by line position proportional also then updated when scrolling
 			
 			gutterHeight = .3
@@ -2552,20 +2554,21 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	let parts =  page.split(' ')
 	let n = 0
 
-/*
-	while ( pos < page.length ){
-		while ( line.length < width && parts[n]){
-			line += parts[n++] + ' '
+	if (!language.length){
+		while ( pos < page.length ){
+			while ( line.length < width && parts[n]){
+				line += parts[n++] + ' '
+			}
+			let potentialine = content.slice(pos, pos+width)
+			forcedLines += line.trim() + '\n'
+			pos+=line.length
+			line = ''
 		}
-		let potentialine = content.slice(pos, pos+width)
-		forcedLines += line.trim() + '\n'
-		pos+=line.length
-		line = ''
-	}
 
-	codeEditor.page = forcedLines
-*/
-	codeEditor.page = page
+		codeEditor.page = forcedLines
+	} else {
+		codeEditor.page = page
+	}
 	codeEditor.line = codeEditor.startWindowRange
 	let numberOfLines = getNumberOfLinesFromCodeEditor(codeEditor, )
 	if (numberOfLines<codeEditor.lengthWindowRange) codeEditor.lengthWindowRange = numberOfLines
@@ -2583,8 +2586,8 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 		codeEditor.language = language
 	}
 
-	addBackdropToTroikaElement( codeEditor, codeEditor.element )
-	//addGuttersToTroikaElement( codeEditor.element )
+	addBackdropToTroikaElement( codeEditor, )
+	addGuttersToTroikaElement( codeEditor, )
 	
 	let scrollbarPicked = false
 	let previousPosition
@@ -3058,15 +3061,13 @@ function tiltId(id, value){
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
-/*
 	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
 		let parts = 4 // can't handle odd splits...
 		let pl = src.length/parts
 		for (let n=0; n<parts; n++ ){
-			addCodeEditor( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
+			addCodeEditor( src.slice(n*pl,(n+1)*pl), '', '0.22 '+(2-n/10)+' -.3' )
 		}
 	})
-*/
 		// should become a component instead
 	//startExperience()
 	//doublePinchToScale()
