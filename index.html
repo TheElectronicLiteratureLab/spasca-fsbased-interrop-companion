@@ -2562,6 +2562,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 			let potentialine = content.slice(pos, pos+width)
 			forcedLines += line.trim() + '\n'
 			pos+=line.length
+			if (line.length==0) pos++
 			line = ''
 		}
 
