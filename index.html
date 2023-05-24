@@ -2214,27 +2214,23 @@ function startExperience(){
 	document.querySelector("#mainbutton").style.display = "none"
 }
 
+let codeEditor
 // should consider multiple instances instead
-let codeEditor = {
-	element: null,
-	line: 0,
-	page: null,
-	startWindowRange: 0,
-	lengthWindowRange: 20,
-	scrollInterval: null,
-	currentlyDisplayedText: "",
-	caret: null,
-	language: null,
-}
+let editors = []
+// track created editors then apply actions to the currently selected one
+// problems happen when relying on querySelector/getElementById rather than a specific editor
+	// do these based on codeEditor.element rather than document	
+// still probably problematic for interactions
+	// consider for now only the currentEditor
 
-function nextLineCodeEditor(lines=1){ // can be negative to scroll up
+function nextLineCodeEditor(codeEditor, lines=1){ // can be negative to scroll up
 	if (codeEditor.line+lines < 0) return
 	codeEditor.line+=lines
 	let content=codeEditor.page.split("\n").slice(codeEditor.line,codeEditor.line+codeEditor.lengthWindowRange).join("\n"); 
 	codeEditor.currentlyDisplayedText=content
 	codeEditor.element.setAttribute("troika-text", {value: content})
 	if (codeEditor.language) codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
-	let gutterEl = document.getElementById("leftgutter")
+	let gutterEl = codeEditor.element.querySelector(".leftgutter")
 	if (gutterEl){
 		let lineNumbers = "\n"
 		for (let i=codeEditor.line+1;i<=codeEditor.line+codeEditor.lengthWindowRange;i++){
@@ -2245,7 +2241,7 @@ function nextLineCodeEditor(lines=1){ // can be negative to scroll up
 		gutterEl.setAttribute("troika-text", {value: lineNumbers})
 	}
 
-	let rightGutterEl = document.getElementById("rightgutter")
+	let rightGutterEl = codeEditor.element.querySelector(".rightgutter")
 	if (rightGutterEl){
 		b = rightGutterEl.parentElement.object3D.children[0]._textRenderInfo.blockBounds
 		w = b[2]-b[0]
@@ -2257,23 +2253,23 @@ function nextLineCodeEditor(lines=1){ // can be negative to scroll up
 	}
 }
 
-function nextPageCodeEditor(){
-	nextLineCodeEditor(codeEditor.lengthWindowRange)
+function nextPageCodeEditor(codeEditor, ){
+	nextLineCodeEditor(codeEditor, codeEditor.lengthWindowRange)
 }
 
-function previousPageCodeEditor(){
-	nextLineCodeEditor(-codeEditor.lengthWindowRange)
+function previousPageCodeEditor(codeEditor, ){
+	nextLineCodeEditor(codeEditor, -codeEditor.lengthWindowRange)
 }
 
-function stopScrollCodeEditor(){
+function stopScrollCodeEditor(codeEditor, ){
 	codeEditor.scrollInterval = clearInterval( codeEditor.scrollInterval )
 }
 
-function startScrollCodeEditor(){
-	if (!codeEditor.scrollInterval) codeEditor.scrollInterval = setInterval( _ => nextLineCodeEditor(), 100)
+function startScrollCodeEditor(codeEditor, ){
+	if (!codeEditor.scrollInterval) codeEditor.scrollInterval = setInterval( _ => nextLineCodeEditor(codeEditor, ), 100)
 }
 
-function highlightAllOccurences(keyword="function"){
+function highlightAllOccurences(codeEditor, keyword="function"){
 	let indices = []
 	let lastfound = codeEditor.currentlyDisplayedText.indexOf(keyword,0)
 	while (lastfound>-1) {
@@ -2287,7 +2283,7 @@ function highlightAllOccurences(keyword="function"){
 	})
 }
 
-function hightlightNextKeyword(keyword="function"){
+function hightlightNextKeyword(codeEditor, keyword="function"){
 	let pos = codeEditor.currentlyDisplayedText.indexOf(keyword)
 	// invisible characters... some still left
 	let offset = (codeEditor.currentlyDisplayedText.slice(0,pos).match(/[\n\t ]/g)||[]).length
@@ -2295,13 +2291,13 @@ function hightlightNextKeyword(keyword="function"){
 	highlightString(pos, keyword.length)
 }
 
-function highlightString(pos, length){
-	for (let c=pos;c<pos+length;c++) highlightChar( c )
+function highlightString(codeEditor, pos, length){
+	for (let c=pos;c<pos+length;c++) highlightChar(codeEditor,  c )
 }
 
 // WARNING this is limited to visible characters, i.e not " " or "\t" or "\n"
 // should instead allow to highlight " " and "\t" both looking the same
-function highlightChar(pos=0, name=null){ // could have multiple selection
+function highlightChar(codeEditor, pos=0, name=null){ // could have multiple selection
 	let b = Array.from( codeEditor.element.object3D.children[0].geometry.attributes.aTroikaGlyphBounds.array ).slice(pos*4,pos*4+4)
 	let w = b[2]-b[0]
 	let h = b[3]-b[1] // could be used to check for same line, if so could make a single block from beginning to end
@@ -2317,7 +2313,7 @@ function highlightChar(pos=0, name=null){ // could have multiple selection
 	c.position.z= .01
 }
 
-function highlightUnderChar(pos=0, name=null){
+function highlightUnderChar(codeEditor, pos=0, name=null){
 	let b = Array.from( codeEditor.element.object3D.children[0].geometry.attributes.aTroikaGlyphBounds.array ).slice(pos*4,pos*4+4)
 	// note that this skips invisible char and thus desync codeEditor.caret from actual position
 		// but, for now at least, " " and "\t" seems to be of equal value and "\n" does not shift on the current line
@@ -2350,45 +2346,45 @@ function highlightUnderChar(pos=0, name=null){
 	c.position.z= .01
 }
 
-function moveCaretToNextVisibleChar(){
+function moveCaretToNextVisibleChar(codeEditor, ){
 	addCaretToCodeEditor( ++codeEditor.caret )
 	// might be able to reach non visible one by remove an offset
 }
 
-function addCaretToCodeEditor(pos=0){
-	if (codeEditor.caret) removeCaretFromCodeEditor()
-	highlightUnderChar(pos, "caret")
+function addCaretToCodeEditor(codeEditor, pos=0){
+	if (codeEditor.caret) removeCaretFromCodeEditor(codeEditor, )
+	highlightUnderChar(codeEditor, pos, "caret")
 	codeEditor.caret = pos
 }
 
-function removeCaretFromCodeEditor(){
+function removeCaretFromCodeEditor(codeEditor, ){
 	codeEditor.element.object3D.getObjectByName("caret").removeFromParent()
 }
 
-function clearCodeEditorContent(){
+function clearCodeEditorContent(codeEditor, ){
 	updateCodeEditorWithContent( "" )
 }
 
 // should support a range, note the entire document (or window?)
-function searchAndReplaceInCodeEditor(before, after){
-	updateCodeEditorWithContent( codeEditor.currentlyDisplayedText.replaceAll(before, after))
+function searchAndReplaceInCodeEditor(codeEditor, before, after){
+	updateCodeEditorWithContent( codeEditor, codeEditor.currentlyDisplayedText.replaceAll(before, after))
 	// note that it desyncs from page so page should only be seen as the initial source
 		// this though would break scrolling which is based on page
 		// consequently page should be modified
 }
 
-function updateCodeEditorWithContent(content){
+function updateCodeEditorWithContent(codeEditor, content){
 	if (!codeEditor.element) return
 	codeEditor.currentlyDisplayedText=content
 	codeEditor.element.setAttribute("troika-text", {value: content})
 	if (codeEditor.language) codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
 }
 
-function addBackdropToTroikaElement( el ){
+function addBackdropToTroikaElement( codeEditor, el ){
 	el.addEventListener("object3dset", e => {
 		el.object3D.children[0].addEventListener("synccomplete", e => {
 			// this can be used for resizing but without add the element
-			if (document.getElementById("leftgutter")) return // already added, should unregister
+			if (codeEditor.element.querySelector(".leftgutter")) return // already added, should unregister
 
 			b = el.object3D.children[0]._textRenderInfo.blockBounds
 			w = b[2]-b[0]
@@ -2405,10 +2401,10 @@ function addBackdropToTroikaElement( el ){
 	})
 }
 
-function addGuttersToTroikaElement( el ){
+function addGuttersToTroikaElement( codeEditor, el ){
 	el.addEventListener("object3dset", e => {
 		el.object3D.children[0].addEventListener("synccomplete", e => {
-			if (document.getElementById("leftgutter")) return 
+			if (codeEditor.element.querySelector(".leftgutter")) return 
 			// already added, should unregister, can be removed to allow dynamic resizing BUT should skip adding element
 	
 			b = el.object3D.children[0]._textRenderInfo.blockBounds
@@ -2421,7 +2417,6 @@ function addGuttersToTroikaElement( el ){
 			m = new THREE.MeshBasicMaterial( {color: 0x333333, opacity: 0.9, transparent: true} );
 			c = new THREE.Mesh( g, m );
 			el.object3D.add( c );  
-			c.name = "leftgutter"
 			c.position.z=-.01
 			c.position.x= -gutterWidth/2
 			//c.rotation.y= .2 // looks nice but have to consider text on top first, could apply rotation to text too
@@ -2438,7 +2433,7 @@ function addGuttersToTroikaElement( el ){
 			lineNumbers.slice(0,-1)
 			leftGutter.setAttribute("troika-text", {value: lineNumbers})
 			leftGutter.setAttribute("troika-text", {textIndent: -.5})
-			leftGutter.id = "leftgutter"
+			leftGutter.className = "leftgutter"
 			codeEditor.element.appendChild( leftGutter )
 			// should be updated when scrolling
 	
@@ -2447,19 +2442,18 @@ function addGuttersToTroikaElement( el ){
 			m = new THREE.MeshBasicMaterial( {color: 0x333333, opacity: 0.9, transparent: true} );
 			c = new THREE.Mesh( g, m );
 			el.object3D.add( c );  
-			c.name = "rightgutter"
 			c.position.z=-.01
 			c.position.x= w+gutterWidth/2
 			//c.rotation.y= -.2 // looks nice but have to consider text on top first
 	
 			var rightGutter = document.createElement("a-cylinder")
 			// height proportional to the visible content to the terminal size
-			let scrollBarHeight = codeEditor.lengthWindowRange/getNumberOfLinesFromCodeEditor() * h
-			let scrollBarVerticalOffset = codeEditor.line/getNumberOfLinesFromCodeEditor() * h
+			let scrollBarHeight = codeEditor.lengthWindowRange/getNumberOfLinesFromCodeEditor(codeEditor, ) * h
+			let scrollBarVerticalOffset = codeEditor.line/getNumberOfLinesFromCodeEditor(codeEditor, ) * h
 			if (scrollBarHeight < .1) scrollBarHeight = .1
 			rightGutter.setAttribute("height", scrollBarHeight )
 			rightGutter.setAttribute("radius", .01 )
-			rightGutter.id = "rightgutter"
+			rightGutter.className = "rightgutter"
 			// should become a constrained target (moving only on y axis and clamped)
 			codeEditor.element.appendChild( rightGutter )
 			// so... rightgutter vs rightGutter ... somehow changing to the "correct" one breaks the editor itself (?!)
@@ -2472,7 +2466,6 @@ function addGuttersToTroikaElement( el ){
 			m = new THREE.MeshBasicMaterial( {color: 0x333333, opacity: 0.9, transparent: true} );
 			c = new THREE.Mesh( g, m );
 			el.object3D.add( c );  
-			c.name = "middlegutter"
 			c.position.z=-.01
 			c.position.y= -h/2-gutterHeight/2
 			c.position.x= w/2
@@ -2484,7 +2477,7 @@ function addGuttersToTroikaElement( el ){
 			middleGutter.setAttribute("outline-color", "black" )
 			middleGutter.setAttribute("troika-text", {value: ":(will add commands here)"})
 			//middleGutter.setAttribute("troika-text", {textIndent: -.3})
-			middleGutter.id = "middlegutter"
+			middleGutter.className = "middlegutter"
 			codeEditor.element.appendChild( middleGutter )
 			middleGutter.object3D.position.y= -h/2-gutterHeight/2
 			// should disable the overlay first, see parseKeys
@@ -2517,7 +2510,7 @@ function addGuttersToTroikaElement( el ){
 	})
 }
 
-function getNumberOfLinesFromCodeEditor(){
+function getNumberOfLinesFromCodeEditor(codeEditor, ){
 	let newLines = codeEditor.page.match(/\n/g)
 	if (!newLines) return 1 // undefined or 0
 	return newLines.length
@@ -2528,6 +2521,17 @@ function getNumberOfLinesFromCodeEditor(){
 	// should also support clipboard or even a more direct way to have impact
 	// could save remotely (e.g wiki) or locally in localStorage
 function addCodeEditor(page="jxr console.log('hello world')", language="javascript", position="-.5 1.6 -.7", name="codeditor" ){
+	let codeEditor = {
+		element: null,
+		line: 0,
+		page: null,
+		startWindowRange: 0,
+		lengthWindowRange: 20,
+		scrollInterval: null,
+		currentlyDisplayedText: "",
+		caret: null,
+		language: null,
+	}
 	// could also add empty but with column and row for sizing
 	// for now supporting only 1 scode editor, despite the name parameter
 
@@ -2550,7 +2554,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 
 	codeEditor.page = forcedLines
 	codeEditor.line = codeEditor.startWindowRange
-	let numberOfLines = getNumberOfLinesFromCodeEditor()
+	let numberOfLines = getNumberOfLinesFromCodeEditor(codeEditor, )
 	if (numberOfLines<codeEditor.lengthWindowRange) codeEditor.lengthWindowRange = numberOfLines
 
 	content=codeEditor.page.split("\n").slice(codeEditor.line,codeEditor.line+codeEditor.lengthWindowRange).join("\n"); 
@@ -2566,7 +2570,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 		codeEditor.language = language
 	}
 
-	addBackdropToTroikaElement( codeEditor.element )
+	addBackdropToTroikaElement( codeEditor, codeEditor.element )
 	//addGuttersToTroikaElement( codeEditor.element )
 	
 	let scrollbarPicked = false
@@ -2592,13 +2596,13 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	}
 	p.addEventListener('pinchstarted', pinchPrimaryScrollbarStarted );
 	function pinchPrimaryScrollbarStarted(event){
-		let rightGutterEl = document.getElementById("rightgutter")
+		let rightGutterEl = codeEditor.element.querySelector(".rightgutter")
 		previousPosition = event.detail.position.clone()
 		rightGutterEl.object3D.getWorldPosition( target );
 		if (previousPosition.distanceTo(target)<0.1) scrollbarPicked = true
 	}
 	
-	return codeEditor.element
+	return codeEditor
 }
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
@@ -3041,7 +3045,14 @@ function tiltId(id, value){
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
-	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( page => { addCodeEditor( page, '', '-0.22 1.4 -.4' ) })
+
+	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
+		let parts = 4 // can't handle odd splits...
+		let pl = src.length/parts
+		for (let n=0; n<parts; n++ ){
+			addCodeEditor( src.slice(n*pl,(n+1)*pl), '', '-0.22 '+(2-n/10)+' -.4' )
+		}
+	})
 		// should become a component instead
 	//startExperience()
 	//doublePinchToScale()
