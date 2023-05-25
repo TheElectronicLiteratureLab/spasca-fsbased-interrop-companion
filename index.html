@@ -2201,21 +2201,7 @@ function highlight(code = `console.log("Here is your code."); var x = 5;`, langu
 	return colorRange
 }
 
-document.body.addEventListener( "highlighterready", (e) => { 
-	//fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
-
-	fetch( 'colorme.js').then(r=>r.text()).then( src => {
-		let parts = 5 // can't handle odd splits...
-		let pl = src.length/parts
-		for (let n=0; n<parts; n++ ){
-			addCodeEditor( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
-		}
-	})
-}, false);
-
 function startExperience(){
-	//addCodeEditor(" \n\nqwe qwe qwe qwe qwe qwe qwe qweqweqwe\n\n\na", "")
-	//addCodeEditor()
 	//fetch("https://fabien.benetou.fr/Tools/Docker?action=source").then(r=>r.text()).then( page => { addCodeEditor( page, "" ) })
         //if (AFRAME.utils.device.checkHeadsetConnected()) AFRAME.scenes[0].enterVR();
 	//document.querySelector("#snapping-sound").components.sound.playSound();
@@ -2521,7 +2507,7 @@ function addGuttersToTroikaElement( codeEditor ){
 function getNumberOfLinesFromCodeEditor(codeEditor){
 	let newLines = codeEditor.page.match(/\n/g)
 	if (!newLines) return 1 // undefined or 0
-	return newLines.length
+	return newLines.length+1
 }
 
 // add jxr command on top of the editor e.g "jxr focusCodeEditor()" which would replace keyboard input
@@ -2619,6 +2605,17 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	return codeEditor
 }
 
+function addCodeMultipleEditors(parts, src, language, name='splitededitor'){
+	let editorParts = []
+	let pl = src.length/parts
+	for (let n=0; n<parts; n++ ){
+		editorParts.push( 
+			addCodeEditor( src.slice(n*pl,(n+1)*pl), language, '-0.22 '+(2-n/10)+' -.4', name+'_part'+n )
+		)
+	}
+	return editorParts
+}
+
 // should reconsider the behavior as the content could still be the same but what is displayed changed
 function splitEditorHorizontally( codeEditor ){
 	let p1, p2
@@ -2636,6 +2633,7 @@ function splitEditorHorizontally( codeEditor ){
 	//pos2.x+=1
 	pos1.y-=.1
 	pos2.y+=.1
+	// could also be set based on controllers/hands positions at the end of a stretch/pull gesture
 	let ce1 = addCodeEditor( p1, codeEditor.language, AFRAME.utils.coordinates.stringify( pos1 ), "codeditorsplit" )
 	let ce2 = addCodeEditor( p2, codeEditor.language, AFRAME.utils.coordinates.stringify( pos2 ), "codeditorsplit" )
 		//codeEditor.language, codeEditor.element.getAttribute("position"), "codeditorsplit" )
@@ -3084,13 +3082,16 @@ function tiltId(id, value){
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
-	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
-		let parts = 4 // can't handle odd splits...
-		let pl = src.length/parts
-		for (let n=0; n<parts; n++ ){
-			addCodeEditor( src.slice(n*pl,(n+1)*pl), '', '0.22 '+(2-n/10)+' -.3' )
-		}
+	if (false) fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
+		addCodeMultipleEditors(2, src, '', name='splitreader')
 	})
+	document.body.addEventListener( "highlighterready", (e) => { 
+		//fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
+		fetch( 'colorme.js').then(r=>r.text()).then( src => {
+			addCodeMultipleEditors(40, src, 'javascript', name='splitededitor')
+		})
+	}, false);
+
 		// should become a component instead
 	//startExperience()
 	//doublePinchToScale()
