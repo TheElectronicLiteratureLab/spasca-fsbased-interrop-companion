@@ -2510,6 +2510,10 @@ function getNumberOfLinesFromCodeEditor(codeEditor){
 	return newLines.length+1
 }
 
+function getEditorFromId( id ){
+	return editors.filter(e=>e.element.id.includes(id))?.[0]
+}
+
 // add jxr command on top of the editor e.g "jxr focusCodeEditor()" which would replace keyboard input
 	// switching keyboardInputTarget to 'codeeditor' then to 'hud' when done
 	// should also support clipboard or even a more direct way to have impact
@@ -3079,12 +3083,32 @@ function tiltId(id, value){
 	document.getElementById(id).object3D.rotation.x+=value; 
 }
 
+function onNextPinchSplitReader(){
+	//let id = getIdFromPick() // applies on primary only
+		// does not work anymore ... but could listen to selectedElements changes via an observer but deprecated
+		// proxy could be nice but requires to modify push() calls first
+	let lastPrimary = selectedElements.filter( e => e.primary ).length
+
+	let checkForNewPinches = setInterval( _ => {
+		if (selectedElements.filter( e => e.primary ).length > lastPrimary){
+			let id = getIdFromPick() // applies on primary only
+console.log('pinched to split', id, getEditorFromId( id ))
+			if (id) splitEditorHorizontally( getEditorFromId( id ) )
+			clearInterval(checkForNewPinches)
+		}
+	}, 50) // relatively cheap check, filtering on small array
+}
+
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
-		addCodeMultipleEditors(2, src, '', name='splitreader')
+		//addCodeMultipleEditors(2, src, '', name='splitreader')
+		let ed = addCodeMultipleEditors(1, src, '', name='splitreader')
+		setTimeout( _ => ed[0].element.setAttribute('position', '0 1 -.4') , 1000)
 	})
+	/*
 	setTimeout( _ => editors.filter(e=>e.element.id.includes('reader') ).map( e=> e.element.object3D.position.x++ ), 1000)
 	document.body.addEventListener( "highlighterready", (e) => { 
 		//fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
@@ -3092,6 +3116,7 @@ AFRAME.registerComponent('startfunctions', {
 			addCodeMultipleEditors(4, src, 'javascript', name='splitededitor')
 		})
 	}, false);
+	*/
 
 		// should become a component instead
 	//startExperience()
@@ -3149,6 +3174,8 @@ AFRAME.registerComponent('startfunctions', {
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
 
+      <a-troika-text anchor=left target class="reader" value="jxr onNextPinchSplitReader()" position="0. 1.55 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+
       <a-troika-text anchor=left target class="reader" value="jxr previousPageCodeEditor()" position="-0.5 1.25 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target class="reader" value="jxr nextPageCodeEditor()" position="0 1.25 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
 
@@ -3167,8 +3194,8 @@ AFRAME.registerComponent('startfunctions', {
 
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
-      <a-console position="0 1.1 -0.8" rotation="-45 0 0" font-size="34" height=0.5 skip-intro=true></a-console>
 	-->
+      <a-console position="0 1.1 -0.8" rotation="-45 0 0" font-size="34" height=0.5 skip-intro=true></a-console>
 
 
     </a-scene>
