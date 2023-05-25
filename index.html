@@ -2528,7 +2528,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 		scrollInterval: null,
 		currentlyDisplayedText: "",
 		caret: null,
-		language: null,
+		language: ''
 	}
 	// could also add empty but with column and row for sizing
 
@@ -2540,7 +2540,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	let parts =  page.split(' ')
 	let n = 0
 
-	if (!language?.length){
+	if (!language.length){
 		while ( pos < page.length ){
 			while ( line.length < width && parts[n]){
 				line += parts[n++] + ' '
@@ -2568,7 +2568,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	codeEditor.element.setAttribute("troika-text", {value: content})
 	codeEditor.element.setAttribute("troika-text", {depthOffset: .1})
 	codeEditor.element.setAttribute("rotation", "30 0 0")
-	if (language?.length > 0 && language != "none") {
+	if (language.length && language != "none") {
 		codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language)})
 		codeEditor.language = language
 	}
@@ -2620,10 +2620,25 @@ function addCodeMultipleEditors(parts, src, language, name='splitededitor'){
 	return editorParts
 }
 
+function mergeEditors( editors ){
+	// inherit language and content from the last found
+	let pos = ''
+	let content = ''
+	let language = ''
+	editors.reverse().map( e => {
+		content += e.page // could add separator, e.g new line
+		if (language != e.language) console.warn('different language in editors to merge')
+		language = e.language
+		pos = e.element.getAttribute("position").clone()
+		e.element.setAttribute("visible", false)
+	})
+	return addCodeEditor( content, language, AFRAME.utils.coordinates.stringify( pos ), "codeditormerge" )
+}
+
 // should reconsider the behavior as the content could still be the same but what is displayed changed
 function splitEditorHorizontally( codeEditor ){
 	let p1, p2
-	if (codeEditor.language?.length){
+	if (codeEditor.language.length){
 		let content = codeEditor.page.split('\n')
 		p1 = content.slice(content.length/2).join('\n')
 		p2 = content.slice(0,content.length/2).join('\n')
@@ -3114,7 +3129,7 @@ AFRAME.registerComponent('startfunctions', {
 	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
 		//addCodeMultipleEditors(2, src, '', name='splitreader')
 		let ed = addCodeMultipleEditors(1, src, '', name='splitreader')
-		setTimeout( _ => ed[0].element.setAttribute('position', '0 1 -.4') , 1000)
+		// setTimeout( _ => ed[0].element.setAttribute('position', '0 1 -.4') , 1000)
 	})
 	/*
 	setTimeout( _ => editors.filter(e=>e.element.id.includes('reader') ).map( e=> e.element.object3D.position.x++ ), 1000)
