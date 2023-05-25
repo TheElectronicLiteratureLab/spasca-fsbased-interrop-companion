@@ -3082,13 +3082,14 @@ function tiltId(id, value){
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
-	if (false) fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
+	fetch( 'https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt').then(r=>r.text()).then( src => {
 		addCodeMultipleEditors(2, src, '', name='splitreader')
 	})
+	setTimeout( _ => editors.filter(e=>e.element.id.includes('reader') ).map( e=> e.element.object3D.position.x++ ), 1000)
 	document.body.addEventListener( "highlighterready", (e) => { 
 		//fetch("colorme.js").then(r=>r.text()).then( page => { addCodeEditor( page ) })
 		fetch( 'colorme.js').then(r=>r.text()).then( src => {
-			addCodeMultipleEditors(40, src, 'javascript', name='splitededitor')
+			addCodeMultipleEditors(4, src, 'javascript', name='splitededitor')
 		})
 	}, false);
 
