@@ -154,6 +154,9 @@ var pinches = [] // position, timestamp, primary vs secondary
 var dl2p = null // from distanceLastTwoPinches
 var selectedElements = [];
 
+let editors = []
+var editorBaseWidth = 50
+
 // could add a dedicated MakeyMakey mode with a fixed camera, e.g bird eye view, and an action based on some physical input that others, thanks to NAF, could see or even use.
 	// ?inputmode=makeymakey
 
@@ -2208,7 +2211,6 @@ function startExperience(){
 	document.querySelector("#mainbutton").style.display = "none"
 }
 
-let editors = []
 // track created editors then apply actions to the currently selected one
 // problems happen when relying on querySelector/getElementById rather than a specific editor
 	// do these based on codeEditor.element rather than document	
@@ -2518,7 +2520,8 @@ function getEditorFromId( id ){
 	// switching keyboardInputTarget to 'codeeditor' then to 'hud' when done
 	// should also support clipboard or even a more direct way to have impact
 	// could save remotely (e.g wiki) or locally in localStorage
-function addCodeEditor(page="jxr console.log('hello world')", language="javascript", position="-.5 1.6 -.7", name="codeditor" ){
+function addCodeEditor(page="jxr console.log('hello world')", language="javascript",
+	position="-.5 1.6 -.7", name="codeditor", width=50, preventReflow=false ){
 	let codeEditor = {
 		element: null,
 		line: 0,
@@ -2533,14 +2536,13 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	// could also add empty but with column and row for sizing
 
 	let forcedLines = ''
-	const width = 50
 	let pos = 0
 	let content = page
 	let line = ''
 	let parts =  page.split(' ')
 	let n = 0
 
-	if (!language.length){
+	if (!preventReflow && !language.length){
 		while ( pos < page.length ){
 			while ( line.length < width && parts[n]){
 				line += parts[n++] + ' '
@@ -2632,11 +2634,11 @@ function mergeEditors( editors ){
 		pos = e.element.getAttribute("position").clone()
 		e.element.setAttribute("visible", false)
 	})
-	return addCodeEditor( content, language, AFRAME.utils.coordinates.stringify( pos ), "codeditormerge" )
+	return addCodeEditor( content, language, AFRAME.utils.coordinates.stringify( pos ), "codeditormerge", editorBaseWidth, true )
 }
 
 // should reconsider the behavior as the content could still be the same but what is displayed changed
-function splitEditorHorizontally( codeEditor ){
+function splitEditorHorizontally( codeEditor, preventReflow=true){
 	let p1, p2
 	if (codeEditor.language.length){
 		let content = codeEditor.page.split('\n')
@@ -2653,8 +2655,8 @@ function splitEditorHorizontally( codeEditor ){
 	pos1.y-=.1
 	pos2.y+=.1
 	// could also be set based on controllers/hands positions at the end of a stretch/pull gesture
-	let ce1 = addCodeEditor( p1, codeEditor.language, AFRAME.utils.coordinates.stringify( pos1 ), "codeditorsplit" )
-	let ce2 = addCodeEditor( p2, codeEditor.language, AFRAME.utils.coordinates.stringify( pos2 ), "codeditorsplit" )
+	let ce1 = addCodeEditor( p1, codeEditor.language, AFRAME.utils.coordinates.stringify( pos1 ), "codeditorsplit", editorBaseWidth, preventReflow)
+	let ce2 = addCodeEditor( p2, codeEditor.language, AFRAME.utils.coordinates.stringify( pos2 ), "codeditorsplit", editorBaseWidth, preventReflow )
 		//codeEditor.language, codeEditor.element.getAttribute("position"), "codeditorsplit" )
 	// should be smaller yet somehow displays it all
 	//updateCodeEditorWithContent(codeEditor, p2 )
