@@ -2209,7 +2209,6 @@ document.body.addEventListener( "highlighterready", (e) => {
 		let pl = src.length/parts
 		for (let n=0; n<parts; n++ ){
 			addCodeEditor( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
-			//console.log( src.slice(n*pl,(n+1)*pl), 'javascript', '-0.22 '+(2-n/10)+' -.4' )
 		}
 	})
 }, false);
@@ -2223,8 +2222,6 @@ function startExperience(){
 	document.querySelector("#mainbutton").style.display = "none"
 }
 
-let codeEditor
-// should consider multiple instances instead
 let editors = []
 // track created editors then apply actions to the currently selected one
 // problems happen when relying on querySelector/getElementById rather than a specific editor
@@ -2262,20 +2259,20 @@ function nextLineCodeEditor(codeEditor, lines=1){ // can be negative to scroll u
 	}
 }
 
-function nextPageCodeEditor(codeEditor, ){
+function nextPageCodeEditor(codeEditor){
 	nextLineCodeEditor(codeEditor, codeEditor.lengthWindowRange)
 }
 
-function previousPageCodeEditor(codeEditor, ){
+function previousPageCodeEditor(codeEditor){
 	nextLineCodeEditor(codeEditor, -codeEditor.lengthWindowRange)
 }
 
-function stopScrollCodeEditor(codeEditor, ){
+function stopScrollCodeEditor(codeEditor){
 	codeEditor.scrollInterval = clearInterval( codeEditor.scrollInterval )
 }
 
-function startScrollCodeEditor(codeEditor, ){
-	if (!codeEditor.scrollInterval) codeEditor.scrollInterval = setInterval( _ => nextLineCodeEditor(codeEditor, ), 100)
+function startScrollCodeEditor(codeEditor){
+	if (!codeEditor.scrollInterval) codeEditor.scrollInterval = setInterval( _ => nextLineCodeEditor(codeEditor), 100)
 }
 
 function highlightAllOccurences(codeEditor, keyword="function"){
@@ -2355,22 +2352,22 @@ function highlightUnderChar(codeEditor, pos=0, name=null){
 	c.position.z= .01
 }
 
-function moveCaretToNextVisibleChar(codeEditor, ){
+function moveCaretToNextVisibleChar(codeEditor){
 	addCaretToCodeEditor( ++codeEditor.caret )
 	// might be able to reach non visible one by remove an offset
 }
 
 function addCaretToCodeEditor(codeEditor, pos=0){
-	if (codeEditor.caret) removeCaretFromCodeEditor(codeEditor, )
+	if (codeEditor.caret) removeCaretFromCodeEditor(codeEditor)
 	highlightUnderChar(codeEditor, pos, "caret")
 	codeEditor.caret = pos
 }
 
-function removeCaretFromCodeEditor(codeEditor, ){
+function removeCaretFromCodeEditor(codeEditor){
 	codeEditor.element.object3D.getObjectByName("caret").removeFromParent()
 }
 
-function clearCodeEditorContent(codeEditor, ){
+function clearCodeEditorContent(codeEditor){
 	updateCodeEditorWithContent( "" )
 }
 
@@ -2386,7 +2383,7 @@ function updateCodeEditorWithContent(codeEditor, content){
 	if (!codeEditor.element) return
 	codeEditor.currentlyDisplayedText=content
 	codeEditor.element.setAttribute("troika-text", {value: content})
-	if (codeEditor.language) codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, language='javascript')})
+	if (codeEditor.language) codeEditor.element.setAttribute("troika-text", {colorRanges: highlight(content, codeEditor.language)})
 }
 
 function addBackdropToTroikaElement( codeEditor ){
@@ -2459,8 +2456,8 @@ function addGuttersToTroikaElement( codeEditor ){
 	
 			var rightGutter = document.createElement("a-cylinder")
 			// height proportional to the visible content to the terminal size
-			let scrollBarHeight = codeEditor.lengthWindowRange/getNumberOfLinesFromCodeEditor(codeEditor, ) * h
-			let scrollBarVerticalOffset = codeEditor.line/getNumberOfLinesFromCodeEditor(codeEditor, ) * h
+			let scrollBarHeight = codeEditor.lengthWindowRange/getNumberOfLinesFromCodeEditor(codeEditor) * h
+			let scrollBarVerticalOffset = codeEditor.line/getNumberOfLinesFromCodeEditor(codeEditor) * h
 			if (scrollBarHeight < .1) scrollBarHeight = .1
 			rightGutter.setAttribute("height", scrollBarHeight )
 			rightGutter.setAttribute("radius", .01 )
@@ -2521,7 +2518,7 @@ function addGuttersToTroikaElement( codeEditor ){
 	})
 }
 
-function getNumberOfLinesFromCodeEditor(codeEditor, ){
+function getNumberOfLinesFromCodeEditor(codeEditor){
 	let newLines = codeEditor.page.match(/\n/g)
 	if (!newLines) return 1 // undefined or 0
 	return newLines.length
@@ -2544,7 +2541,6 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 		language: null,
 	}
 	// could also add empty but with column and row for sizing
-	// for now supporting only 1 scode editor, despite the name parameter
 
 	let forcedLines = ''
 	const width = 50
@@ -2554,7 +2550,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	let parts =  page.split(' ')
 	let n = 0
 
-	if (!language.length){
+	if (!language?.length){
 		while ( pos < page.length ){
 			while ( line.length < width && parts[n]){
 				line += parts[n++] + ' '
@@ -2571,7 +2567,7 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 		codeEditor.page = page
 	}
 	codeEditor.line = codeEditor.startWindowRange
-	let numberOfLines = getNumberOfLinesFromCodeEditor(codeEditor, )
+	let numberOfLines = getNumberOfLinesFromCodeEditor(codeEditor)
 	if (numberOfLines<codeEditor.lengthWindowRange) codeEditor.lengthWindowRange = numberOfLines
 
 	content=codeEditor.page.split("\n").slice(codeEditor.line,codeEditor.line+codeEditor.lengthWindowRange).join("\n"); 
@@ -2587,8 +2583,8 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 		codeEditor.language = language
 	}
 
-	addBackdropToTroikaElement( codeEditor, )
-	addGuttersToTroikaElement( codeEditor, )
+	addBackdropToTroikaElement( codeEditor)
+	addGuttersToTroikaElement( codeEditor)
 	
 	let scrollbarPicked = false
 	let previousPosition
@@ -2619,7 +2615,33 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 		if (previousPosition.distanceTo(target)<0.1) scrollbarPicked = true
 	}
 	
+	editors.push( codeEditor )
 	return codeEditor
+}
+
+// should reconsider the behavior as the content could still be the same but what is displayed changed
+function splitEditorHorizontally( codeEditor ){
+	let p1, p2
+	if (codeEditor.language?.length){
+		let content = codeEditor.page.split('\n')
+		p1 = content.slice(content.length/2).join('\n')
+		p2 = content.slice(0,content.length/2).join('\n')
+	} else {
+		p1 = codeEditor.page.slice(codeEditor.page.length/2)
+		p2 = codeEditor.page.slice(0,codeEditor.page.length/2)
+	}
+	let pos1 = codeEditor.element.getAttribute("position").clone()
+	let pos2 = codeEditor.element.getAttribute("position").clone()
+	//pos1.x-=1
+	//pos2.x+=1
+	pos1.y-=.1
+	pos2.y+=.1
+	let ce1 = addCodeEditor( p1, codeEditor.language, AFRAME.utils.coordinates.stringify( pos1 ), "codeditorsplit" )
+	let ce2 = addCodeEditor( p2, codeEditor.language, AFRAME.utils.coordinates.stringify( pos2 ), "codeditorsplit" )
+		//codeEditor.language, codeEditor.element.getAttribute("position"), "codeditorsplit" )
+	// should be smaller yet somehow displays it all
+	//updateCodeEditorWithContent(codeEditor, p2 )
+	return [ce1, ce2]
 }
 
 // could change model opacity based on hand position, fading out when within a (very small here) safe space
