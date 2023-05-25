@@ -3092,8 +3092,16 @@ function onNextPinchSplitReader(){
 	let checkForNewPinches = setInterval( _ => {
 		if (selectedElements.filter( e => e.primary ).length > lastPrimary){
 			let id = getIdFromPick() // applies on primary only
-console.log('pinched to split', id, getEditorFromId( id ))
-			if (id) splitEditorHorizontally( getEditorFromId( id ) )
+			if (id) {
+				let srcEditor = getEditorFromId( id )
+				let editorParts = splitEditorHorizontally( srcEditor )
+				// could position based on hands positions
+				// should hide or even delete older one
+				srcEditor.element.setAttribute('visible', false)
+				// could display a line between current pinch and secondary hand
+					// or temporary transparency on the 2 new editors
+					// could attach on hand indexes
+			}
 			clearInterval(checkForNewPinches)
 		}
 	}, 50) // relatively cheap check, filtering on small array
