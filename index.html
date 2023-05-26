@@ -3226,24 +3226,53 @@ function visualDebugSphere( pos ){
 	return controlSphere
 }
 
+function numberOfPredecessors( g ){ return Object.keys( g ).map( k => g[k].predecessors.length ) }
+
+function numberOfSuccessors( g ){ return Object.keys( g ).map( k => g[k].successors.length ) }
+
+function traverseFunctionGraph( g ){
+	let callStack = []
+	Object.keys( g ).map( k => {
+		if (!g[k].predecessors.length) callStack.push( g[k] )
+	} )
+	if (callStack.length < 1){
+		console.warn( 'no entry point found in editor graph' )
+		return []
+	}
+	if (callStack.length > 1){
+		console.warn( 'multiple entry point founds in editor graph' )
+		return []
+	}
+	let pos = 0
+	while ( callStack[pos].successors?.[0] ) {
+		callStack.push( g[ callStack[pos].successors[0].element.id ] )
+		pos++
+	}
+	return callStack
+}
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 	document.body.addEventListener( "highlighterready", (e) => { 
-		let ed1 = addCodeEditor( 'function NodalTestSquare(x){ return x*x}', 'javascript', '-.3 2.2 -2.8')
-		addConnectorsToCodeEditor( ed1 )
-// testing multiline
-		let ed2 = addCodeEditor( `function NodalPrintToJXR(x){
-	addNewNote(x)
-}`, 'javascript', '.4 1.9 -.8')
-		addConnectorsToCodeEditor( ed2, true, false )
-		let ed3 = addCodeEditor( 'function NodalTestRandom(){ return Math.random()}', 'javascript', '-1.1 2.5 -.8')
+		let ed3 = addCodeEditor( 'Math.random()', 'javascript', '-.9 1.8 -.5')
 		addConnectorsToCodeEditor( ed3, false, true)
+		let ed1 = addCodeEditor( 'nodalValue*nodalValue', 'javascript', '-.3 1.6 -.5')
+		addConnectorsToCodeEditor( ed1 )
+		let ed2 = addCodeEditor( 'addNewNote("nodalValue: "+nodalValue)', 'javascript', '.2 1.4 -.5')
+		addConnectorsToCodeEditor( ed2, true, false )
 		setTimeout( _ => {
 			console.clear()
 			//console.log( connectionsBetweenEditors( editors[0], editors[2] ) )
-			console.log( generateGraphFromEditors(editors) )
-			// should look for predecessors and lack of
+			let g = generateGraphFromEditors(editors) 
+			//console.log( numberOfPredecessors( g ), numberOfSuccessors( g ) )
+			traverseFunctionGraph( g ).map( e => {
+				try {
+					nodalValue = eval?.( e.editor.page ) 
+				} catch (error) {
+					console.error(`Evaluation failed with ${error}`);
+				}
+			} )
 		} , 1000 )
 		// should be done after each codeEditors gets connectors added then on editor moves
 	}, false);
@@ -3302,6 +3331,7 @@ AFRAME.registerComponent('startfunctions', {
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
 
+      <a-troika-text anchor=left target id="displaypred" value="jxr displayPred()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
