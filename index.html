@@ -2565,6 +2565,8 @@ function addCodeEditor(page="jxr console.log('hello world')", language="javascri
 	content=codeEditor.page.split("\n").slice(codeEditor.line,codeEditor.line+codeEditor.lengthWindowRange).join("\n"); 
 	codeEditor.currentlyDisplayedText=content
 
+	if (document.getElementById(name)) name += Date.now()  
+	// shouldn't exist prior
 	if (!codeEditor.element) codeEditor.element = addNewNote(content, position, "0.1 0.1 0.1", name, "tool")
 	codeEditor.element.classList.add('reader')
 	codeEditor.element.setAttribute("troika-text", {value: content})
@@ -2983,6 +2985,8 @@ function makeAnchorsVisibleOnTargets(){
 		controlSphere.setAttribute("radius", 0.05) 
 		controlSphere.setAttribute("color", "blue")
 		controlSphere.setAttribute("wireframe", "true")
+		controlSphere.setAttribute("segments-width", 8)
+		controlSphere.setAttribute("segments-height", 8)
 		t.appendChild( controlSphere )
 	}) // could provide a proxy to be able to monitor efficiently
 }
@@ -3135,51 +3139,112 @@ function addConnectorsToCodeEditor( codeEditor, input=true, output=true){
 			if (input){
 				el.setAttribute("line__input", `start: 0 0 0; end : -1 1 0; opacity: 1;`)
 				el.setAttribute("line__input__end", `start: -1 1 0; end : -2 1 0; opacity: 1;`)
+				// order matters for getConnectorsFromEditor, the very tip MUST be the end point
 			}
 			if (output){
 				el.setAttribute("line__output", `start: ${w} ${-h} 0; end : ${w+1} ${-h-1} 0; opacity: 1;`)
 				el.setAttribute("line__output__end", `start: ${w+1} ${-h-1} 0; end : ${w+2} ${-h-1} 0; opacity: 1;`)
+				// order matters for getConnectorsFromEditor, the very tip MUST be the end point
 			}
 		})
 	})
 	return el
 }
 
-function checkConnectors( a, b ){
+function connectionsBetweenEditors( a, b ){
 	const connectionThreshold = 1 // to adjust after tries in VR, should probably be much shorter
-	const far = 999
-	let i1 = new THREE.Vector3(far,far,far)
-	let i2 = new THREE.Vector3(far,far,far)
-	let o1 = new THREE.Vector3(far,far,far)
-	let o2 = new THREE.Vector3(far,far,far)
-	a.element.getObject3D('line__input')?.getWorldPosition(i1)
-	b.element.getObject3D('line__input')?.getWorldPosition(i2)
-	a.element.getObject3D('line__output__end')?.getWorldPosition(o1)
-	b.element.getObject3D('line__output__end')?.getWorldPosition(o2)
+	let ca = getConnectorsFromEditor( a )
+	let cb = getConnectorsFromEditor( b )
 	let links = []
-	if ( i2.distanceTo(o1) < connectionThreshold ){
+	if ( ca.input && cb.output && ca.input.distanceTo(cb.output) < connectionThreshold ){
 		links.push({source:a, target:b})
 	}
-	if ( i1.distanceTo(o2) < connectionThreshold ){
+	if ( cb.input && ca.output && cb.input.distanceTo(ca.output) < connectionThreshold ){
 		links.push({source:b, target:a})
 	}
 	return links
+}
+
+function getConnectorsFromEditor( codeEditor ){
+	const pos = new THREE.Vector3()
+	const scale = new THREE.Vector3()
+	const quaternion = new THREE.Quaternion()
+	codeEditor.element.object3D.getWorldPosition(pos)
+	codeEditor.element.object3D.getWorldScale(scale)
+	codeEditor.element.object3D.getWorldQuaternion(quaternion)
+	let connectors = {source: codeEditor}
+	let res = ['input', 'output'].map( ctype => { // we might get different types of inputs or outputs later
+		let i = codeEditor.element.getObject3D('line__'+ctype+'__end')
+		if (i){
+			let tip = new THREE.Vector3( ...i.geometry.attributes.position.array.slice(3)) // end point
+			tip.applyQuaternion( quaternion )
+			tip.multiply(scale)
+			tip.add(pos)
+			connectors[ctype] = tip
+			//visualDebugSphere(tip)
+		}
+	})
+	return connectors
+}
+
+function generateGraphFromEditors( editors ){
+	let inputs = editors.map( e => getConnectorsFromEditor(e) ).filter( c => c.input )
+	let outputs = editors.map( e => getConnectorsFromEditor(e) ).filter( c => c.output )
+	let connections = []
+	// check distances between all inputs with outputs which are not from the same source
+	outputs.map( o => {
+		inputs.map( i => {
+			if (i.source != o.source && i.input.distanceTo( o.output ) < .2 )
+				connections.push( { source: o.source, target: i.source })
+		})
+	})
+	let graph = {}
+	editors.map( (e) => {
+		graph[e.element.id] = {}
+		let g = graph[e.element.id] 
+		g.editor = e
+		g.predecessors = []
+		g.successors = []
+		connections.map( c => {
+			if (c.target == e) g.predecessors.push(c.source)	
+			if (c.source == e) g.successors.push(c.target)	
+		})
+	})
+	return graph
+}
+
+function visualDebugSphere( pos ){
+	let controlSphere = document.createElement("a-sphere")
+	controlSphere.setAttribute("radius", 0.01) 
+	controlSphere.setAttribute("color", "blue")
+	controlSphere.setAttribute("wireframe", "true")
+	controlSphere.setAttribute("segments-width", 8)
+	controlSphere.setAttribute("segments-height", 8)
+	controlSphere.classList.add('visualdebug')
+	controlSphere.setAttribute("position", AFRAME.utils.coordinates.stringify( pos ) )
+	AFRAME.scenes[0].appendChild( controlSphere )
+	return controlSphere
 }
 
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 	document.body.addEventListener( "highlighterready", (e) => { 
-		let ed1 = addCodeEditor( 'function NodalTestSquare(x){ return x*x}', 'javascript', '-.3 2.2 -.8')
+		let ed1 = addCodeEditor( 'function NodalTestSquare(x){ return x*x}', 'javascript', '-.3 2.2 -2.8')
 		addConnectorsToCodeEditor( ed1 )
 // testing multiline
 		let ed2 = addCodeEditor( `function NodalPrintToJXR(x){
 	addNewNote(x)
 }`, 'javascript', '.4 1.9 -.8')
 		addConnectorsToCodeEditor( ed2, true, false )
-		let ed3 = addCodeEditor( 'function NodalTestRandom(){ return Math.random()}', 'javascript', '-.8 2.5 -.8')
+		let ed3 = addCodeEditor( 'function NodalTestRandom(){ return Math.random()}', 'javascript', '-1.1 2.5 -.8')
 		addConnectorsToCodeEditor( ed3, false, true)
-		setTimeout( _ => console.log( checkConnectors( editors[0], editors[2] ) ), 1000 )
+		setTimeout( _ => {
+			console.clear()
+			//console.log( connectionsBetweenEditors( editors[0], editors[2] ) )
+			console.log( generateGraphFromEditors(editors) )
+			// should look for predecessors and lack of
+		} , 1000 )
 		// should be done after each codeEditors gets connectors added then on editor moves
 	}, false);
 	//startExperience()
