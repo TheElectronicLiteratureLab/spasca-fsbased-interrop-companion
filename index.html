@@ -3251,6 +3251,66 @@ function traverseFunctionGraph( g ){
 	return callStack
 }
 
+var points2D = []
+function startDraw2D(){
+// consider draw( pos ) too
+	let p = document.querySelector('[pinchprimary]')
+	let target = new THREE.Vector3(); // create once an reuse it
+	p.addEventListener('pinchended', pinchPrimaryDraw2DEnded );
+	let indexTipTracking
+	let controlSphere
+	function pinchPrimaryDraw2DEnded(event){
+		let pos = event.detail.position.clone()
+		let controlSphere = points2D[points2D.length-1]
+		// check if close enough to starting point, if yes then remove listeners
+		/*
+		if ( pos.distanceTo( controlSphere.getAttribute("position") ) < .1 ){
+			console.log('removed listeners')
+			p.removeEventListener('pinchended', pinchPrimaryDraw2DEnded)
+			p.removeEventListener('pinchmoved', pinchPrimaryDraw2DMoved)
+			p.removeEventListener('pinchstarted', pinchPrimaryDraw2DStarted)
+		}
+		*/
+		//clearInterval( indexTipTracking )
+
+	}
+	p.addEventListener('pinchmoved', pinchPrimaryDraw2DMoved );
+	function pinchPrimaryDraw2DMoved(event){
+		// update line ending point position
+		let pos = event.detail.position.clone()
+		//let controlSphere = points2D[points2D.length-1]
+	}
+	p.addEventListener('pinchstarted', pinchPrimaryDraw2DStarted );
+	function pinchPrimaryDraw2DStarted(event){
+		// creates an offset between last pinch and last index tip position
+			// could merge them by updating the previous line end to the current pinch position
+		controlSphere = document.createElement("a-sphere")
+		points2D.push( controlSphere )
+		let pos = event.detail.position.clone()
+		controlSphere.className += "draw2d"
+		controlSphere.setAttribute("radius", 0.005)
+		controlSphere.setAttribute("color", "purple")
+		controlSphere.setAttribute("wireframe", "true")
+		controlSphere.setAttribute("segments-width", 8)
+		controlSphere.setAttribute("segments-height", 8)
+		controlSphere.setAttribute("position", pos)
+		AFRAME.scenes[0].appendChild( controlSphere )
+		controlSphere.setAttribute("line__0", `start: 0 0 0; end : 0 0 0; opacity: 1; color:purple;`)
+		clearInterval( indexTipTracking )
+		indexTipTracking = setInterval( _ => {
+			target = p.components['hand-tracking-controls'].indexTipPosition
+			// sometimes getting strange values, might check against null/0
+			let line = controlSphere.getAttribute("line__0")
+			let cspos = controlSphere.getAttribute("position")
+			if (line){
+				let previousPos = AFRAME.utils.coordinates.stringify( target.sub(cspos) )
+				//pos.z = line.start.z // stick to a single plane, here axis aligned
+				controlSphere.setAttribute("line__0", "end", previousPos)
+			}
+		}, 20)
+	}
+}
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
@@ -3262,7 +3322,6 @@ AFRAME.registerComponent('startfunctions', {
 		let ed2 = addCodeEditor( 'addNewNote("nodalValue: "+nodalValue)', 'javascript', '.2 1.4 -.5')
 		addConnectorsToCodeEditor( ed2, true, false )
 		setTimeout( _ => {
-			console.clear()
 			//console.log( connectionsBetweenEditors( editors[0], editors[2] ) )
 			let g = generateGraphFromEditors(editors) 
 			//console.log( numberOfPredecessors( g ), numberOfSuccessors( g ) )
@@ -3276,6 +3335,7 @@ AFRAME.registerComponent('startfunctions', {
 		} , 1000 )
 		// should be done after each codeEditors gets connectors added then on editor moves
 	}, false);
+	startDraw2D()
 	//startExperience()
 	//doublePinchToScale()
 	//emptyPinchToMove()
@@ -3330,6 +3390,8 @@ AFRAME.registerComponent('startfunctions', {
       <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" ></a-entity>
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
+      
+      <a-troika-text anchor=left target id="startdraw2d" value="jxr startDraw2D()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="displaypred" value="jxr displayPred()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
