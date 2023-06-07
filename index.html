@@ -3284,6 +3284,12 @@ function startDraw2D(){
 	function pinchPrimaryDraw2DStarted(event){
 		// creates an offset between last pinch and last index tip position
 			// could merge them by updating the previous line end to the current pinch position
+			// could add a new line between both
+		if (points2D.length && points2D.length > 0){
+			let lastPoint = points2D[points2D.length-1]
+			let previouspos = 
+				lastPoint.getAttribute("line__0").end.clone().add( lastPoint.getAttribute('position') )
+		}
 		controlSphere = document.createElement("a-sphere")
 		points2D.push( controlSphere )
 		let pos = event.detail.position.clone()
@@ -3311,31 +3317,73 @@ function startDraw2D(){
 	}
 }
 
+function colorGradient(fadeFraction, rgbColor1, rgbColor2, rgbColor3) {
+// https://gist.github.com/gskema/2f56dc2e087894ffc756c11e6de1b5ed
+    var color1 = rgbColor1;
+    var color2 = rgbColor2;
+    var fade = fadeFraction;
+
+    // Do we have 3 colors for the gradient? Need to adjust the params.
+    if (rgbColor3) {
+      fade = fade * 2;
+
+      // Find which interval to use and adjust the fade percentage
+      if (fade >= 1) {
+        fade -= 1;
+        color1 = rgbColor2;
+        color2 = rgbColor3;
+      }
+    }
+
+    var diffRed = color2.red - color1.red;
+    var diffGreen = color2.green - color1.green;
+    var diffBlue = color2.blue - color1.blue;
+
+    var gradient = {
+      red: parseInt(Math.floor(color1.red + (diffRed * fade)), 10),
+      green: parseInt(Math.floor(color1.green + (diffGreen * fade)), 10),
+      blue: parseInt(Math.floor(color1.blue + (diffBlue * fade)), 10),
+    };
+
+    return 'rgb(' + Math.max(0,gradient.red) + ',' + Math.max(0,gradient.green) + ',' + Math.max(0,gradient.blue) + ')';
+}
+
+function presetColorGradient(fadeFraction){
+  let highColor = { red: 217, green: 83, blue: 79 };
+  let mediumColor = { red: 240, green: 173, blue: 78 };
+  let lowColor = { red: 92, green: 184, blue: 91 };
+
+  return colorGradient(fadeFraction, lowColor, mediumColor, highColor);
+}
+
+function tensionVisualized(){
+	let p = document.querySelector('[pinchprimary]')
+	let ptarget = new THREE.Vector3(); // create once an reuse it
+	let s = document.querySelector('[pinchsecondary]')
+	let starget = new THREE.Vector3(); // create once an reuse it
+	let entity = document.createElement("a-entity")
+	AFRAME.scenes[0].appendChild( entity )
+	entity.setAttribute("line__0", `start: 0 0 0; end : 0 0 0; opacity: 1; color:purple;`)
+	let indexesTipTracking = setInterval( _ => {
+		ptarget = p.components['hand-tracking-controls'].indexTipPosition
+		starget = s.components['hand-tracking-controls'].indexTipPosition
+		// sometimes getting strange values, might check against null/0
+		let line = entity.getAttribute("line__0")
+		if (line){
+			let start = AFRAME.utils.coordinates.stringify( ptarget )
+			entity.setAttribute("line__0", "start", start)
+			let end = AFRAME.utils.coordinates.stringify( starget )
+			entity.setAttribute("line__0", "end", end)
+			entity.setAttribute("line__0", "color", presetColorGradient( ptarget.distanceTo(starget)) )
+		}
+	}, 20)
+}
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
-	document.body.addEventListener( "highlighterready", (e) => { 
-		let ed3 = addCodeEditor( 'Math.random()', 'javascript', '-.9 1.8 -.5')
-		addConnectorsToCodeEditor( ed3, false, true)
-		let ed1 = addCodeEditor( 'nodalValue*nodalValue', 'javascript', '-.3 1.6 -.5')
-		addConnectorsToCodeEditor( ed1 )
-		let ed2 = addCodeEditor( 'addNewNote("nodalValue: "+nodalValue)', 'javascript', '.2 1.4 -.5')
-		addConnectorsToCodeEditor( ed2, true, false )
-		setTimeout( _ => {
-			//console.log( connectionsBetweenEditors( editors[0], editors[2] ) )
-			let g = generateGraphFromEditors(editors) 
-			//console.log( numberOfPredecessors( g ), numberOfSuccessors( g ) )
-			traverseFunctionGraph( g ).map( e => {
-				try {
-					nodalValue = eval?.( e.editor.page ) 
-				} catch (error) {
-					console.error(`Evaluation failed with ${error}`);
-				}
-			} )
-		} , 1000 )
-		// should be done after each codeEditors gets connectors added then on editor moves
-	}, false);
-	startDraw2D()
+
+	tensionVisualized()
 	//startExperience()
 	//doublePinchToScale()
 	//emptyPinchToMove()
@@ -3410,7 +3458,7 @@ AFRAME.registerComponent('startfunctions', {
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
 	-->
-      <a-console position="0 1.1 -0.8" rotation="-45 0 0" font-size="34" height=0.5 skip-intro=true></a-console>
+      <a-console position="0 1.1 -0.8" rotation="-45 0 0" height=2 font-size="34" height=0.5 skip-intro=true></a-console>
 
 
     </a-scene>
