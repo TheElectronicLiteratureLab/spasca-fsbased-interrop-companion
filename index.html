@@ -3379,11 +3379,21 @@ function tensionVisualized(){
 	}, 20)
 }
 
+function ontouch(){
+	let p = document.querySelector('[pinchprimary]')
+	let ptarget = new THREE.Vector3(); // create once an reuse it
+	let indexesTipTracking = setInterval( _ => {
+		ptarget = p.components['hand-tracking-controls'].indexTipPosition
+		getClosestTargetElement( ptarget )?.setAttribute('wireframe', true)
+	}, 20)
+}
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 
-	tensionVisualized()
+	ontouch()
+	//tensionVisualized()
 	//startExperience()
 	//doublePinchToScale()
 	//emptyPinchToMove()
@@ -3460,6 +3470,7 @@ AFRAME.registerComponent('startfunctions', {
 	-->
       <a-console position="0 1.1 -0.8" rotation="-45 0 0" height=2 font-size="34" height=0.5 skip-intro=true></a-console>
 
+      <a-box target position="0 1.65 -0.5" scale="0.01 0.01 0.01"></a-box>
 
     </a-scene>
   </body>
