@@ -3388,11 +3388,55 @@ function ontouch(){
 	}, 20)
 }
 
+
+function thumbToIndexPull(){
+	let p = document.querySelector('[pinchprimary]')
+	let tip = new THREE.Vector3(); // create once an reuse it
+	let proximal = new THREE.Vector3(); // create once an reuse it
+	let thumb = new THREE.Vector3(); // create once an reuse it
+	let touches = []
+	const threshold_thumb2tip = 0.01
+	const threshold_thumb2proximal = 0.05
+	let indexesTipTracking = setInterval( _ => {
+		// cpnsider getObjectByName() instead
+		p.object3D.traverse( e => { if (e.name == 'index-finger-tip' ) tip = e.position })
+		//index-finger-phalanx-distal 
+		//index-finger-phalanx-intermediate
+		p.object3D.traverse( e => { if (e.name == 'index-finger-phalanx-proximal' ) proximal = e.position })
+		p.object3D.traverse( e => { if (e.name == 'thumb-tip' ) thumb = e.position })
+		let touch = {}
+		touch.date = Date.now()
+		touch.thumb2tip = thumb.distanceTo(tip)
+		if (!touch.thumb2tip) return
+		touch.thumb2proximal = thumb.distanceTo(proximal)
+		//console.log( touch.thumb2tip, touch.thumb2proximal )
+		// usually <1cm				<4cm (!)
+		//if ((touch.thumb2tip && touch.thumb2tip < threshold_thumb2tip)
+			//|| (touch.thumb2proximal && touch.thumb2proximal < threshold_thumb2proximal))
+		if (touch.thumb2tip < threshold_thumb2tip
+			|| touch.thumb2proximal < threshold_thumb2proximal){
+			if (touches.length){
+				let previous = touches[touches.length-1]
+				if (touch.date - previous.date < 300){
+					if (touch.thumb2tip < threshold_thumb2tip &&
+						previous.thumb2proximal < threshold_thumb2proximal)
+						console.log('^')
+					if (touch.thumb2proximal < threshold_thumb2proximal &&
+						previous.thumb2tip < threshold_thumb2tip)
+						console.log('v')
+				}
+			}
+			touches.push(touch)
+		}
+	}, 50)
+}
+
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 
-	ontouch()
+	thumbToIndexPull()
+	//ontouch()
 	//tensionVisualized()
 	//startExperience()
 	//doublePinchToScale()
