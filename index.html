@@ -3388,7 +3388,6 @@ function ontouch(){
 	}, 20)
 }
 
-
 function thumbToIndexPull(){
 	let p = document.querySelector('[pinchprimary]')
 	let tip = new THREE.Vector3(); // create once an reuse it
@@ -3419,23 +3418,49 @@ function thumbToIndexPull(){
 				let previous = touches[touches.length-1]
 				if (touch.date - previous.date < 300){
 					if (touch.thumb2tip < threshold_thumb2tip &&
-						previous.thumb2proximal < threshold_thumb2proximal)
+						previous.thumb2proximal < threshold_thumb2proximal){
 						console.log('^')
+						p.emit('thumb2indexpull')
+					}
 					if (touch.thumb2proximal < threshold_thumb2proximal &&
-						previous.thumb2tip < threshold_thumb2tip)
+						previous.thumb2tip < threshold_thumb2tip){
 						console.log('v')
+						p.emit('thumb2indexpush')
+					}
 				}
 			}
 			touches.push(touch)
 		}
 	}, 50)
+	// TODO
+	// Bind thumb2indexpush/thumb2indexpull to zoom in/out "world" i.e all assets that aren't "special" e.g self, lights, UI
+}
+
+function thumbToIndexAngle(){
+	let p = document.querySelector('[pinchprimary]')
+	let tip = new THREE.Vector3(); // create once an reuse it
+	let metacarpal = new THREE.Vector3(); // create once an reuse it
+	let thumb = new THREE.Vector3(); // create once an reuse it
+	let indexesTipTracking = setInterval( _ => {
+		p.object3D.traverse( e => { if (e.name == 'index-finger-tip' ) tip = e.position })
+		p.object3D.traverse( e => { if (e.name == 'thumb-metacarpal' ) metacarpal = e.position })
+		p.object3D.traverse( e => { if (e.name == 'thumb-tip' ) thumb = e.position })
+		tip.sub(metacarpal)
+		thumb.sub(metacarpal)
+		let angle = thumb.angleTo(tip)
+		if (angle > 0.9 && angle < 1.2) {
+			console.log( 'r' )
+			p.emit('thumb2indexpush')
+		}
+	}, 590)
 }
 
 // used for testing
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 
-	thumbToIndexPull()
+	thumbToIndexAngle()
+	//thumbToIndexPull()
 	//ontouch()
 	//tensionVisualized()
 	//startExperience()
