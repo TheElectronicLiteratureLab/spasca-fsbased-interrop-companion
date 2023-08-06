@@ -3451,7 +3451,10 @@ function thumbToIndexAngle(){
 		if (angle > 0.9 && angle < 1.2) {
 			console.log( 'r' )
 			p.emit('thumb2indexpush')
+			// could insert (with max threshold) a targe entity between tip and thumb
+				// this entity could then ondrop add a new post it note or jxr element
 		}
+		// could also check angle against head to insure it's facing the user
 	}, 590)
 }
 
