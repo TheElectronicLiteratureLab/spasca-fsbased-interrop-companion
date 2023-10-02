@@ -2074,6 +2074,33 @@ function generateCompoundPrimitiveExample(position="0 1.4 -0.2"){
 	return el
 }
 
+function generateCompoundPrimitiveStart(position="0 1.4 -0.2"){
+	var el = document.createElement("a-entity")	
+	el.setAttribute("position", position)
+	el.id = "compound_object_" + Date.now()
+	el.className = "compound_object" 
+	let parts = []
+	parts.push( newPrimitiveWithOutline("box",           "0 0 0",     ".2 .1 .1") )
+	parts.push( newPrimitiveWithOutline("box",        ".125 0 0",  ".05 .05 .05") )
+	parts.map( p => el.appendChild(p) )
+	return el
+}
+
+function generateCompoundPrimitiveEnd(position="0 1.4 -0.2"){
+	var el = document.createElement("a-entity")	
+	el.setAttribute("position", position)
+	el.id = "compound_object_" + Date.now()
+	el.className = "compound_object" 
+	let parts = []
+	parts.push( newPrimitiveWithOutline("box",           "0 0 0",     ".2 .1 .1") )
+	parts.push( newPrimitiveWithOutline("box",  "-.125 0.0375 0",  ".05 .025 .1") )
+	parts.push( newPrimitiveWithOutline("box", "-.125 -0.0375 0",  ".05 .025 .1") )
+	parts.push( newPrimitiveWithOutline("box",  "-.125 0 0.0375", ".05 .05 .025") )
+	parts.push( newPrimitiveWithOutline("box", "-.125 0 -0.0375", ".05 .05 .025") )
+	parts.map( p => el.appendChild(p) )
+	return el
+}
+
 function addPrimitive( name, position="0 1.4 -0.2" ){
 	let el = newPrimitiveWithOutline( name )
 	el.setAttribute("position", position)
@@ -3392,18 +3419,27 @@ function thumbToIndexAngle(){
 	}, 590)
 }
 
-// used for testing
+// used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
+// does indeed create problems, namely other pages relying on it do get this testing behavior
 AFRAME.registerComponent('startfunctions', {
   init: function () {
+	//addBlockCodeExample(text="hi", pos="0 1.4 -0.2", color="black", outlineColor="white")
+	addBlockCodeExample('code', '0 1.5 -0.2')
+	//relies on addCompoundPrimitiveExample() which already uses snap-on-pinched-ended
+	// also relies on addNewNote() so means code might be executed on left pinch or move with right pinch indepdently from block, to verify
 
-	thumbToIndexAngle()
-	//thumbToIndexPull()
-	//ontouch()
-	//tensionVisualized()
-	//startExperience()
-	//doublePinchToScale()
-	//emptyPinchToMove()
-	//makeAnchorsVisibleOnTargets()
-	//startMesher()
+	let el = generateCompoundPrimitiveStart(position="-0.2 1.5 -0.2")
+	targets.push(el)
+	//el.setAttribute('snap-on-pinchended', true) 
+	el.setAttribute('scale', '.1 .1 .1') 
+	AFRAME.scenes[0].appendChild(el)
+
+	el = generateCompoundPrimitiveEnd(position="0.2 1.5 -0.2")
+	targets.push(el)
+	//el.setAttribute('snap-on-pinchended', true) 
+	el.setAttribute('scale', '.1 .1 .1') 
+	AFRAME.scenes[0].appendChild(el)
+
+	// consider instanciateFromPrimitive() also in order to clone a set of blocks
   }
 })
