@@ -3419,8 +3419,28 @@ function thumbToIndexAngle(){
 	}, 590)
 }
 
+AFRAME.registerComponent('annotation', {
+// consider also multiple annotation but being mindful that it might clutter significantly
+  schema: {
+	content : {type: 'string'}
+  },
+  init: function () {
+	addAnnotation(this.el, this.data.content)
+  },
+  update: function () {
+	this.el.querySelector('.annotation').setAttribute('value', this.data.content )
+	// assuming single annotation
+  },
+  remove: function () {
+	this.el.querySelector('.annotation').removeFromParent()
+	//Array.from( this.el.querySelectorAll('.annotation') ).map( a => a.removeFromParent() )
+  }
+})
+
 function addAnnotation(el, content){
+	// could also appear only when in close proximity or while pinching
 	let annotation = document.createElement( 'a-troika-text' )
+	annotation.classList.add( 'annotation' )
 	annotation.setAttribute('value', content)
 	annotation.setAttribute('position', '0 .1 -.1')
 	annotation.setAttribute('rotation', '-90 0 0')
