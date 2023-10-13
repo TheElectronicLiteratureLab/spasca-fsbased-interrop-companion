@@ -3419,12 +3419,46 @@ function thumbToIndexAngle(){
 	}, 590)
 }
 
+function addAnnotation(el, content){
+	let annotation = document.createElement( 'a-troika-text' )
+	annotation.setAttribute('value', content)
+	annotation.setAttribute('position', '0 .1 -.1')
+	annotation.setAttribute('rotation', '-90 0 0')
+	annotation.setAttribute("anchor", "left" )
+	annotation.setAttribute("outline-width", "5%" )
+	annotation.setAttribute("outline-color", "black" )
+	el.appendChild(annotation)
+	return el
+}
+
 // used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
 // does indeed create problems, namely other pages relying on it do get this testing behavior
 AFRAME.registerComponent('startfunctions', {
   init: function () {
+
+/* class clonableasset : Crystal.glb Fish.glb Mountains.glb Penguin.glb Pinetree.glb
+consider also 
+	backend needed for caching
+		getPolyList(keyword) cachePoly(res) loadPolyThumbnails(res) loadFirstPolyModel(res) loadPolyModels(res)
+
+
+see https://git.benetou.fr/utopiah/text-code-xr-engine/issues/52 for more shorthands
+
+*/
+	const movePenguin = "jxr qs #penguin sa position 1 0 -2"
+	const rotatePenguin = "jxr qs #penguin sa rotation 0 -20 0"
+
 	//addBlockCodeExample(text="hi", pos="0 1.4 -0.2", color="black", outlineColor="white")
-	addBlockCodeExample('code', '0 1.5 -0.2')
+	addBlockCodeExample('add penguin', '0 1.5 -0.2')
+	let elToAnnotate = addBlockCodeExample('move penguin forward', '0 1.6 -0.2')
+	addAnnotation(elToAnnotate, 'fait avancer pengouin')
+	console.log(elToAnnotate)
+	addBlockCodeExample('add green cube', '0 1.4 -0.2')
+
+	addBlockCodeExample(movePenguin, '0 1.45 -0.2')
+	addBlockCodeExample(rotatePenguin, '0 1.55 -0.2')
+// should change color and enable the 2 new types
+
 	//relies on addCompoundPrimitiveExample() which already uses snap-on-pinched-ended
 	// also relies on addNewNote() so means code might be executed on left pinch or move with right pinch indepdently from block, to verify
 
@@ -3439,6 +3473,27 @@ AFRAME.registerComponent('startfunctions', {
 	//el.setAttribute('snap-on-pinchended', true) 
 	el.setAttribute('scale', '.1 .1 .1') 
 	AFRAME.scenes[0].appendChild(el)
+
+	let h = [
+		[1,1,1,1,1,1,1,1,1,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,1,1,1,1,1,1,1,1,1],
+	]
+	for (let z=0;z<10;z++)
+		for (let x=0;x<10;x++){
+			el = document.createElement("a-entity")
+			el.setAttribute('position', (x-5) + ' 0 ' + (z-5) )
+			el.setAttribute('geometry', "primitive: cylinder; segmentsRadial: 8; segmentsHeight: 1; radius: 0.5; height: "+(h[x][z]+.1)+";" )
+			el.setAttribute('material', 'color', 'lightblue')
+			AFRAME.scenes[0].appendChild(el)
+		}
 
 	// consider instanciateFromPrimitive() also in order to clone a set of blocks
   }

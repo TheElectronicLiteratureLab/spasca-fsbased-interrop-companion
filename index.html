@@ -104,7 +104,7 @@
 
       <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
 	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
-      <a-sky hide-on-enter-ar color="black"></a-sky>
+      <a-sky hide-on-enter-ar color="lightgray"></a-sky>
       <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" ></a-entity>
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
@@ -128,10 +128,19 @@
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
 	-->
-      <a-console position="0 1.1 -0.8" rotation="-45 0 0" height=2 font-size="34" height=0.5 skip-intro=true></a-console>
+      <a-console position="0 2 -0.8" rotation="-5 0 0" font-size="34" height=1 skip-intro=true></a-console>
 
-      <a-box target position="0 1.65 -0.5" scale="0.01 0.01 0.01"></a-box>
+      <a-troika-text value="Biggu's Gate" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="0 2 -0.5"
+	rotation="25 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #00f"></a-troika-text>
+	<a-gltf-model hide-on-enter-ar="" src="../content/winterset/Mountains.glb" position="0 0 0" rotation="0 0 0" scale="10 10 10" class="clonableasset"></a-gltf-model>
 
+	<a-gltf-model src="../content/winterset/Crystal.glb" position="-1 0 -1" rotation="0 0 0" scale=".1 .1 .1" class="clonableasset"></a-gltf-model>
+	<a-gltf-model id="fish" src="../content/winterset/Fish.glb" position="2 0 -2" rotation="0 0 0" scale=".01 .01 .01" class="clonableasset"></a-gltf-model>
+	<a-gltf-model id="penguin" src="../content/winterset/Penguin.glb" position="0 0 -1" rotation="0 0 0" scale=".1 .1 .1" class="clonableasset"></a-gltf-model>
+
+	<a-gltf-model src="../content/winterset/Pinetree.glb" position="0 3 -10" rotation="0 0 0" scale="5 5 5" class="clonableasset"></a-gltf-model>
+
+	<a-plane hide-on-enter-ar="" scale="50 50 50" rotation="-90 0 0" color="lightblue"></a-plane>
     </a-scene>
   </body>
 </script>
