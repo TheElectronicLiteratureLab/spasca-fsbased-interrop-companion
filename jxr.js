@@ -3451,6 +3451,45 @@ function addAnnotation(el, content){
 	return el
 }
 
+AFRAME.registerComponent('playground', {
+  //schema: { content : {type: 'string'} },
+  init: function () {
+	// could come from content as a string for sufficiently small examples e.g 3x3
+	let h = [
+		[1,1,1,1,1,1,1,1,1,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,0,0,0,1,0,0,0,0,1],
+		[1,0,0,0,0,1,0,0,0,1],
+		[1,1,1,1,1,1,1,1,1,1],
+	]
+	for (let z=0;z<10;z++)
+		for (let x=0;x<10;x++){
+			let el = document.createElement("a-entity")
+			el.setAttribute('position', (x-5) + ' 0 ' + (z-5) )
+			el.setAttribute('geometry', "primitive: cylinder; segmentsRadial: 8; segmentsHeight: 1; radius: 0.5; height: "+(h[x][z]+.1)+";" )
+			el.setAttribute('material', 'color', 'lightblue')
+			this.el.appendChild(el)
+		}
+  }
+})
+
+
+AFRAME.registerComponent('unpackable', {
+  //schema: { content : {type: 'string'} },
+  init: function () {
+	// (this.el, this.data.content)
+  },
+  update: function () {
+  },
+  remove: function () {
+  }
+})
+
 // used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
 // does indeed create problems, namely other pages relying on it do get this testing behavior
 AFRAME.registerComponent('startfunctions', {
@@ -3493,27 +3532,6 @@ see https://git.benetou.fr/utopiah/text-code-xr-engine/issues/52 for more shorth
 	//el.setAttribute('snap-on-pinchended', true) 
 	el.setAttribute('scale', '.1 .1 .1') 
 	AFRAME.scenes[0].appendChild(el)
-
-	let h = [
-		[1,1,1,1,1,1,1,1,1,1],
-		[1,0,0,0,1,0,0,0,0,1],
-		[1,0,0,0,0,1,0,0,0,1],
-		[1,0,0,0,1,0,0,0,0,1],
-		[1,0,0,0,0,1,0,0,0,1],
-		[1,0,0,0,1,0,0,0,0,1],
-		[1,0,0,0,0,1,0,0,0,1],
-		[1,0,0,0,1,0,0,0,0,1],
-		[1,0,0,0,0,1,0,0,0,1],
-		[1,1,1,1,1,1,1,1,1,1],
-	]
-	for (let z=0;z<10;z++)
-		for (let x=0;x<10;x++){
-			el = document.createElement("a-entity")
-			el.setAttribute('position', (x-5) + ' 0 ' + (z-5) )
-			el.setAttribute('geometry', "primitive: cylinder; segmentsRadial: 8; segmentsHeight: 1; radius: 0.5; height: "+(h[x][z]+.1)+";" )
-			el.setAttribute('material', 'color', 'lightblue')
-			AFRAME.scenes[0].appendChild(el)
-		}
 
 	// consider instanciateFromPrimitive() also in order to clone a set of blocks
   }
