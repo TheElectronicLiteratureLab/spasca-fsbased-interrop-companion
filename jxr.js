@@ -3513,9 +3513,10 @@ AFRAME.registerComponent('unpackable', {
 })
 
 AFRAME.registerComponent('trail', {
-  //schema: { content : {type: 'string'} },
+  
   init: function () {
 	let player = document.getElementById('player') // assuming single player, non networked
+	let previousPos 
 	setInterval( _ => {
 		let pos = player.getAttribute('position').clone()
 		pos.y = 1
@@ -3530,6 +3531,7 @@ AFRAME.registerComponent('trail', {
 			console.log(hits) // problem here...
 			hits[hits.length-1].el.setAttribute('color', 'red')
 		}
+		if (previousPos && previousPos.distanceTo(pos) < 0.1) return // threshold to avoid cluttering
 		let el = document.createElement('a-cylinder')
 		el.setAttribute('scale', '.2 2 .2')
 		el.setAttribute('position', AFRAME.utils.coordinates.stringify( pos ) )
@@ -3537,11 +3539,12 @@ AFRAME.registerComponent('trail', {
 		el.setAttribute('opacity', '0.3')
 		el.className += 'trail'
 		this.el.appendChild(el)
+		previousPos = player.getAttribute('position').clone()
+		previousPos.y = 1
 	}, 500)
   },
-  update: function () {
-  },
   remove: function () {
+	// should remove interval, possible visual trail too
   }
 })
 
