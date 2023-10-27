@@ -3478,11 +3478,66 @@ AFRAME.registerComponent('playground', {
   }
 })
 
-
+// tested per scene for now
 AFRAME.registerComponent('unpackable', {
   //schema: { content : {type: 'string'} },
   init: function () {
 	// (this.el, this.data.content)
+	// see tensionVisualized() 
+	// 0-20cm stretch vertically or horizontally using scale
+	// 20-50 go on as transparent/wireframe
+	// >50% hide then show building blocks
+		// themselves as unpackable
+	let pp = new THREE.Vector3(); // create once an reuse it
+	let ps = new THREE.Vector3(); // create once an reuse it
+	document.querySelector('[pinchprimary]').addEventListener('pinchmoved', event => {
+		pp = event.detail.position.clone()
+		if (!ps || !selectedElement) return
+		let d = pp.distanceTo(ps)
+		console.log( d )
+		console.log( selectedElement.getAttribute('scale') )
+		selectedElement.setAttribute('scale', d+' ' +d+' '+d )
+		if (d>.2) selectedElement.setAttribute('transparent', true)
+		if (d>.2) selectedElement.setAttribute('wireframe', true)
+	})
+	document.querySelector('[pinchsecondary]').addEventListener('pinchmoved', event => {
+		ps = event.detail.position.clone()
+	})
+	document.querySelector('[pinchprimary]').addEventListener('pinchended', event => { pp = null })
+	document.querySelector('[pinchprimary]').addEventListener('pinchended', event => { pp = null })
+  },
+  update: function () {
+  },
+  remove: function () {
+  }
+})
+
+AFRAME.registerComponent('trail', {
+  //schema: { content : {type: 'string'} },
+  init: function () {
+	let player = document.getElementById('player') // assuming single player, non networked
+	setInterval( _ => {
+		let pos = player.getAttribute('position').clone()
+		pos.y = 1
+		// compare current pos with previous set ones and if below distance threshold, lose points
+		let hits = Array.from(document.querySelectorAll('.trail'))
+			.filter( e => e.getAttribute("visible") == true)
+			.map( t => { return { el: t, dist : pos.distanceTo(t.getAttribute("position") ) } })
+			.filter( t => t.dist < 0.1 ) 
+			.sort( (a,b) => a.dist > b.dist)
+		if (hits.length>0) {
+			setFeedbackHUD('touching')
+			console.log(hits) // problem here...
+			hits[hits.length-1].el.setAttribute('color', 'red')
+		}
+		let el = document.createElement('a-cylinder')
+		el.setAttribute('scale', '.2 2 .2')
+		el.setAttribute('position', AFRAME.utils.coordinates.stringify( pos ) )
+		el.setAttribute('color', 'green')
+		el.setAttribute('opacity', '0.3')
+		el.className += 'trail'
+		this.el.appendChild(el)
+	}, 500)
   },
   update: function () {
   },
@@ -3534,5 +3589,6 @@ see https://git.benetou.fr/utopiah/text-code-xr-engine/issues/52 for more shorth
 	AFRAME.scenes[0].appendChild(el)
 
 	// consider instanciateFromPrimitive() also in order to clone a set of blocks
+	AFRAME.scenes[0].setAttribute('trail', '')
   }
 })
