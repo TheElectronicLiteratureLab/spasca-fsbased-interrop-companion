@@ -3528,7 +3528,6 @@ AFRAME.registerComponent('trail', {
 			.sort( (a,b) => a.dist > b.dist)
 		if (hits.length>0) {
 			setFeedbackHUD('touching')
-			console.log(hits) // problem here...
 			hits[hits.length-1].el.setAttribute('color', 'red')
 		}
 		if (previousPos && previousPos.distanceTo(pos) < 0.1) return // threshold to avoid cluttering
@@ -3537,11 +3536,13 @@ AFRAME.registerComponent('trail', {
 		el.setAttribute('position', AFRAME.utils.coordinates.stringify( pos ) )
 		el.setAttribute('color', 'green')
 		el.setAttribute('opacity', '0.3')
+		el.setAttribute('segments-radial', '6')
+		el.setAttribute('segments-height', '2')
 		el.className += 'trail'
 		this.el.appendChild(el)
 		previousPos = player.getAttribute('position').clone()
 		previousPos.y = 1
-	}, 500)
+	}, 50)
   },
   remove: function () {
 	// should remove interval, possible visual trail too
