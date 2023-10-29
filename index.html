@@ -29,7 +29,7 @@
     <!-- still experimenting, see webdav.html -->
     <script src='dependencies/webdav.js'></script> 
 
-    <script src='jxr.js'></script> 
+    <script src='jxr.js?12344'></script> 
     <!-- replacing with local copies as CDNs are like unpkg tend to be slow
     <script type="module" src="https://unpkg.com/immers-client/dist/destination.bundle.js"></script>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
@@ -129,18 +129,18 @@
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
 	-->
-      <a-console position="0 2 -0.8" rotation="-5 0 0" font-size="34" height=1 skip-intro=true></a-console>
+      <a-console position="2 2 0" rotation="0 -45 0" font-size="34" height=1 skip-intro=true></a-console>
 
-      <a-entity playground></a-entity>
-      <a-troika-text value="Biggu's Gate" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="0 2 -0.5"
-	rotation="25 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #00f"></a-troika-text>
-	<a-gltf-model hide-on-enter-ar="" src="../content/winterset/Mountains.glb" position="0 0 0" rotation="0 0 0" scale="10 10 10" class="clonableasset"></a-gltf-model>
+	<a-gltf-model hide-on-enter-ar="" visible=false src="../content/room.gltf" position="0 0 0" rotation="0 0 0" ></a-gltf-model>
+	<a-gltf-model hide-on-enter-ar="" src="../content/kitchen.gltf" position=".5 0 0" rotation="0 110 0" ></a-gltf-model>
 
-	<a-gltf-model src="../content/winterset/Crystal.glb" position="-1 0 -1" rotation="0 0 0" scale=".1 .1 .1" class="clonableasset"></a-gltf-model>
-	<a-gltf-model id="fish" src="../content/winterset/Fish.glb" position="2 0 -2" rotation="0 0 0" scale=".01 .01 .01" class="clonableasset"></a-gltf-model>
-	<a-gltf-model id="penguin" src="../content/winterset/Penguin.glb" position="0 0 -1" rotation="0 0 0" scale=".1 .1 .1" class="clonableasset"></a-gltf-model>
-
-	<a-gltf-model src="../content/winterset/Pinetree.glb" position="0 3 -10" rotation="0 0 0" scale="5 5 5" class="clonableasset"></a-gltf-model>
+	<a-cone changeover="color:red"position="0 0.1 -1.0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red"position="0 0.1 -1.4" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red"position="0 0.1 -1.8" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red"position="0 0.1 -2.2" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red"position="0 0.1 -2.6" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red"position="0 0.1 -3.0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-torus position="0 0 -3" arc="180" color="#43A367" radius=".5" scale="1 4 1" height="10" radius-tubular="0.01"></a-torus>
 
 	<a-plane hide-on-enter-ar="" scale="50 50 50" rotation="-90 0 0" color="lightblue"></a-plane>
     </a-scene>

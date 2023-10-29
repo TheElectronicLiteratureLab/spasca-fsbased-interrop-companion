@@ -3513,13 +3513,12 @@ AFRAME.registerComponent('unpackable', {
 })
 
 AFRAME.registerComponent('trail', {
-  
   init: function () {
 	let player = document.getElementById('player') // assuming single player, non networked
 	let previousPos 
 	setInterval( _ => {
 		let pos = player.getAttribute('position').clone()
-		pos.y = 1
+		pos.y = 0
 		// compare current pos with previous set ones and if below distance threshold, lose points
 		let hits = Array.from(document.querySelectorAll('.trail'))
 			.filter( e => e.getAttribute("visible") == true)
@@ -3532,20 +3531,46 @@ AFRAME.registerComponent('trail', {
 		}
 		if (previousPos && previousPos.distanceTo(pos) < 0.1) return // threshold to avoid cluttering
 		let el = document.createElement('a-cylinder')
-		el.setAttribute('scale', '.2 2 .2')
+		el.setAttribute('scale', '.2 .2 .2')
 		el.setAttribute('position', AFRAME.utils.coordinates.stringify( pos ) )
 		el.setAttribute('color', 'green')
-		el.setAttribute('opacity', '0.3')
+		el.setAttribute('opacity', '0.03')
 		el.setAttribute('segments-radial', '6')
 		el.setAttribute('segments-height', '2')
 		el.className += 'trail'
 		this.el.appendChild(el)
 		previousPos = player.getAttribute('position').clone()
-		previousPos.y = 1
+		previousPos.y = 0
 	}, 50)
   },
   remove: function () {
 	// should remove interval, possible visual trail too
+  }
+})
+
+let changeovercheck
+AFRAME.registerComponent('changeover', {
+  schema: { color : {type: 'string'} },
+  init: function () {
+	// (this.el, this.data.content)
+	if (changeovercheck) return
+	let player = document.getElementById('player') // assuming single player, non networked
+	console.log('adding timer')
+	changeovercheck = setInterval( _ => {
+		let pos = player.getAttribute('position').clone()
+		pos.y = 0.1 // hard coded but should be from component element
+		let hits = Array.from(document.querySelectorAll('[changeover]'))
+			.filter( e => e.getAttribute("visible") == true)
+			.map( t => { return { el: t, dist : pos.distanceTo(t.getAttribute("position") ) } })
+			.filter( t => t.dist < 0.02 ) 
+			.sort( (a,b) => a.dist > b.dist)
+		console.log(hits.length)
+		if (hits.length>0) {
+			setFeedbackHUD('touching cone')
+			console.log('touching cone')
+			hits[hits.length-1].el.setAttribute('color', 'red')
+		}
+	}, 50)
   }
 })
 
