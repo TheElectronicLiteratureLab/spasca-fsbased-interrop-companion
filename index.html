@@ -70,7 +70,7 @@
  <button id=mainbutton style="display:none; z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
 
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
-	startfunctions
+	startfunctions physics="debug:true; friction: 0.01;" speedhud
 	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json>
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
@@ -89,9 +89,48 @@
       <a-entity id="rig">
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
-		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
+		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;">
+		</a-entity>
 		<a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
       </a-entity>
+
+<a-entity visible="false" gltf-model="src: ../content/HockeyStickAlt.glb" NObody="type: dynamic; mass: 5; shape: hull;" position="0 2 -1"></a-entity>
+<a-entity wristright>
+	<a-box scale=".1 2 .01" static-body="mass:10" ></a-box>
+</a-entity>
+	<a-gltf-model id="stick" NOwristright NOdynamic-body originsrc="https://poly.pizza/m/NQnXoyeezy" src="../content/HockeyStickAlt.glb" scale=".5 .5 .5" position="0 1 -1.2" rotation="0 0 0" ></a-gltf-model>
+	<!-- as with NAF can't attach if no pos to inherit from...-->
+<script>
+let positions = []
+AFRAME.registerComponent('speedhud',{
+  init: function () {
+    this.tick = AFRAME.utils.throttleTick(this.tick, 50, this);
+  },
+  tick: function () {
+	let pos = document.getElementById('player').getAttribute('position').clone() 
+	positions.push( pos )
+	if (positions.length > 20) {
+		let dist = pos.distanceTo( positions[positions.length-20] )
+		console.log(dist) // could be done via setFeedbackHUD() instead
+	}
+}})
+
+AFRAME.registerComponent('wristright',{
+  init: function () {
+    var el = this.el
+    this.worldPosition=new THREE.Vector3();
+  },
+  tick: function () {
+	var worldPosition=this.worldPosition;
+	document.querySelector("#rightHand").object3D.traverse( e => { if (e.name == "wrist") {
+		worldPosition.copy(e.position);e.parent.updateMatrixWorld();e.parent.localToWorld(worldPosition)
+		rotation = e.rotation.x*180/3.14 + " " + e.rotation.y*180/3.14 + " " + e.rotation.z*180/3.14
+		this.el.setAttribute("rotation", rotation)
+		this.el.setAttribute("position", AFRAME.utils.coordinates.stringify( worldPosition ) ) }
+	})
+  },
+});
+</script>
 
       <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink">
 	  <a-entity collider-check raycaster="objects: .collidable; showLine:true;" ></a-entity>
@@ -134,13 +173,95 @@
 	<a-gltf-model hide-on-enter-ar="" visible=false src="../content/room.gltf" position="0 0 0" rotation="0 0 0" ></a-gltf-model>
 	<a-gltf-model hide-on-enter-ar="" src="../content/kitchen.gltf" position=".5 0 0" rotation="0 110 0" ></a-gltf-model>
 
-	<a-cone changeover="color:red"position="0 0.1 -1.0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
-	<a-cone changeover="color:red"position="0 0.1 -1.4" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
-	<a-cone changeover="color:red"position="0 0.1 -1.8" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
-	<a-cone changeover="color:red"position="0 0.1 -2.2" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
-	<a-cone changeover="color:red"position="0 0.1 -2.6" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
-	<a-cone changeover="color:red"position="0 0.1 -3.0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cylinder id="puck" dynamic-body="mass:.1" position="0 3 -.5" color="black" height=".02" radius="0.04"></a-cylinder>
+	<a-plane rotation="-90 0 0" scale="5 5 5" position="0 0 0" opacity=.01 static-body></a-plane>
+
+	<!-- map in HUD -->
+	<!-- visual odometer as rotation changing arrow below arc in HUD -->
+
+	<!-- now movable but should snap to floor, consider on-drop -->
+	<a-cone changeover="color:red" target position="0 0.1 -1.0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red" target position="0 0.1 -1.0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red" target position="0 0.1 -1.4" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red" target position="0 0.1 -1.8" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red" target position="0 0.1 -2.2" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red" target position="0 0.1 -2.6" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	<a-cone changeover="color:red" target position="0 0.1 -3.0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
 	<a-torus position="0 0 -3" arc="180" color="#43A367" radius=".5" scale="1 4 1" height="10" radius-tubular="0.01"></a-torus>
+	<a-torus position="0 1 -5" color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="0 2 -7" color="#43A367" radius=".5" radius-tubular="0.01"></a-torus>
+
+	<a-entity class="workcone" scale=".2 .5 .2" position="0.5 0 -1">
+		<a-cone position="0 0.2 0" color="darkorange" height=".4" radius-bottom="0.2" radius-top="0.02"></a-cone>
+		<a-cone position="0 0.2 0" color="white" height=".2" radius-bottom="0.15" radius-top="0.07"></a-cone>
+		<a-cone position="0 0.1 0" color="white" height=".1" radius-bottom="0.18" radius-top="0.14"></a-cone>
+		<a-box color="darkorange" scale=".5 .02 .5" position="0 0 0"></a-box>
+	</a-entity>
+
+	<a-entity class="workcone" scale=".5 1 .5" position="-.5 0 -1">
+		<a-cone position="0 0.2 0" color="darkorange" height=".4" radius-bottom="0.2" radius-top="0.02"></a-cone>
+		<a-cone position="0 0.2 0" color="white" height=".2" radius-bottom="0.15" radius-top="0.07"></a-cone>
+		<a-cone position="0 0.1 0" color="white" height=".1" radius-bottom="0.18" radius-top="0.14"></a-cone>
+		<a-box color="darkorange" scale=".5 .02 .5" position="0 0 0"></a-box>
+	</a-entity>
+
+	<a-entity class="workcone" position="0 0 -3">
+		<a-cone position="0 0.2 0" color="darkorange" height=".4" radius-bottom="0.2" radius-top="0.02"></a-cone>
+		<a-cone position="0 0.2 0" color="white" height=".2" radius-bottom="0.15" radius-top="0.07"></a-cone>
+		<a-cone position="0 0.1 0" color="white" height=".1" radius-bottom="0.18" radius-top="0.14"></a-cone>
+		<a-box color="darkorange" scale=".5 .02 .5" position="0 0 0"></a-box>
+	</a-entity>
+
+	<a-entity class="workcone" position="0 0 -1">
+		<a-cone position="0 0.2 0" color="darkorange" height=".4" radius-bottom="0.2" radius-top="0.02"></a-cone>
+		<a-cone position="0 0.2 0" color="white" height=".2" radius-bottom="0.15" radius-top="0.07"></a-cone>
+		<a-cone position="0 0.1 0" color="white" height=".1" radius-bottom="0.18" radius-top="0.14"></a-cone>
+		<a-box color="darkorange" scale=".5 .02 .5" position="0 0 0"></a-box>
+	</a-entity>
+
+	<a-entity class="widget" position="0 1 -1">
+		<a-entity target class="arrow" position="0 0 0" rotation="0 0 -90">
+			<a-cylinder color="red" height=".2" radius="0.01"></a-cylinder>
+			<a-cone position="0 0.1 0" color="red" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+		</a-entity>
+		<a-entity target class="arrow" position="0 0 0" rotation="0 0 0">
+			<a-cylinder color="green" height=".2" radius="0.01"></a-cylinder>
+			<a-cone position="0 0.1 0" color="green" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+		</a-entity>
+		<a-entity target class="arrow" position="0 0 0" rotation="90 0 0">
+			<a-cylinder color="blue" height=".2" radius="0.01"></a-cylinder>
+			<a-cone position="0 0.1 0" color="blue" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+		</a-entity>
+	</a-entity>
+
+	<a-entity target class="arrow" position="0 1 -5" rotation="-45 0 0">
+		<a-cylinder color="red" height=".2" radius="0.01"></a-cylinder>
+		<a-cone position="0 0.1 0" color="red" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
+	</a-entity>
+	<!-- opacity can be changed based on time, e.g gradually do so after 1min, or distance, e.g .1 opacity if close to walls -->
+
+	<a-entity visible="false" id="mrbottomlessskybox">
+		<a-box visible="false" scale="10 3 .1" src="../content/lcm-skyline.jpg" position="0 1.5 -3"></a-box>
+		<a-box visible="false" scale="10 3 .1" src="../content/lcm-skyline.jpg" position="0 1.5 5"></a-box>
+		<a-box visible="false" scale=".1 3 10" src="../content/lcm-skyline.jpg" position="-2 1.5 0"></a-box>
+		<a-box visible="false" scale=".1 3 10" src="../content/lcm-skyline.jpg" position="2 1.5 0"></a-box>
+		<a-box visible="false" scale="10 .1 10" src="../content/lcm-skycloudy.jpg" position="0 3 0"></a-box>
+	</a-entity>
+	<!-- bottomless skybox motivation https://twitter.com/utopiah/status/1719777887987937477 -->
+
+	<a-entity visible="false" id="mrbottomless3Dmodels">
+		<a-gltf-model originsrc="https://poly.pizza/m/ecGdK1XryiQ" src="../content/WoodenFence.glb" position="-1 0 -1" rotation="0 0 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/ecGdK1XryiQ" src="../content/WoodenFence.glb" position="-1 0 1" rotation="0 0 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/ecGdK1XryiQ" src="../content/WoodenFence.glb" position="1 0 -1" rotation="0 0 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/ecGdK1XryiQ" src="../content/WoodenFence.glb" position="1 0 1" rotation="0 0 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/ecGdK1XryiQ" src="../content/WoodenFence.glb" position="0 0 -2" rotation="0 90 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/ecGdK1XryiQ" src="../content/WoodenFence.glb" position="0 0 2" rotation="0 90 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/38m6Q1H12DU" src="../content/WalkInTheWoods.glb" scale="5 5 5" position="0 1 -6" rotation="0 -12.1 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/38m6Q1H12DU" src="../content/WalkInTheWoods.glb" scale="5 5 5" position="0 1 5.3" rotation="0 -12.1 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/38m6Q1H12DU" src="../content/WalkInTheWoods.glb" scale="5 5 5" position="-4 1 -1.2" rotation="0 -12.1 0" ></a-gltf-model>
+		<a-gltf-model originsrc="https://poly.pizza/m/38m6Q1H12DU" src="../content/WalkInTheWoods.glb" scale="5 5 5" position="4 1 -1.2" rotation="0 -12.1 0" ></a-gltf-model>
+		<a-sphere color="lightblue" geometry="radius: 6; thetaLength: 90" material="side: back; shader: flat;"></a-sphere>
+	</a-entity>
 
 	<a-plane hide-on-enter-ar="" scale="50 50 50" rotation="-90 0 0" color="lightblue"></a-plane>
     </a-scene>
