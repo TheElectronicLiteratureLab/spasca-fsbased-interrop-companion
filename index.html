@@ -70,14 +70,16 @@
  <button id=mainbutton style="display:none; z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
 
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: [html]; interval:100;" adjust-height-in-vr
-	startfunctions physics="debug:true; friction: 0.01;" speedhud
-	toolbox disable-components-via-url enable-components-via-url NOcommands-from-external-json>
+	startfunctions 
+	disable-components-via-url enable-components-via-url NOcommands-from-external-json>
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
+	toolbox 
+	physics="debug:true; friction: 0.01;" 
 	networked-scene="serverURL: https://naf.benetou.fr/; adapter: easyrtc; audio: true;"
 	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
 	-->
       <a-assets>
-	      <template id="avatar-template"> <a-cylinder opacity=.3 scale=".2 1.2 .2" networked-audio-source></a-cylinder> </template>
+	      <template id="avatar-template"></template>
 	      <template id="left-hand-default-template">
 		      <a-entity networked-hand-controls="hand:left"></a-entity>
 	      </template>
@@ -88,30 +90,28 @@
 
       <a-entity id="rig">
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
-			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
+			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0">
+		      <a-troika-text odometer value="odometer" position="0 -0.5 -0.9" rotation="-10 0 0"></a-troika-text>
+		</a-entity>
 		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;">
 		</a-entity>
 		<a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
       </a-entity>
 
-<a-entity visible="false" gltf-model="src: ../content/HockeyStickAlt.glb" NObody="type: dynamic; mass: 5; shape: hull;" position="0 2 -1"></a-entity>
-<a-entity wristright>
-	<a-box scale=".1 2 .01" static-body="mass:10" ></a-box>
-</a-entity>
-	<a-gltf-model id="stick" NOwristright NOdynamic-body originsrc="https://poly.pizza/m/NQnXoyeezy" src="../content/HockeyStickAlt.glb" scale=".5 .5 .5" position="0 1 -1.2" rotation="0 0 0" ></a-gltf-model>
-	<!-- as with NAF can't attach if no pos to inherit from...-->
 <script>
 let positions = []
-AFRAME.registerComponent('speedhud',{
+AFRAME.registerComponent('odometer',{
   init: function () {
     this.tick = AFRAME.utils.throttleTick(this.tick, 50, this);
   },
   tick: function () {
+	let el = this.el
 	let pos = document.getElementById('player').getAttribute('position').clone() 
 	positions.push( pos )
 	if (positions.length > 20) {
 		let dist = pos.distanceTo( positions[positions.length-20] )
 		console.log(dist) // could be done via setFeedbackHUD() instead
+		el.setAttribute('value', dist.toFixed(2))
 	}
 }})
 
@@ -148,15 +148,17 @@ AFRAME.registerComponent('wristright',{
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
       
+      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+
+      <!-- 
       <a-troika-text anchor=left target id="startdraw2d" annotation="content:dessiner en 2D"
 		value="jxr startDraw2D()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="displaypred" value="jxr displayPred()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-
       <a-troika-text anchor=left target value="jxr tiltUpId('codeditor')" position=" -0.3 1.65 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target value="jxr tiltDownId('codeditor')" position=" -0.3 1.60 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
+	-->
 
       <a-troika-text anchor=left target value="jxr pushLeftClass('reader')" position=" -0.3 1.55 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target value="jxr pushRightClass('reader')" position=" -0.3 1.50 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
@@ -170,11 +172,19 @@ AFRAME.registerComponent('wristright',{
 	-->
       <a-console position="2 2 0" rotation="0 -45 0" font-size="34" height=1 skip-intro=true></a-console>
 
+	<!-- as with NAF can't attach if no pos to inherit from...-->
+      <!-- 
+<a-entity wristright>
+	<a-box scale=".1 2 .01" static-body="mass:10" ></a-box>
+</a-entity>
+<a-entity visible="false" gltf-model="src: ../content/HockeyStickAlt.glb" NObody="type: dynamic; mass: 5; shape: hull;" position="0 2 -1"></a-entity>
+	<a-gltf-model id="stick" NOwristright NOdynamic-body originsrc="https://poly.pizza/m/NQnXoyeezy" src="../content/HockeyStickAlt.glb" scale=".5 .5 .5" position="0 1 -1.2" rotation="0 0 0" ></a-gltf-model>
 	<a-gltf-model hide-on-enter-ar="" visible=false src="../content/room.gltf" position="0 0 0" rotation="0 0 0" ></a-gltf-model>
-	<a-gltf-model hide-on-enter-ar="" src="../content/kitchen.gltf" position=".5 0 0" rotation="0 110 0" ></a-gltf-model>
+	<a-gltf-model hide-on-enter-ar="" visible=false src="../content/kitchen.gltf" position=".5 0 0" rotation="0 110 0" ></a-gltf-model>
 
 	<a-cylinder id="puck" dynamic-body="mass:.1" position="0 3 -.5" color="black" height=".02" radius="0.04"></a-cylinder>
 	<a-plane rotation="-90 0 0" scale="5 5 5" position="0 0 0" opacity=.01 static-body></a-plane>
+	-->
 
 	<!-- map in HUD -->
 	<!-- visual odometer as rotation changing arrow below arc in HUD -->
@@ -190,6 +200,20 @@ AFRAME.registerComponent('wristright',{
 	<a-torus position="0 0 -3" arc="180" color="#43A367" radius=".5" scale="1 4 1" height="10" radius-tubular="0.01"></a-torus>
 	<a-torus position="0 1 -5" color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
 	<a-torus position="0 2 -7" color="#43A367" radius=".5" radius-tubular="0.01"></a-torus>
+
+	<a-torus position="0 1 -5" color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="0 1 -6" color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="0 1 -7" color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-1 1 -8" rotation="0 20 0" color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-2 1 -9" rotation="0 40 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-3 1 -10" rotation="0 60 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-4 1 -11" rotation="0 80 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-5 1 -12" rotation="0 90 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-6 1 -12" rotation="0 90 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-8 1 -12" rotation="0 90 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-10 1 -12" rotation="0 90 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-15 1 -12" rotation="0 90 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
+	<a-torus position="-20 1 -12" rotation="0 90 0"color="#43A367" radius="1" radius-tubular="0.01"></a-torus>
 
 	<a-entity class="workcone" scale=".2 .5 .2" position="0.5 0 -1">
 		<a-cone position="0 0.2 0" color="darkorange" height=".4" radius-bottom="0.2" radius-top="0.02"></a-cone>
@@ -212,14 +236,16 @@ AFRAME.registerComponent('wristright',{
 		<a-box color="darkorange" scale=".5 .02 .5" position="0 0 0"></a-box>
 	</a-entity>
 
-	<a-entity class="workcone" position="0 0 -1">
+        <a-triangle color="red" position="0 .01 0" rotation="-90 0 0"></a-triangle>
+
+	<a-entity target class="workcone" position="0 0 -.1">
 		<a-cone position="0 0.2 0" color="darkorange" height=".4" radius-bottom="0.2" radius-top="0.02"></a-cone>
-		<a-cone position="0 0.2 0" color="white" height=".2" radius-bottom="0.15" radius-top="0.07"></a-cone>
+		<a-cone position="0 0.2 0" color="blue" height=".2" radius-bottom="0.15" radius-top="0.07"></a-cone>
 		<a-cone position="0 0.1 0" color="white" height=".1" radius-bottom="0.18" radius-top="0.14"></a-cone>
 		<a-box color="darkorange" scale=".5 .02 .5" position="0 0 0"></a-box>
 	</a-entity>
 
-	<a-entity class="widget" position="0 1 -1">
+	<a-entity visible="false" class="widget" position="0 1 -1">
 		<a-entity target class="arrow" position="0 0 0" rotation="0 0 -90">
 			<a-cylinder color="red" height=".2" radius="0.01"></a-cylinder>
 			<a-cone position="0 0.1 0" color="red" height=".2" radius-bottom="0.02" radius-top="0"></a-cone>
@@ -263,7 +289,12 @@ AFRAME.registerComponent('wristright',{
 		<a-sphere color="lightblue" geometry="radius: 6; thetaLength: 90" material="side: back; shader: flat;"></a-sphere>
 	</a-entity>
 
-	<a-plane hide-on-enter-ar="" scale="50 50 50" rotation="-90 0 0" color="lightblue"></a-plane>
+	<a-box scale="0.1 0.01 30" position="-27 0.01 0" color="blue"></a-box>
+	<a-box scale="0.1 0.01 30" position="27 0.01 0" color="blue"></a-box>
+	<a-box scale="0.1 0.01 30" position="-9 0.01 0" color="blue"></a-box>
+	<a-box scale="0.1 0.01 30" position="0 0.01 0" color="blue"></a-box>
+	<a-box scale="0.1 0.01 30" position=" 9 0.01 0" color="blue"></a-box>
+	<a-box hide-on-enter-ar="" scale="60 0.01 30" color="lightblue"></a-box>
     </a-scene>
   </body>
 </script>
