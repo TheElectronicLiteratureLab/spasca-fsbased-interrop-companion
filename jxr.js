@@ -3574,6 +3574,41 @@ AFRAME.registerComponent('changeover', {
   }
 })
 
+// to add only on selectable elements, thus already with a target component attached
+AFRAME.registerComponent('pull', {
+  events: {
+    picked: function (evt) {
+      this.startePos = this.el.getAttribute('position').clone()
+      this.starteRot = this.el.getAttribute('rotation')//.clone() not necessary as converted first
+      this.decimtersEl = document.createElement('a-troika-text')
+      AFRAME.scenes[0].appendChild(this.decimtersEl)
+    },
+    moved: function (evt) {
+      let pos = AFRAME.utils.coordinates.stringify( this.startePos )
+      let oldpos = AFRAME.utils.coordinates.stringify( this.el.getAttribute('position') )
+      AFRAME.scenes[0].setAttribute("line__pull", `start: ${oldpos}; end : ${pos};`)
+      let d = this.startePos.distanceTo( this.el.getAttribute('position') )
+      // could show a preview state before release, e.g 
+      let decimeters = Math.round(d*10)
+      console.log('pulling '+decimeters+' pages')
+      // update visible value instead, ideally under line but still facing user
+      let textPos = new THREE.Vector3()
+      textPos.lerpVectors(this.startePos, this.el.getAttribute('position'), .7)
+      this.decimtersEl.setAttribute('position', textPos )
+      this.decimtersEl.setAttribute('rotation', this.el.getAttribute('rotation') )
+      this.decimtersEl.setAttribute('value', decimeters )
+  },
+    released: function (evt) {
+      let d = this.startePos.distanceTo( this.el.getAttribute('position') )
+      console.log('This entity was released '+ d + 'm away from picked pos')
+      this.el.setAttribute('position', AFRAME.utils.coordinates.stringify( this.startePos ))
+      this.el.setAttribute('rotation', AFRAME.utils.coordinates.stringify( this.starteRot ))
+      AFRAME.scenes[0].removeAttribute("line__pull")
+      this.decimtersEl.remove()
+    },
+  },
+});
+
 // used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
 // does indeed create problems, namely other pages relying on it do get this testing behavior
 AFRAME.registerComponent('startfunctions', {
