@@ -14,6 +14,8 @@
     <!--<script type="module" id=immersbundle src="https://cdn.jsdelivr.net/npm/immers-client/dist/destination.bundle.js?role=modFull"></script>-->
     <!--<script src="https://threejs.org/examples/js/exporters/GLTFExporter.js"></script>-->
 
+<script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.1.0/dist/aframe-extras.min.js"></script>
+
     <script src="dependencies/shiki0.14.1.js"></script>
 
     <!-- for input sharing -->
@@ -298,6 +300,10 @@ AFRAME.registerComponent('wristright',{
 	<a-box scale="0.1 0.01 30" position="0 0.01 0" color="blue"></a-box>
 	<a-box scale="0.1 0.01 30" position=" 9 0.01 0" color="blue"></a-box>
 	<a-box hide-on-enter-ar="" scale="60 0.01 30" color="lightblue"></a-box>
+
+	<a-entity gltf-model="url(../content/PlayerSkater_Animations2.glb)" position="0 0 -2" animation-mixer="clip: *Hawk"></a-entity>
+
+	<a-tube path="0 1 0,-5 1 -7,-20 1 -12,-25 1 0,-25 1 10,0 1 10,25 1 12,25 1 -12,-5 1 -12" radius="1" material="color: red;wireframe:true"></a-tube>
     </a-scene>
   </body>
 </script>

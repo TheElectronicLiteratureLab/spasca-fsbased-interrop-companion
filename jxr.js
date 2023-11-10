@@ -3623,36 +3623,36 @@ consider also
 see https://git.benetou.fr/utopiah/text-code-xr-engine/issues/52 for more shorthands
 
 */
-	const movePenguin = "jxr qs #penguin sa position 1 0 -2"
-	const rotatePenguin = "jxr qs #penguin sa rotation 0 -20 0"
+	//const movePenguin = "jxr qs #penguin sa position 1 0 -2"
+	//const rotatePenguin = "jxr qs #penguin sa rotation 0 -20 0"
 
 	//addBlockCodeExample(text="hi", pos="0 1.4 -0.2", color="black", outlineColor="white")
-	addBlockCodeExample('add penguin', '0 1.5 -0.2')
-	let elToAnnotate = addBlockCodeExample('move penguin forward', '0 1.6 -0.2')
-	addAnnotation(elToAnnotate, 'fait avancer pengouin')
-	console.log(elToAnnotate)
-	addBlockCodeExample('add green cube', '0 1.4 -0.2')
+	//addBlockCodeExample('add penguin', '0 1.5 -0.2')
+	//let elToAnnotate = addBlockCodeExample('move penguin forward', '0 1.6 -0.2')
+	//addAnnotation(elToAnnotate, 'fait avancer pengouin')
+	//console.log(elToAnnotate)
+	//addBlockCodeExample('add green cube', '0 1.4 -0.2')
 
-	addBlockCodeExample(movePenguin, '0 1.45 -0.2')
-	addBlockCodeExample(rotatePenguin, '0 1.55 -0.2')
+	//addBlockCodeExample(movePenguin, '0 1.45 -0.2')
+	//addBlockCodeExample(rotatePenguin, '0 1.55 -0.2')
 // should change color and enable the 2 new types
 
 	//relies on addCompoundPrimitiveExample() which already uses snap-on-pinched-ended
 	// also relies on addNewNote() so means code might be executed on left pinch or move with right pinch indepdently from block, to verify
 
-	let el = generateCompoundPrimitiveStart(position="-0.2 1.5 -0.2")
-	targets.push(el)
+	//let el = generateCompoundPrimitiveStart(position="-0.2 1.5 -0.2")
+	//targets.push(el)
 	//el.setAttribute('snap-on-pinchended', true) 
-	el.setAttribute('scale', '.1 .1 .1') 
-	AFRAME.scenes[0].appendChild(el)
+	//el.setAttribute('scale', '.1 .1 .1') 
+	//AFRAME.scenes[0].appendChild(el)
 
-	el = generateCompoundPrimitiveEnd(position="0.2 1.5 -0.2")
-	targets.push(el)
+	//el = generateCompoundPrimitiveEnd(position="0.2 1.5 -0.2")
+	//targets.push(el)
 	//el.setAttribute('snap-on-pinchended', true) 
-	el.setAttribute('scale', '.1 .1 .1') 
-	AFRAME.scenes[0].appendChild(el)
+	//el.setAttribute('scale', '.1 .1 .1') 
+	//AFRAME.scenes[0].appendChild(el)
 
 	// consider instanciateFromPrimitive() also in order to clone a set of blocks
-	AFRAME.scenes[0].setAttribute('trail', '')
+	//AFRAME.scenes[0].setAttribute('trail', '')
   }
 })
