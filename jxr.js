@@ -3564,7 +3564,7 @@ AFRAME.registerComponent('changeover', {
 			.map( t => { return { el: t, dist : pos.distanceTo(t.getAttribute("position") ) } })
 			.filter( t => t.dist < 0.02 ) 
 			.sort( (a,b) => a.dist > b.dist)
-		console.log(hits.length)
+		//console.log(hits.length)
 		if (hits.length>0) {
 			setFeedbackHUD('touching cone')
 			console.log('touching cone')
@@ -3605,6 +3605,41 @@ AFRAME.registerComponent('pull', {
       this.el.setAttribute('rotation', AFRAME.utils.coordinates.stringify( this.starteRot ))
       AFRAME.scenes[0].removeAttribute("line__pull")
       this.decimtersEl.remove()
+    },
+  },
+});
+
+AFRAME.registerComponent('control-points', {
+  init: function () {
+	let cPoints = this.el.getAttribute("path").split(",")
+	if (!this.el.id) this.el.id = 'control-point-target' + Date.now()
+	cPoints.map( (p,n) => {
+		let controlSphere = document.createElement("a-sphere")
+		controlSphere.setAttribute("radius", 0.05) 
+		controlSphere.setAttribute("color", "red")
+		controlSphere.setAttribute("wireframe", "true")
+		controlSphere.setAttribute("segments-width", 8)
+		controlSphere.setAttribute("segments-height", 8)
+		controlSphere.setAttribute("target", '')
+		controlSphere.setAttribute("move-target-point", 'target:'+this.el.id+';number:'+n)
+		controlSphere.setAttribute("position", p)
+		controlSphere.setAttribute("value", '')
+		AFRAME.scenes[0].appendChild(controlSphere)
+	})
+  },
+});
+
+AFRAME.registerComponent('move-target-point', {
+  schema: {
+	target: {type: 'string'},
+	number: {type: 'number'},
+  },
+  events: {
+    moved: function (evt) {
+	let targetEl = document.getElementById(this.data.target)
+	let newPath = targetEl.getAttribute("path").split(",")
+	newPath[this.data.number] = AFRAME.utils.coordinates.stringify( this.el.getAttribute('position') )
+	targetEl.setAttribute( 'path', newPath.join(',') )
     },
   },
 });

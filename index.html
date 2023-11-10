@@ -112,7 +112,7 @@ AFRAME.registerComponent('odometer',{
 	positions.push( pos )
 	if (positions.length > 20) {
 		let dist = pos.distanceTo( positions[positions.length-20] )
-		console.log(dist) // could be done via setFeedbackHUD() instead
+		//console.log(dist) // could be done via setFeedbackHUD() instead
 		el.setAttribute('value', dist.toFixed(2))
 	}
 }})
@@ -303,7 +303,7 @@ AFRAME.registerComponent('wristright',{
 
 	<a-entity gltf-model="url(../content/PlayerSkater_Animations2.glb)" position="0 0 -2" animation-mixer="clip: *Hawk"></a-entity>
 
-	<a-tube path="0 1 0,-5 1 -7,-20 1 -12,-25 1 0,-25 1 10,0 1 10,25 1 12,25 1 -12,-5 1 -12" radius="1" material="color: red;wireframe:true"></a-tube>
+	<a-tube control-points path="0 1 0,-5 1 -7,-20 1 -12,-25 1 0,-25 1 10,0 1 10,25 1 12,25 1 -12,-5 1 -12" radius="1" material="color: red;wireframe:true"></a-tube>
     </a-scene>
   </body>
 </script>
