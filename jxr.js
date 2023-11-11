@@ -3644,6 +3644,36 @@ AFRAME.registerComponent('move-target-point', {
   },
 });
 
+AFRAME.registerComponent('levels-to-load', {
+  init: function () {
+	const generatorName = this.attrName
+	Array.from( this.el.children ).map( (l,n) => {
+		l.id = 'level_'+n
+		let pos = '1 '+ (1+n/5) +' -.5'
+		addNewNote( 'jxr loadLevel("'+l.id+'")', pos, ".1 .1 .1", null, generatorName)
+		unloadLevel(l, pos)
+	})
+  },
+});
+
+function unloadLevel(el, pos){
+	const scale = .02
+	el.setAttribute('position', pos)
+	el.setAttribute('scale', scale + ' ' +scale + ' ' +scale )
+	console.log('unloading', el.id)
+}
+
+function loadLevel(elementIdName){
+	const el = document.getElementById(elementIdName)
+	Array.from( document.querySelector('[levels-to-load]').children ).map( (l) => {
+		let n = l.id.replace('level_','')
+		let pos = '1 '+ (1+n/5) +' -.5'
+		unloadLevel(l, pos)
+	})
+	el.setAttribute('scale', '1 1 1')
+	el.setAttribute('position', '0 0 0')
+}
+
 // used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
 // does indeed create problems, namely other pages relying on it do get this testing behavior
 AFRAME.registerComponent('startfunctions', {

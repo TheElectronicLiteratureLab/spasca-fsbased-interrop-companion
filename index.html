@@ -304,6 +304,11 @@ AFRAME.registerComponent('wristright',{
 	<a-entity gltf-model="url(../content/PlayerSkater_Animations2.glb)" position="0 0 -2" animation-mixer="clip: *Hawk"></a-entity>
 
 	<a-tube control-points path="0 1 0,-5 1 -7,-20 1 -12,-25 1 0,-25 1 10,0 1 10,25 1 12,25 1 -12,-5 1 -12" radius="1" material="color: red;wireframe:true"></a-tube>
+	<a-entity levels-to-load>
+		<a-tube path="0 1 0,-5 1 -7,-20 1 -12,-25 1 0,-25 1 10,0 1 10,25 1 12,25 1 -12,-5 1 -12" radius="1" material="color: red;wireframe:true"></a-tube>
+		<a-tube path="0 1 0,-5 1 -7,-20 1 -12,-25 1 0,-5 1 10,0 1 10,25 1 12,25 1 -12,-5 1 -12" radius="1" material="color: green;wireframe:true"></a-tube>
+		<a-tube path="0 1 0,-5 1 -7,-20 1 -12,-25 1 0,-25 1 10,0 1 10,25 1 12,5 1 -2,-5 1 -12" radius="1" material="color: blue;wireframe:true"></a-tube>
+	</a-entity>
     </a-scene>
   </body>
 </script>
