@@ -3697,6 +3697,16 @@ AFRAME.registerComponent('gltf-jxr', {
 	})
     },
   },
+
+	/* example of backend code to annotate the glTF
+	import { NodeIO } from '@gltf-transform/core';
+	import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+	const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+	const document = await io.read('PopsicleChocolate.glb');
+	const node = document.getRoot() // doesn't seem to work.listNodes().find((node) => node.getName() === 'RootNode');
+	node.setExtras({jxr: "jxr addNewNote('hi')"});
+	await io.write('output.glb', document);
+	*/
 });
 
 // used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
