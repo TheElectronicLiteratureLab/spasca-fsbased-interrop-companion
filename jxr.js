@@ -3674,6 +3674,31 @@ function loadLevel(elementIdName){
 	el.setAttribute('position', '0 0 0')
 }
 
+AFRAME.registerComponent('gltf-jxr', {
+  events: {
+    "model-loaded": function (evt) {
+	this.el.object3D.traverse( n => { if (n.userData.jxr) {
+		console.log(n.userData)
+		// need to make gltf become a child of a note to be executable on pinch
+		// try reparenting first... otherwise var clone = this.el.cloneNode(true)
+			// might not be great, cf https://github.com/aframevr/aframe/issues/2425
+		let pos = this.el.object3D.position.clone()
+		let rot = this.el.object3D.rotation.clone()
+		this.el.remove()
+		
+		let note = addNewNote( n.userData.jxr, pos, "0.1 0.1 0.1", null, "gltf-jxr-source")
+		let clone = this.el.cloneNode(true)
+		clone.setAttribute('position', '0 0 0')
+		clone.setAttribute('scale', '10 10 10') // assuming not scaled until now, surely wrong
+		// need rescaling to current scale by 1/0.1, clone.setAttribute(
+		clone.removeAttribute('gltf-jxr')
+		note.appendChild(clone)
+		}
+	})
+    },
+  },
+});
+
 // used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
 // does indeed create problems, namely other pages relying on it do get this testing behavior
 AFRAME.registerComponent('startfunctions', {
