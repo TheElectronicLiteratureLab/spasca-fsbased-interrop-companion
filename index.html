@@ -92,18 +92,58 @@ function inspectModel(selectedModel){
   return {animations:animations, bones:foundBones, skinnedMeshes: skinnedMeshes, morphTargets:morphTargets}
 }
 
-
 function checkExerciseCompletion(targetNumber=2){
+	const instructions = document.querySelector("#instructions>a-troika-text")
 	let counter = 0
 	Array.from( document.querySelector("#fishes").children ).map( f => {
 		if (f.object3D.position.distanceTo( document.querySelector('#plate').object3D.position ) < .3 ) counter++ })
-		
-	console.log(counter)
-	if (counter == targetNumber)
-		document.querySelector("#bubble>a-troika-text").setAttribute("value", "bravo Julia!")
-	else
-		document.querySelector("#bubble>a-troika-text").setAttribute("value", "presque Julia,\ncontinue...")
+	if (counter == targetNumber) {
+		instructions.setAttribute("value", "bravo Julia!")
+		instructions.emit('win')
+		document.getElementById("biggu").setAttribute('animation-mixer', "clip:BigguAction_Yes;loop:once")
+	} else {
+		instructions.setAttribute("value", "presque Julia,\ncontinue...")
+		instructions.emit('failed', {counter:counter})
+		document.getElementById("biggu").setAttribute('animation-mixer', "clip:BigguAction_No;loop:once")
+		//document.getElementById("biggu").setAttribute('animation-mixer', "clip:BigguAction;loop:once") // t-pose
+		//document.getElementById("biggu").setAttribute('animation-mixer', "clip:BigguAction_PointL;loop:once")
+	}
 }
+
+
+AFRAME.registerComponent('exercise', {
+  schema: {
+    instructions: {type: 'string'},
+    win: {type: 'string'},
+    failed: {type: 'string'},
+    next: {type: 'selector'},
+    first: {type: 'boolean', default: false},
+  },
+	init: function(){
+		const emittedExerciseId = this.el.id
+		const instructions = document.querySelector("#instructions>a-troika-text")
+		if (!this.data.first)
+			this.el.setAttribute('position', '0 0 9999')
+		else
+			instructions.setAttribute("value", this.data.instructions )
+		instructions.addEventListener('win', _ => {
+			instructions.setAttribute("value", this.data.win ) 
+			// should setTimeout or let the player actively move on
+			this.el.setAttribute('position', '0 0 9999')
+			// must filter on id, making sure it's emited by matching excercise
+			if (this.data.next) {
+				console.log( this.data.next )
+				console.log( this.data.next.id )
+				this.data.next.setAttribute('position', '0 0 0')
+			}
+		})
+		instructions.addEventListener('failed', ev => {
+			console.log(emittedExerciseId, this.id)
+			instructions.setAttribute("value", this.data.failed ) 
+		})
+		// should be replaced by drawings or even scaled down models with "5" and arrow or hand model
+	}
+})
 
 </script>
 <input style='position:fixed;z-index:1; top: 0%; left: 20%;'
@@ -140,23 +180,38 @@ function checkExerciseCompletion(targetNumber=2){
 		align="center" color="black" position="0 0 .2"></a-troika-text>
       </a-entity>
 
-      <a-entity id="bubble2" position="0.5 1.7 -1" rotation="0 -20 0" scale=".07 .07 .07">
+      <a-entity id="instructions" position="0.5 1.7 -1" rotation="0 -20 0" scale=".07 .07 .07">
 	<a-sphere scale="2 1 .1" color="white"></a-sphere>
 	<a-cone scale="2 1 .1" position="-.5 -.7 0" rotation="0 0 45" color="white"></a-cone>
-	<a-troika-text value="Pose 5 poissons\ndans l'asiette" font-size=".3" outline-color="gray" outline-width=".02"
+	<a-troika-text value="" font-size=".3" outline-color="gray" outline-width=".02"
 		align="center" color="black" position="0 0 .2"></a-troika-text>
       </a-entity>
 
-      <a-entity id="fishes">
-	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1 -1" color="blue"></a-sphere>
-	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1.5 -1" color="blue"></a-sphere>
-	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".4 1 -1" color="blue"></a-sphere>
-	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".4 1.5 -1" color="blue"></a-sphere>
-	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".6 1 -.3" color="blue"></a-sphere>
-	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1.2 -.3" color="blue"></a-sphere>
+      <a-entity id="exerciseA" exercise="first:true;next:#exerciseB;instructions:Pose 5 poissons\ndans l'assiette;win:win;failed:failed;">
+	      <a-entity id="fishes">
+		<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1.5 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".4 1 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".4 1.5 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".6 1 -.3" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1.2 -.3" color="blue"></a-sphere>
+	      </a-entity>
+	      <a-sphere id="plate" radius=".2" position="-.5 1.2 -.5" scale="1 .1 1" color="white"></a-sphere>
       </a-entity>
-      <a-sphere id="plate" radius=".2" position="-.5 1.2 -.5" scale="1 .1 1" color="white"></a-sphere>
 	
+      <a-entity id="exerciseB" exercise="instructions:Pose 3 poissons\ndans l'assiette;win:win;failed:failed;">
+	      <a-entity id="otherfishes">
+		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".5 1 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".5 1.5 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".4 1 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".4 1.5 -1" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".6 1 -.3" color="blue"></a-sphere>
+		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".5 1.2 -.3" color="blue"></a-sphere>
+	      </a-entity>
+	      <a-sphere id="plate" radius=".2" position="-.5 1.2 -.5" scale="1 .1 1" color="white"></a-sphere>
+      </a-entity>
+      <a-gltf-model id="biggu" src="../content/webXRtest_v014.glb" position="-0.3 1.5 -1"></a-gltf-model>
+
       <a-entity id="rig">
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0">
