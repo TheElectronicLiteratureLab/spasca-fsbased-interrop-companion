@@ -3709,11 +3709,32 @@ AFRAME.registerComponent('gltf-jxr', {
 	*/
 });
 
+function setOnDropFromAttribute(){
+	// add to file descriptor from offtopus
+	// could also be prototyped with a URL instead, doesn't need offtopus even cached version
+	// could also prototype by doing so via https://webdav.benetou.fr/fot-demo-day/mobydick-extract.txt
+	targets.map( el => {
+		if ( el.getAttribute('ondrop')?.length > 0 )
+			el.addEventListener('released', e => {
+				let code = el.getAttribute('ondrop')
+				console.log('do', code)
+				try {
+					eval( code )
+				} catch (error) {
+					console.error(`Evaluation failed with ${error}`);
+				}
+			})
+	} )
+	// if dropped close enough to an editor, load file content in editor
+	// could try a jxr command...
+}
+
 // used for testing, now that jxr.js is outside of index.html, could consider putting this back in index.html instead to keep behavior one would expect from a library
 // does indeed create problems, namely other pages relying on it do get this testing behavior
 AFRAME.registerComponent('startfunctions', {
   init: function () {
 
+	setOnDropFromAttribute()
 /* class clonableasset : Crystal.glb Fish.glb Mountains.glb Penguin.glb Pinetree.glb
 consider also 
 	backend needed for caching

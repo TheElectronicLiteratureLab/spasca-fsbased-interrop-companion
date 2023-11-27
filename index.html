@@ -31,7 +31,7 @@
     <!-- still experimenting, see webdav.html -->
     <script src='dependencies/webdav.js'></script> 
 
-    <script src='jxr.js?12345'></script> 
+    <script src='jxr.js?212345'></script> 
     <!-- replacing with local copies as CDNs are like unpkg tend to be slow
     <script type="module" src="https://unpkg.com/immers-client/dist/destination.bundle.js"></script>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
@@ -92,6 +92,19 @@ function inspectModel(selectedModel){
   return {animations:animations, bones:foundBones, skinnedMeshes: skinnedMeshes, morphTargets:morphTargets}
 }
 
+
+function checkExerciseCompletion(targetNumber=2){
+	let counter = 0
+	Array.from( document.querySelector("#fishes").children ).map( f => {
+		if (f.object3D.position.distanceTo( document.querySelector('#plate').object3D.position ) < .3 ) counter++ })
+		
+	console.log(counter)
+	if (counter == targetNumber)
+		document.querySelector("#bubble>a-troika-text").setAttribute("value", "bravo Julia!")
+	else
+		document.querySelector("#bubble>a-troika-text").setAttribute("value", "presque Julia,\ncontinue...")
+}
+
 </script>
 <input style='position:fixed;z-index:1; top: 0%; left: 20%;'
 	type="file" name="file-input" accept=".gltf, .glb"  id="file-input" onchange="loadFile(this)" />
@@ -101,16 +114,7 @@ function inspectModel(selectedModel){
 	</a>
 </div>
 
-<div>
-	<div id="observablehq-numberOfPages-835aa7e9"></div>
-	<div id="observablehq-result_as_html-ab4c1560"></div>
-</div>
-
-<div id="observablehq-key">
-    <div id="observablehq-viewof-offsetExample-ab4c1560"></div>
-    <div id="observablehq-result_as_html-ab4c1560"></div>
-</div>
- <button id=mainbutton style="display:none; z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
+<button id=mainbutton style="display:none; z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
 
 <a-scene startfunctions >
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
@@ -129,18 +133,39 @@ function inspectModel(selectedModel){
 	      </template>
       </a-assets>
 
+      <a-entity id="bubble" position="0 2 -1" scale=".1 .1 .1">
+	<a-sphere scale="2 1 .1" color="white"></a-sphere>
+	<a-cone scale="2 1 .1" position="-.5 -.7 0" rotation="0 0 45" color="white"></a-cone>
+	<a-troika-text value="C'est moi Biggu!" font-size=".4" outline-color="gray" outline-width=".02"
+		align="center" color="black" position="0 0 .2"></a-troika-text>
+      </a-entity>
+
+      <a-entity id="bubble2" position="0.5 1.7 -1" rotation="0 -20 0" scale=".07 .07 .07">
+	<a-sphere scale="2 1 .1" color="white"></a-sphere>
+	<a-cone scale="2 1 .1" position="-.5 -.7 0" rotation="0 0 45" color="white"></a-cone>
+	<a-troika-text value="Pose 5 poissons\ndans l'asiette" font-size=".3" outline-color="gray" outline-width=".02"
+		align="center" color="black" position="0 0 .2"></a-troika-text>
+      </a-entity>
+
+      <a-entity id="fishes">
+	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1 -1" color="blue"></a-sphere>
+	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1.5 -1" color="blue"></a-sphere>
+	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".4 1 -1" color="blue"></a-sphere>
+	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".4 1.5 -1" color="blue"></a-sphere>
+	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".6 1 -.3" color="blue"></a-sphere>
+	<a-sphere ondrop="checkExerciseCompletion()" scale="2 1 1" radius=".07" target position=".5 1.2 -.3" color="blue"></a-sphere>
+      </a-entity>
+      <a-sphere id="plate" radius=".2" position="-.5 1.2 -.5" scale="1 .1 1" color="white"></a-sphere>
+	
       <a-entity id="rig">
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0">
 		</a-entity>
-		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;">
-		</a-entity>
+		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
 		<a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
       </a-entity>
 
-      <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink">
-	  <a-entity collider-check raycaster="objects: .collidable; showLine:true;" ></a-entity>
-</a-box>
+      <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
       <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
       <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
 
