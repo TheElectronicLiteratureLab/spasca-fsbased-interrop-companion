@@ -98,6 +98,34 @@ function manualAnimate(selector="#biggu"){
 	)
 }
 
+// see https://biggu-backend-collab.glitch.me/ to insure steps are done correctly
+function shareLiveEvent(eventName, server='https://biggu-backend-collab.glitch.me/'){
+  if (eventName.length > 0) fetch(server+'/newevent/'+eventName)
+}
+// should then become a container hosted on benetou.fr
+
+function saveTargets(server='https://biggu-backend-collab.glitch.me/'){
+  // might try to generate a hash as ID, should be reproducible though
+  let data = []
+  Array.from( document.querySelectorAll("[target]") )
+    .filter( el => el.id != '')
+    .map( el => {
+      // limited to location/position for now as that's only what target does modify
+      if( hasBeenManipulated(el.getAttribute('position')) || hasBeenManipulated(el.getAttribute('rotation')) )
+        data.push({id:el.id, position:el.getAttribute('position'), rotation:el.getAttribute('rotation')})
+  })
+  if (data.length > 0) fetch(server+'/save?data='+JSON.stringify(data))
+  return data
+}
+
+function animateThenIdle(mainCharacter, animationName, timeScale='1'){
+	mainCharacter.setAttribute('animation-mixer', "clip:"+animationName+";loop:once; timeScale:"+timeScale)
+	mainCharacter.addEventListener('animation-finished', _ => {
+		mainCharacter.setAttribute('animation-mixer', "clip:bigguaction_idle; loop:true;")
+	})
+	// could return the animation duration or an event when done
+}
+
 function checkExerciseCompletion(targetNumber=2){
 	const instructions = document.querySelector("#instructions>a-troika-text")
 	let counter = 0
@@ -107,22 +135,19 @@ function checkExerciseCompletion(targetNumber=2){
 		if (f.object3D.position.distanceTo( document.querySelector('#plate').object3D.position ) < .3 ) counter++ })
 	if (counter == targetNumber) {
 		instructions.emit('win')
-		mainCharacter.setAttribute('animation-mixer', "clip:bigguaction_win;loop:once")
-		mainCharacter.addEventListener('animation-finished', _ => {
-			mainCharacter.setAttribute('animation-mixer', "clip:bigguaction_idle; loop:true;")
-		})
+		shareLiveEvent('win')
+		document.getElementById("biggubravojulia").play()
+		animateThenIdle(mainCharacter, 'bigguaction_win')
 	} else {
+		document.getElementById("biggucontinu").play()
 		instructions.emit('failed', {counter:counter})
-		mainCharacter.setAttribute('animation-mixer', "clip:bigguaction_yes;loop:once")
-		mainCharacter.addEventListener('animation-finished', _ => {
-			mainCharacter.setAttribute('animation-mixer', "clip:bigguaction_idle; loop:true;")
-		})
+		shareLiveEvent('failed'+' '+counter)
+		animateThenIdle(mainCharacter, 'bigguaction_yes')
 	// anims = [ "bigguaction_no", "Bigguaction_pl", "bigguaction_pr", "bigguaction_talk", "bigguaction_win", "bigguaction_win", "bigguaction_yes" ]
-
 	}
 }
 
-
+// much too complex
 AFRAME.registerComponent('exercise', {
   schema: {
     instructions: {type: 'string'},
@@ -160,8 +185,45 @@ AFRAME.registerComponent('exercise', {
 	}
 })
 
+// for more complete supervision consider remote scrcpy
+AFRAME.registerComponent('start-with-supervision', {
+  init: function(){
+	const server='https://biggu-backend-collab.glitch.me'
+	// CORS enabled needed
+	const source = new EventSource(server+'/events');
+
+	source.addEventListener('message', message => {
+	  console.log('Got', message);
+	  if (message.data == '"start-with-supervision"') startExercise()
+	})
+  }
+})
+
+function startExercise(){
+	document.getElementById("exerciseA").setAttribute("visible", false)
+	// hide everything until this is done, otherwise overwhelming
+	const mainCharacter = document.getElementById("biggu")
+	setTimeout(_=>{
+		document.getElementById("biggucestmoi").play()
+		// works in XR on headset, not on desktop (needs user action)
+		animateThenIdle(mainCharacter, 'bigguaction_talk', .5)
+	},1000)
+	// should focus on learning pinch (thumb and index) before doing the exercise itself
+	setTimeout(_=>{
+		document.getElementById("exerciseA").setAttribute("visible", true)
+		document.getElementById("bigguinstructions").play()
+		animateThenIdle(mainCharacter, 'bigguaction_talk', .5)
+	},5000)
+}
+
+AFRAME.registerComponent('warmup', {
+	init: function(){
+		startExercise()
+	}
+})
+
 </script>
-<input style='position:fixed;z-index:1; top: 0%; left: 20%;'
+<input style='position:fixed;z-index:1; top: 0%; left: 20%; display:none' 
 	type="file" name="file-input" accept=".gltf, .glb"  id="file-input" onchange="loadFile(this)" />
 <div style='position:fixed;z-index:1; top: 0%; left: 0%; border-bottom: 70px solid transparent; border-left: 70px solid #eee; '>
 	<a href="https://git.benetou.fr/utopiah/text-code-xr-engine/issues/">
@@ -171,7 +233,7 @@ AFRAME.registerComponent('exercise', {
 
 <button id=mainbutton style="display:none; z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
 
-<a-scene startfunctions >
+<a-scene startfunctions start-with-supervision>
 	<!-- screenstack dynamic-view selectionboxonpinches glossary timeline issues fot
 	toolbox commands-from-external-json disable-components-via-url enable-components-via-url 
 	physics="debug:true; friction: 0.01;" 
@@ -179,9 +241,10 @@ AFRAME.registerComponent('exercise', {
 	refresh-text-content-from-wiki-page="pagename:TestingPairCollaboration"
 	-->
       <a-assets>
-      <!-- Voices
-		../content/voicesBigguJulia/biggu-fem.mp3 ../content/voicesBigguJulia/bravojulia.mp3 ../content/voicesBigguJulia/continu.mp3 ../content/voicesBigguJulia/instructions.mp3
-	-->
+	      <audio id="biggucestmoi" src="../content/voicesBigguJulia/biggu-fem.mp3"></audio>
+	      <audio id="biggubravojulia" src="../content/voicesBigguJulia/bravojulia.mp3"></audio>
+	      <audio id="biggucontinu" src="../content/voicesBigguJulia/continu.mp3"></audio>
+	      <audio id="bigguinstructions" src="../content/voicesBigguJulia/instructions.mp3"></audio>
 	      <template id="avatar-template"></template>
 	      <template id="left-hand-default-template">
 		      <a-entity networked-hand-controls="hand:left"></a-entity>
@@ -199,33 +262,33 @@ AFRAME.registerComponent('exercise', {
       <a-entity hide-on-enter-ar="" id="environment" class="hidableenvironment" ></a-entity>
       <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
 	-->
-      <a-gltf-model hide-on-enter-ar="" src="../content/winterset/WinterIsland.glb" position="2.1 -3.5 -1.7" ></a-gltf-model>
-      <a-gltf-model src="../content/winterset/WinterSled.glb" position="0.11322 1.14197 0.27573" ></a-gltf-model>
+      <a-gltf-model hide-on-enter-ar="" src="../content/winterset/WinterIsland.glb" position="2.1 -4.5 -1.7" ></a-gltf-model>
+      <a-gltf-model src="../content/winterset/WinterSled.glb" position="0.11322 0.14197 0.27573" ></a-gltf-model>
 
-      <a-entity id="bubble" position="0 2 -1" scale=".1 .1 .1">
+      <a-entity id="bubble" position="0 1 -1" scale=".1 .1 .1">
 	<a-sphere scale="2 1 .1" color="white"></a-sphere>
 	<a-cone scale="2 1 .1" position="-.5 -.7 0" rotation="0 0 45" color="white"></a-cone>
 	<a-troika-text value="C'est moi Biggu!" font-size=".4" outline-color="gray" outline-width=".02"
 		align="center" color="black" position="0 0 .2"></a-troika-text>
       </a-entity>
 
-      <a-entity id="instructions" position="0.5 1.7 -1" rotation="0 -20 0" scale=".07 .07 .07">
+      <a-entity id="instructions" position="0.5 0.7 -1" rotation="0 -20 0" scale=".07 .07 .07">
 	<a-sphere scale="2 1 .1" color="white"></a-sphere>
 	<a-cone scale="2 1 .1" position="-.5 -.7 0" rotation="0 0 45" color="white"></a-cone>
 	<a-troika-text value="" font-size=".3" outline-color="gray" outline-width=".02"
 		align="center" color="black" position="0 0 .2"></a-troika-text>
       </a-entity>
 
-      <a-entity id="exerciseA" exercise="first:true;next:#exerciseB;instructions:Pose 5 poissons\ndans l'assiette;win:Bravo Julia!;failed:presque Julia, continue;">
+      <a-entity id="exerciseA" exercise="first:true;next:#exerciseB;instructions:Pose 2 poissons\ndans l'assiette;win:Bravo Julia!;failed:presque Julia, continue;">
 	      <a-entity id="fishes">
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".005 .005 .005" position=".5 1 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".005 .005 .005" position=".5 1.5 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".005 .005 .005" position=".4 1 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".005 .005 .005" position=".4 1.5 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".005 .005 .005" position=".6 1 -.3" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".005 .005 .005" position=".5 1.2 -.3" src="../content/winterset/Fish.glb"></a-gltf-model>
+		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".5 0 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
+		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".5 0.1 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
+		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".4 0 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
+		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".4 0.1 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
+		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".1 0 -.3" src="../content/winterset/Fish.glb"></a-gltf-model>
+		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".2 0.2 -.3" src="../content/winterset/Fish.glb"></a-gltf-model>
 	      </a-entity>
-	      <a-gltf-model id="plate" src="../content/winterset/FruitBowl.glb" position="-0.39714 1.20394 -0.50847" scale="0.1 0.1 0.1"></a-gltf-model>
+		<a-gltf-model id="plate" src="../content/winterset/BowlWhite.glb" position="-0.397 0.14354 -0.508" scale="0.1 0.05 0.1" ></a-gltf-model>
       </a-entity>
 	
       <a-entity id="exerciseB" exercise="first:false;next:#exerciseB;instructions:Pose 5 poissons\ndans l'assiette;win:Bravo Julia!;failed:presque Julia, continue;">
@@ -239,11 +302,12 @@ AFRAME.registerComponent('exercise', {
 	      </a-entity>
 	      <a-sphere id="plate" radius=".2" position="-.5 1.2 -.5" scale="1 .1 1" color="white"></a-sphere>
       </a-entity>
-      <!-- <a-gltf-model id="biggu" src="../content/SK_Biggu_v024.glb" position="-0.3 1.5 -1"></a-gltf-model> -->
-      <a-gltf-model id="biggu" src="../content/winterset/SK_Biggu_v029_optimized.glb" position="-0.3 1.5 -1"></a-gltf-model>
+      <a-gltf-model id="biggu" src="../content/winterset/SK_Biggu_v029_optimized.glb" position="-0.3 0.5 -1">
+	  <!-- <a-sound src="#bigguinstructions"></a-sound> -->
+      </a-gltf-model>
 
-      <a-gltf-model src="../content/winterset/Crystal_iPoly3D.glb" position="-0.29409 0.83524 -0.83481" scale="0.1 0.1 0.1"></a-gltf-model>
-      <a-gltf-model src="../content/winterset/FruitBowl.glb" position="-0.29409 0.83524 -0.83481" scale="0.1 0.1 0.1"></a-gltf-model>
+      <a-gltf-model src="../content/winterset/Crystal_iPoly3D.glb" position="-0.29409 -0.23524 -0.83481" scale="0.1 0.1 0.1"></a-gltf-model>
+      <a-gltf-model src="../content/winterset/FruitBowl.glb" position="-0.29409 -.23524 -0.83481" scale="0.1 0.1 0.1"></a-gltf-model>
       <a-entity id="rig">
 		<a-entity id="player" networked="template:#avatar-template;attachTemplateToLocal:false;" 
 			hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0">
@@ -264,9 +328,6 @@ AFRAME.registerComponent('exercise', {
       <a-sky hide-on-enter-ar color="lightgray"></a-sky>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
       
-      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-
       <!-- 
       <a-troika-text anchor=left target id="startdraw2d" annotation="content:dessiner en 2D"
 		value="jxr startDraw2D()" position="0 1.45 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
@@ -278,8 +339,8 @@ AFRAME.registerComponent('exercise', {
 
       <!-- somehow disable hand interaction despite, according to the documentation, it should rely on world position 
 	      <a-text target value="jxr qs #rig sa position 0 0 10" position="0 1.55 .5" rotation="0 180 0" scale="0.1 0.1 0.1"></a-text>
-	-->
       <a-console position="2 2 0" rotation="0 -45 0" font-size="34" height=1 skip-intro=true></a-console>
+	-->
     </a-scene>
   </body>
 </script>
