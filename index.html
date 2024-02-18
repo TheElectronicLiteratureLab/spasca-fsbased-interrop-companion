@@ -200,6 +200,22 @@ AFRAME.registerComponent('start-with-supervision', {
 })
 
 function startExercise(){
+	const maxFishes = 5
+	for (let i=0;i<maxFishes;i++){
+		let gltfEl = document.createElement('a-gltf-model')
+		gltfEl.setAttribute("ondrop","checkExerciseCompletion()")
+		gltfEl.setAttribute("target","true")
+		gltfEl.setAttribute("scale",".001 .001 .001")
+		gltfEl.setAttribute("src","../content/winterset/Fish.glb")
+		let x = Math.random()*1-1
+		let y = Math.random()*1-.5
+		let z = Math.random()*1-1
+		gltfEl.setAttribute("position",`${x} ${y} ${z}`)
+		//console.log("position",`${x} ${y} ${z}`)
+		document.querySelector("#fishes").appendChild(gltfEl)
+	} // might want to appear from the start
+	// audio does not match asset, should be a white bowl, not black
+
 	document.getElementById("exerciseA").setAttribute("visible", false)
 	// hide everything until this is done, otherwise overwhelming
 	const mainCharacter = document.getElementById("biggu")
@@ -279,28 +295,12 @@ AFRAME.registerComponent('warmup', {
 		align="center" color="black" position="0 0 .2"></a-troika-text>
       </a-entity>
 
+      <a-troika-text anchor=left target annotation="content:RECOMMENCER"
+	value="jxr startExercise()" position=" -0.3 0.60 .5" rotation="90 180 0" scale="0.1 0.1 0.1"></a-troika-text>
+
       <a-entity id="exerciseA" exercise="first:true;next:#exerciseB;instructions:Pose 2 poissons\ndans l'assiette;win:Bravo Julia!;failed:presque Julia, continue;">
-	      <a-entity id="fishes">
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".5 0 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".5 0.1 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".4 0 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".4 0.1 -1" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".1 0 -.3" src="../content/winterset/Fish.glb"></a-gltf-model>
-		<a-gltf-model ondrop="checkExerciseCompletion()" target scale=".001 .001 .001" position=".2 0.2 -.3" src="../content/winterset/Fish.glb"></a-gltf-model>
-	      </a-entity>
+	      <a-entity id="fishes"></a-entity>
 		<a-gltf-model id="plate" src="../content/winterset/BowlWhite.glb" position="-0.397 0.14354 -0.508" scale="0.1 0.05 0.1" ></a-gltf-model>
-      </a-entity>
-	
-      <a-entity id="exerciseB" exercise="first:false;next:#exerciseB;instructions:Pose 5 poissons\ndans l'assiette;win:Bravo Julia!;failed:presque Julia, continue;">
-	      <a-entity id="otherfishes">
-		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".5 1 -1" color="blue"></a-sphere>
-		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".5 1.5 -1" color="blue"></a-sphere>
-		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".4 1 -1" color="blue"></a-sphere>
-		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".4 1.5 -1" color="blue"></a-sphere>
-		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".6 1 -.3" color="blue"></a-sphere>
-		<a-sphere ondrop="checkExerciseCompletion(3)" scale="2 1 1" radius=".07" target position=".5 1.2 -.3" color="blue"></a-sphere>
-	      </a-entity>
-	      <a-sphere id="plate" radius=".2" position="-.5 1.2 -.5" scale="1 .1 1" color="white"></a-sphere>
       </a-entity>
       <a-gltf-model id="biggu" src="../content/winterset/SK_Biggu_v029_optimized.glb" position="-0.3 0.5 -1">
 	  <!-- <a-sound src="#bigguinstructions"></a-sound> -->
