@@ -16,7 +16,30 @@
   <body>
 
 <script>
-	// custom components go here
+// goal : being able to modify the bindings in XR, hence the manager part
+
+const gestures = [];
+	// start with : left pinch, right pinch, right index tap
+var gesturesTargets = []
+	// start with target (updated by target component) and selectors e.g #box (maybe semantically clarified, i.e follow wrist)
+
+var boundGestures = [];
+	// start with
+		// left pinch ON [target] (correct selector)
+		// right pinch ON [target]
+		// right index tap ON #box
+
+FRAME.registerComponent('empty', {
+  init: function(){
+	console.log('empty component example')
+  }
+})
+
+function listBoundGestures(){
+	console.log('could start with : left pinch, right pinch, box tap')
+	console.log(boundGestures, gestures, gesturesTargets)
+}
+
 </script>
 <a-scene startfunctions>
       <a-entity id="rig">
@@ -34,9 +57,9 @@
       <a-sky hide-on-enter-ar color="lightgray"></a-sky>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
       
-      <!-- 
       <a-console position="2 2 0" rotation="0 -45 0" font-size="34" height=1 skip-intro=true></a-console>
-	-->
+
+      <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
