@@ -41,11 +41,41 @@ function listBoundGestures(){
 	console.log('pinchprimary pinchsecondary wristattachsecondary="target: #box" pressable start-on-press')
 }
 
-// showcase a selector/attribute model. Maybe others do work this way.
-// might be possible to have a ondrop on top of a selector as a way to manage gestures
-	// e.g ondrop="" on #rightHand or #leftHand could add/remove the attribute, e.g pinchprimary/pinchsecondary
+// switchSide() showcase a selector/attribute model. Maybe others do work this way.
+// might be possible to have a onreleased neary a selector, e.g #rightHand as a way to manage gestures
+	// e.g onreleased="" on #rightHand or #leftHand could add/remove the attribute, e.g pinchprimary/pinchsecondary
 		// it could also remove it for any other entity if it's an exclusive attribute (can only be used once)
 
+// need to list which entities can actually receive an attribute related to gesture
+	// for example pinchprimary/pinchsecondary need to be on entities with hand-tracking-controls 
+	// it would not make sense to expect a pinch from a sphere nor a single finger of a hand
+
+// draw a line between a selector and its instancing
+	// e.g between "#rightHand" and actually the element with this id
+AFRAME.registerComponent('selector-line', {
+  init: function(){
+	this.newLine = document.createElement("a-entity")
+	this.newLine.setAttribute("line", "start: 0, 0, 0; end: 0 0 0.01; color: red")
+	AFRAME.scenes[0].appendChild( this.newLine )
+        this.worldPosition=new THREE.Vector3()
+  },
+  tick: function(){
+	// unfortunately here it does not work as it's not the entity itself for the hand that has a position... (cf NAF discussions)
+	let worldPosition = this.worldPosition
+
+	document.querySelector( this.el.getAttribute("value") ).object3D.traverse( e => { if (e.name == "wrist") {
+		worldPosition.copy(e.position);e.parent.updateMatrixWorld();e.parent.localToWorld(worldPosition)
+		}
+	})
+
+	let startPos = this.el.getAttribute("position") // does not seem to update..?
+	this.newLine.setAttribute("line", "end", AFRAME.utils.coordinates.stringify( worldPosition ) )
+	this.newLine.setAttribute("line", "start", AFRAME.utils.coordinates.stringify( startPos) )
+
+	//console.log( startPos, worldPosition)
+  },
+  
+})
 </script>
 <a-scene startfunctions>
       <!-- City Scene Sketch by Alex Safayan [CC-BY] via Poly Pizza -->
@@ -67,6 +97,8 @@ function listBoundGestures(){
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
       
       <a-console position="-1 1.5 0" rotation="0 45 0" font-size="34" height=1 skip-intro=true></a-console>
+
+      <a-troika-text anchor=left target selector-line value="#rightHand" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="switchside" value="jxr switchSide()" position="0 1.70 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
