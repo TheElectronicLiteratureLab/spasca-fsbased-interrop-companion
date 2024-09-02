@@ -29,7 +29,7 @@ var boundGestures = [];
 		// right pinch ON [target]
 		// right index tap ON #box
 
-FRAME.registerComponent('empty', {
+AFRAME.registerComponent('empty', {
   init: function(){
 	console.log('empty component example')
   }
@@ -38,10 +38,38 @@ FRAME.registerComponent('empty', {
 function listBoundGestures(){
 	console.log('could start with : left pinch, right pinch, box tap')
 	console.log(boundGestures, gestures, gesturesTargets)
+	console.log('pinchprimary pinchsecondary wristattachsecondary="target: #box" pressable start-on-press')
+}
+
+function reBindGestureTest(){
+	document.querySelector("#leftHand").setAttribute("pinchsecondary", "")
+}
+
+function unBindGestureTest(){
+	document.querySelector("[pinchsecondary]").removeAttribute("pinchsecondary")
+	setTimeout( _ => reBindGestureTest(), 2000)
+}
+
+function unBindGestureTestPrimary(){
+	document.querySelector("[pinchprimary]").removeAttribute("pinchprimary")
+	setTimeout( _ => document.querySelector("#rightHand").setAttribute("pinchprimary", "") , 2000)
+}
+
+function switchPrimarySecondaryTest(){
+	console.log('hands switched')
+	let formerPrimary = document.querySelector("[pinchprimary]")
+	let formerSecondary = document.querySelector("[pinchsecondary]")
+	document.querySelector("[pinchprimary]").removeAttribute("pinchprimary")
+	document.querySelector("[pinchsecondary]").removeAttribute("pinchsecondary")
+	formerSecondary.setAttribute("pinchprimary", "")
+	formerPrimary.setAttribute("pinchsecondary", "")
 }
 
 </script>
 <a-scene startfunctions>
+      <!-- City Scene Sketch by Alex Safayan [CC-BY] via Poly Pizza -->
+      <a-gltf-model hide-on-enter-ar="" src="../content/CitySceneSketch.glb" rotation="" position="4.15152 0 -2.52983" scale="4 4 4" gltf-model="../content/CitySceneSketch.glb"></a-gltf-model>
+
       <a-entity id="rig">
 		<a-entity id="player" hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
 		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
@@ -54,12 +82,15 @@ function listBoundGestures(){
 
       <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
 	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
-      <a-sky hide-on-enter-ar color="lightgray"></a-sky>
+      <a-sky hide-on-enter-ar color="lightblue"></a-sky>
       <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
       
-      <a-console position="2 2 0" rotation="0 -45 0" font-size="34" height=1 skip-intro=true></a-console>
+      <a-console position="-1 1.5 0" rotation="0 45 0" font-size="34" height=1 skip-intro=true></a-console>
 
       <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="unbingesturetest" value="jxr unBindGestureTest()" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="unbingesturetestprimary" value="jxr unBindGestureTestPrimary()" position="0 1.60 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="primarysecondaryswitchtest" value="jxr switchPrimarySecondaryTest()" position="0 1.70 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>

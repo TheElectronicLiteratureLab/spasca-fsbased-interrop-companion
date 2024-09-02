@@ -885,8 +885,8 @@ AFRAME.registerComponent('wristattachsecondary',{
 });
 
 AFRAME.registerComponent('pinchsecondary', { 
-  init: function () {
-	this.el.addEventListener('pinchended', function (event) {
+  events: {
+    pinchended: function (event) {
 		selectedElement = getClosestTargetElement( event.detail.position )
 		selectedElements.push({element:selectedElement, timestamp:Date.now(), primary:false})
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
@@ -904,22 +904,19 @@ AFRAME.registerComponent('pinchsecondary', {
 		bbox.min.copy( zeroVector3 )
 		bbox.man.copy( zeroVector3 )
 	       */
-	});
-	this.el.addEventListener('pinchmoved', function (event) {
+    },
+    pinchmoved: function (event) {
 		if (selectionPinchMode){
 			bbox.min.copy( event.detail.position )
 			setFeedbackHUD( "selectionPinchMode updated min")
 			if (!bbox.max.equal(zeroVector3))
 				selectionBox.update();
 		}
-	});
-	this.el.addEventListener('pinchstarted', function (event) {
+    },
+    pinchstarted: function (event) {
 		if (!selectionPinchMode) bbox.min.copy( zeroVector3 )
 		if (selectionPinchMode) setFeedbackHUD( "selectionPinchMode started")
-	});
-  },
-  remove: function() {
-	// should remove event listeners here. Requires naming them.
+    }
   }
 });
 
@@ -928,9 +925,8 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 // consider instead https://github.com/AdaRoseCannon/handy-work/blob/main/README-AFRAME.md for specific poses
 // or https://aframe.io/aframe/examples/showcase/hand-tracking/pinchable.js 
 
-  init: function () {
-	var el = this.el
-	this.el.addEventListener('pinchended', function (event) { 
+  events: {
+    pinchended: function (event) {
 		// if positioned close enough to a target zone, trigger action
 			// see own trigger-box component. Could use dedicated threejs helpers instead.
 				// https://github.com/Utopiah/aframe-triggerbox-component/blob/master/aframe-triggerbox-component.js#L66
@@ -979,9 +975,8 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		newPinchPos.copy(event.detail.position )
 		pinches.push({position:newPinchPos, timestamp:Date.now(), primary:true})
 		dl2p = distanceLastTwoPinches()
-
-	});
-	this.el.addEventListener('pinchmoved', function (event) { 
+    },
+    pinchmoved: function (event) {
 		// move current target if any
 		if (selectionPinchMode){
 			bbox.max.copy( event.detail.position )
@@ -990,7 +985,8 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		}
 		if (selectedElement && !groupingMode) {
 			selectedElement.setAttribute("position", event.detail.position)
-			document.querySelector("#rightHand").object3D.traverse( e => {
+			this.el.object3D.traverse( e => { // should be hand independant
+			//document.querySelector("#rightHand").object3D.traverse( e => { // TODO this should be hand independant
 				if (e.name == "ring-finger-tip"){
 					selectedElement.object3D.rotation.copy( e.rotation )
 				}
@@ -998,8 +994,8 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			// rotation isn't ideal with the wrist as tend not have wrist flat as we pinch
 		}
 		if (selectedElement) selectedElement.emit("moved")
-	});
-	this.el.addEventListener('pinchstarted', function (event) {
+    },
+    pinchstarted: function (event) {
 		primaryPinchStarted = true
 		if (!selectionPinchMode) bbox.max.copy( zeroVector3 )
 
@@ -1014,10 +1010,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 		// is it truly world position? See https://github.com/aframevr/aframe/issues/5182
 		// setFeedbackHUD( AFRAME.utils.coordinates.stringify( event.detail.position ) )
 		// if close enough to a target among a list of potential targets, unselect previous target then select new
-	});
-  },
-  remove: function() {
-	// should remove event listeners here. Requires naming them.
+    }
   }
 });
 
