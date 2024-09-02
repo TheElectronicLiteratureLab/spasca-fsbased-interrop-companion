@@ -11,7 +11,7 @@
     <script src="dependencies/shiki0.14.1.js"></script>
     <!-- bit demanding but it IS about code too, so arguably important enough -->
 
-    <script src='jxr.js'></script> 
+    <script src='jxr-core.js'></script> 
   </head>
   <body>
 
@@ -41,29 +41,10 @@ function listBoundGestures(){
 	console.log('pinchprimary pinchsecondary wristattachsecondary="target: #box" pressable start-on-press')
 }
 
-function reBindGestureTest(){
-	document.querySelector("#leftHand").setAttribute("pinchsecondary", "")
-}
-
-function unBindGestureTest(){
-	document.querySelector("[pinchsecondary]").removeAttribute("pinchsecondary")
-	setTimeout( _ => reBindGestureTest(), 2000)
-}
-
-function unBindGestureTestPrimary(){
-	document.querySelector("[pinchprimary]").removeAttribute("pinchprimary")
-	setTimeout( _ => document.querySelector("#rightHand").setAttribute("pinchprimary", "") , 2000)
-}
-
-function switchPrimarySecondaryTest(){
-	console.log('hands switched')
-	let formerPrimary = document.querySelector("[pinchprimary]")
-	let formerSecondary = document.querySelector("[pinchsecondary]")
-	document.querySelector("[pinchprimary]").removeAttribute("pinchprimary")
-	document.querySelector("[pinchsecondary]").removeAttribute("pinchsecondary")
-	formerSecondary.setAttribute("pinchprimary", "")
-	formerPrimary.setAttribute("pinchsecondary", "")
-}
+// showcase a selector/attribute model. Maybe others do work this way.
+// might be possible to have a ondrop on top of a selector as a way to manage gestures
+	// e.g ondrop="" on #rightHand or #leftHand could add/remove the attribute, e.g pinchprimary/pinchsecondary
+		// it could also remove it for any other entity if it's an exclusive attribute (can only be used once)
 
 </script>
 <a-scene startfunctions>
@@ -88,9 +69,7 @@ function switchPrimarySecondaryTest(){
       <a-console position="-1 1.5 0" rotation="0 45 0" font-size="34" height=1 skip-intro=true></a-console>
 
       <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="unbingesturetest" value="jxr unBindGestureTest()" position="0 1.50 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="unbingesturetestprimary" value="jxr unBindGestureTestPrimary()" position="0 1.60 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="primarysecondaryswitchtest" value="jxr switchPrimarySecondaryTest()" position="0 1.70 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="switchside" value="jxr switchSide()" position="0 1.70 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
