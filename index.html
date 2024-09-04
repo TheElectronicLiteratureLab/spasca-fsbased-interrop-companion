@@ -75,6 +75,8 @@ AFRAME.registerComponent('selector-line', {
 	//console.log( startPos, worldPosition)
   },
   
+// try pinching modifier, e.g pinch while holding the SHIFT key
+
 })
 </script>
 <a-scene startfunctions>
@@ -98,13 +100,13 @@ AFRAME.registerComponent('selector-line', {
       
       <a-console position="-1 1.5 0" rotation="0 45 0" font-size="34" height=1 skip-intro=true></a-console>
 
-      <a-troika-text anchor=left target selector-line value="#rightHand" position="0 1.30 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target selector-line value="#rightHand" position="0 1.30 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="0 1.40 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="switchside" value="jxr switchSide()" position="0 1.70 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="0 1.40 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="switchside" value="jxr switchSide()" position="0 1.35 -0.4" scale="0.1 0.1 0.3"></a-troika-text>
 
-      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
 
     </a-scene>
   </body>
