@@ -25,6 +25,7 @@ const sides = ["right", "left"]
 var pinches = [] // position, timestamp, primary vs secondary
 var dl2p = null // from distanceLastTwoPinches
 var selectedElements = [];
+var billboarding = false
 
 // ==================================== picking ======================================================
 
@@ -161,7 +162,7 @@ AFRAME.registerComponent('pinchprimary', { // currently only 1 hand, the right o
 			if (selectedElement){
 				let content = selectedElement.getAttribute("value")
 				selectedElement.emit('released', {element:selectedElement, timestamp:Date.now(), primary:true})
-				// selectedElement.object3D.rotation.set( 0, 0, 0 ) // billboarding, could need modifier
+				if (billboarding) selectedElement.object3D.rotation.set( 0, 0, 0 )
 			}
 			// unselect current target if any
 			selectedElement = null;
@@ -832,6 +833,8 @@ function addDropZone(position="0 1.4 -0.6", callback=setFeedbackHUD, radius=0.11
 	// never unregister
 	return el
 }
+
+function toggleBillboarding(){ billboarding=!billboarding }
 
 // ==================================== facilitating debugging ======================================================
 
