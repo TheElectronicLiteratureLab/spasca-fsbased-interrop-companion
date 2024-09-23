@@ -52,17 +52,226 @@ function listBoundGestures(){
 
 // draw a line between a selector and its instancing
 	// e.g between "#rightHand" and actually the element with this id
+
+var tips = {
+	left : {},
+	right : {},
+}
+
+AFRAME.registerComponent('save-on-exit-xr', {
+  init: function () {
+    var sceneEl = this.el;
+	sceneEl.addEventListener('exit-vr', _ => {
+		saveBoard() // only when exiting VR proper, NOT "multitasking" so added onreleased to enable that workflow too
+		showBoardFromHash()
+	})
+  }
+});
+
+function saveBoard(){
+	let positions = [] // ordered is preserved as the elements are created in order too (bit risky)
+	getArrayFromClass("pannels").map( p => {
+		let v = p.getAttribute("position")
+
+		let o = new THREE.Vector3()
+		o.x = v.x.toFixed(3)
+		o.y = v.y.toFixed(3)
+		o.z = v.z.toFixed(3)
+
+		positions.push( o )
+	})
+
+	let data = {}
+	data.positions = positions
+
+	window.location.hash = JSON.stringify(data)
+	// generate URL and append the optional forced 2D overlay parameter
+		// warning : a URI has a maximum length which might be too short due to text content
+		// we can rely on the index position of the array ASSUMING that the .json file does not change between both moments
+}
+
+//const billBoardSourceURL = "../content/nlnetproposal.json"
+const billBoardSourceURL = "../content/snippets.json"
+
+function showBoardFromHash(){ // the flattening... not very useful for now, ideally could be brought to a better canvas
+	let positions = JSON.parse( decodeURI( window.location.hash.substring(1) ) ).positions
+
+	//could already do a preview
+	let canvas2DpreviewEl = document.createElement('div')
+	document.body.appendChild( canvas2DpreviewEl )
+	canvas2DpreviewEl.style = "zIndex:99; position:absolute; top:0; left:0; width:90%; height:90%; background-color:black;"
+
+	// done again, should be cached instead
+	fetch(billBoardSourceURL).then( r => r.json() ).then( json => {
+		let count = json.length // can get too high, thus unreachable, sticking to 1m total
+		json.map( (l,i) => {
+			let content = l
+			// trim very long texts (should evoque the memory of instead, other cluttering)
+			if (count > 500) content = l.substring(0,500) + "\n..."
+			let boardEl = document.createElement('span')
+			boardEl.innerText = content
+			boardEl.draggable = true
+			let pos = positions[i]
+			let x = 500 + pos.x * 1000
+			let y = pos.y * 500 - 200
+			let z = Math.round( pos.z*100 + 999 )
+			boardEl.style = "z-index:"+z+"; position:absolute; top:"+y+"px; left:"+x+"px; color:white; width: 1000px;"
+			boardEl.className = "boardElement2D"
+			canvas2DpreviewEl.appendChild( boardEl )
+			dragElement( boardEl )
+		})
+
+		// add 2D button on corner to copy data to clipboard
+		let boardButtonData = document.createElement( "input" )
+		boardButtonData.id = "boardbuttondata"
+		let content = []
+		getArrayFromClass("boardElement2D").map( p => content.push( {
+				zIndex: p.style.zIndex, 
+				x: p.style.left, 
+				y: p.style.top
+			})
+		)
+		boardButtonData.style = "z-index:999; position:absolute; top:0px; left:0px; color:black; width: 100px;"
+		boardButtonData.value = JSON.stringify( content )
+		canvas2DpreviewEl.appendChild( boardButtonData )
+	})
+}
+
+function updateBoardButtonData(){
+	let boardButtonData = document.getElementById("boardbuttondata")
+	let content = []
+	getArrayFromClass("boardElement2D").map( p => content.push( {
+			zIndex: p.style.zIndex, 
+			x: p.style.left, 
+			y: p.style.top
+		})
+	)
+	boardButtonData.value = JSON.stringify( content )
+}
+
+function dragElement(elmnt) { // from https://www.w3schools.com/howto/howto_js_draggable.asp
+  var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  elmnt.onmousedown = dragMouseDown;
+
+  function dragMouseDown(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // get the mouse cursor position at startup:
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    // call a function whenever the cursor moves:
+    document.onmousemove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // calculate the new cursor position:
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    // set the element's new position:
+    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+  }
+
+  function closeDragElement() {
+    // stop moving when mouse button is released:
+    document.onmouseup = null;
+    document.onmousemove = null;
+	// note that this should probably save back to the hash too, otherwise no persistance.
+	// could also consider saving to JSON or whatever useful format (probably https://jsoncanvas.org )
+	updateBoardButtonData()
+  }
+} // done
+
+AFRAME.registerComponent('billboard-content', {
+  init: function(){
+	let positions = false
+	if (window.location.hash)
+	positions = JSON.parse( decodeURI( window.location.hash.substring(1) ) ).positions
+	// assume JSON is correct...
+
+	let boardEl = document.createElement("a-box")
+	boardEl.setAttribute("width", 2)
+	boardEl.setAttribute("depth", .1)
+	boardEl.setAttribute("height", 1)
+	boardEl.setAttribute("color", "black")
+	boardEl.setAttribute("position", "0 1.5 -1")
+	AFRAME.scenes[0].appendChild( boardEl )
+	// bringing content in
+	fetch(billBoardSourceURL).then( r => r.json() ).then( json => {
+		let count = json.length // can get too high, thus unreachable, sticking to 1m total
+		json.map( (l,i) => {
+			let content = l
+			// trim very long texts (should evoque the memory of instead, other cluttering)
+			if (count > 500) content = l.substring(0,500) + "\n..."
+			// could filter out or highlight when l begins with "TODO:"
+			let noteEl
+			if (positions)
+				noteEl = addNewNote(content, positions[i], scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
+			else 
+				noteEl = addNewNote(content, "-0.5 "+ (i/count+0.7)+" "+(-0.5-Math.random()), scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
+			noteEl.setAttribute("max-width", 10)
+			noteEl.setAttribute("jsonID", i)
+			noteEl.setAttribute("onreleased", "saveBoard()")
+		})
+		billboarding = true
+		makeAnchorsVisibleOnTargets()
+	})
+  },
+})
+
 AFRAME.registerComponent('selector-line', {
   init: function(){
 	this.newLine = document.createElement("a-entity")
 	this.newLine.setAttribute("line", "start: 0, 0, 0; end: 0 0 0.01; color: red")
 	AFRAME.scenes[0].appendChild( this.newLine )
         this.worldPosition=new THREE.Vector3()
+        this.hr=new THREE.Vector3()
+        this.hl=new THREE.Vector3()
+
+	document.querySelector('a-scene').addEventListener('enter-vr', _ => {
+		// seems there is a slight delay to get children for hands and no hasLoaded event to catch
+		setTimeout( _ => {
+				["left", "right"].map( (side, i) =>
+					[ "index-finger", "middle-finger", "ring-finger", "pinky-finger", "thumb"].map( (part, j) => {
+						document.querySelector('[hand-tracking-controls="hand: '+side+';"]').object3D.traverse( e => { if (e.name == part+"-tip") tips[side][part] = e })
+						addNewNote("#"+side+"_"+part+"_tip", "-1 "+ (j/10+1)+" "+(-1+i/10)) // for surfacing affordances as selectors 
+					})
+				)
+			}, 500
+		)
+		// risky bet, maybe hand are occluded when enter VR
+	} )
+	// might also want to "remove" them on leaving VR (works for AR and VR)
   },
   tick: function(){
+	let dist = 0
+	if (tips.left.thumb) { // assuming we are getting both hands which is not necessarily true
+		let proximityPairs = [
+			{ pair : [ tips.left.thumb, tips.right.thumb ], msg : 'thumbs touching-ish', eventName: "touchingThumbs"}, 
+			{ pair : [ tips.left["pinky-finger"], tips.right["pinky-finger"] ], msg : 'pinkies touching-ish', eventName: "touchingPinkies" },
+			{ pair : [ tips.right["pinky-finger"], tips.right["thumb"] ], msg : 'right pinky to thumb touching-ish', eventName: "rightPinkyToThumbTouching" },
+			// for the gesture manager those pairs and msg/events directly manipulable as selectors (cf this overall component)
+		]
+
+		proximityPairs.map( rule => {
+			dist = 0
+			dist = rule.pair[0].position.distanceTo(rule.pair[1].position)  
+			let threshold = .04 // tricky threshold, assuming with better camera and CV it will improve over time
+			if ( dist > 0 && dist < threshold) { 
+				console.log( rule.msg ) 
+				AFRAME.scenes[0].emit( rule.eventName )
+			}
+		})
+	}
+	// note that is about RELATIVE position, not absolute position!
+
 	// unfortunately here it does not work as it's not the entity itself for the hand that has a position... (cf NAF discussions)
 	let worldPosition = this.worldPosition
-
 	document.querySelector( this.el.getAttribute("value") ).object3D.traverse( e => { if (e.name == "wrist") {
 		worldPosition.copy(e.position);e.parent.updateMatrixWorld();e.parent.localToWorld(worldPosition)
 		}
@@ -79,7 +288,7 @@ AFRAME.registerComponent('selector-line', {
 })
 
 </script>
-<a-scene startfunctions>
+<a-scene startfunctions save-on-exit-xr billboard-content>
       <!-- City Scene Sketch by Alex Safayan [CC-BY] via Poly Pizza -->
       <a-gltf-model hide-on-enter-ar="" id="environment" rotation="" position="4.15152 0 -2.52983" scale="4 4 4" gltf-model="../content/CitySceneSketch.glb"></a-gltf-model>
 
@@ -100,14 +309,16 @@ AFRAME.registerComponent('selector-line', {
       
       <a-console position="-1 1.5 0" rotation="0 45 0" font-size="34" height=1 skip-intro=true></a-console>
 
-      <a-troika-text anchor=left target selector-line value="#rightHand" position="0 1.30 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target selector-line value="#rightHand" position="1 1.30 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="0 1.40 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="switchside" value="jxr switchSide()" position="0 1.35 -0.4" scale="0.1 0.1 0.3"></a-troika-text>
-      <a-troika-text anchor=left target id="togglebillboarding" value="jxr toggleBillboarding()" position="0 1.55 -0.4" scale="0.1 0.1 0.3"></a-troika-text>
+      <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="1 1.40 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="switchside" value="jxr switchSide()" position="1 1.35 -0.4" scale="0.1 0.1 0.3"></a-troika-text>
+      <a-troika-text anchor=left target id="togglebillboarding" value="jxr toggleBillboarding()" position="1 1.55 -0.4" scale="0.1 0.1 0.3"></a-troika-text>
 
-      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="1 1.20 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="1 1.05 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+
+      <a-troika-text anchor=left target id="clearhash" value="jxr window.location.hash=''" position="-1 2.05 -1" scale="0.1 0.1 0.1"></a-troika-text>
 
     </a-scene>
   </body>
