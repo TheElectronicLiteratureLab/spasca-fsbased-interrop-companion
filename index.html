@@ -196,11 +196,21 @@ AFRAME.registerComponent('billboard-content', {
 
 	let boardEl = document.createElement("a-box")
 	boardEl.setAttribute("width", 2)
-	boardEl.setAttribute("depth", .1)
+	boardEl.setAttribute("depth", .01)
 	boardEl.setAttribute("height", 1)
-	boardEl.setAttribute("color", "black")
-	boardEl.setAttribute("position", "0 1.5 -1")
+	boardEl.setAttribute("color", "#303030")
+	boardEl.setAttribute("position", "0 1.5 -1.2")
 	AFRAME.scenes[0].appendChild( boardEl )
+	var grid = new THREE.GridHelper(1, 10, 0xFFFFFF, 0x888888 );
+	grid.rotateX(Math.PI/2)
+	grid.translateY(.01)
+	grid.translateX(.5)
+	boardEl.object3D.add(grid);
+	var grid = new THREE.GridHelper(1, 10, 0xFFFFFF, 0x888888 );
+	grid.rotateX(Math.PI/2)
+	grid.translateY(.01)
+	grid.translateX(-.5)
+	boardEl.object3D.add(grid);
 	// bringing content in
 	fetch(billBoardSourceURL).then( r => r.json() ).then( json => {
 		let count = json.length // can get too high, thus unreachable, sticking to 1m total
@@ -217,6 +227,7 @@ AFRAME.registerComponent('billboard-content', {
 			noteEl.setAttribute("max-width", 10)
 			noteEl.setAttribute("jsonID", i)
 			noteEl.setAttribute("onreleased", "saveBoard()")
+			// could also possible insure that it's in front of the board, always
 		})
 		billboarding = true
 		makeAnchorsVisibleOnTargets()
@@ -289,8 +300,12 @@ AFRAME.registerComponent('selector-line', {
 
 </script>
 <a-scene startfunctions save-on-exit-xr billboard-content>
-      <!-- City Scene Sketch by Alex Safayan [CC-BY] via Poly Pizza -->
-      <a-gltf-model hide-on-enter-ar="" id="environment" rotation="" position="4.15152 0 -2.52983" scale="4 4 4" gltf-model="../content/CitySceneSketch.glb"></a-gltf-model>
+      <!-- Apartment 2 by Gabriele Romagnoli [CC-BY] via Poly Pizza -->
+	<a-gltf-model hide-on-enter-ar="" id="environment" rotation="0 90 0" position="-.3 .8 4" scale="8 8 8" gltf-model="../content/Apartment2.glb"></a-gltf-model>
+	<a-box color="gray" position="0 0 -1.6" scale="10 0.1 0.2"></a-box>
+	<a-box color="gray" position="0 2.7 -1.6" scale="10 0.1 0.2"></a-box>
+	<a-box color="gray" position="3.2 1.3 -1.6" scale="0.1 3 0.2"></a-box>
+	<a-box color="gray" position="-3.1 1.3 -1.6" scale="0.1 3 0.2"></a-box>
 
       <a-entity id="rig">
 		<a-entity id="player" hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
