@@ -11,6 +11,8 @@
     <script src="dependencies/shiki0.14.1.js"></script>
     <!-- bit demanding but it IS about code too, so arguably important enough -->
 
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.0/dist/aframe-extras.min.js"></script>
+
     <script src='jxr-core.js'></script> 
   </head>
   <body>
@@ -41,6 +43,31 @@ function listBoundGestures(){
 	console.log('pinchprimary pinchsecondary wristattachsecondary="target: #box" pressable start-on-press')
 }
 
+AFRAME.registerComponent('generate-anchors', {
+  init: function(){
+	let points = this.el.getAttribute('path').split(',')
+	let id = this.el.id
+	points.map( (p,i) => {
+		let anchorEl = document.createElement("a-entity")
+		anchorEl.id = id + "_" + i
+		anchorEl.setAttribute("target", "")
+		anchorEl.setAttribute("binding-anchor", "") // could use this value instead of
+		anchorEl.setAttribute("onreleased", "moveAnchorPointTarget('"+anchorEl.id+"')" )
+		anchorEl.setAttribute("position", p.trim() )
+		anchorEl.setAttribute("scale", ".2 .2 .2" )
+		AFRAME.scenes[0].appendChild(anchorEl)
+	})
+  }
+})
+
+function moveAnchorPointTarget(id){
+	console.log('should update the position of'+id+' with new hand position')
+	let [targetId,numberOnPath] = id.split('_')
+	let targetEl = document.getElementById(targetId)
+	let path = targetEl.getAttribute("path").split(',')
+	path[numberOnPath] = AFRAME.utils.coordinates.stringify( document.getElementById(id).getAttribute('position') )
+	targetEl.setAttribute("path", path.join(",") )
+}
 // switchSide() showcase a selector/attribute model. Maybe others do work this way.
 // might be possible to have a onreleased neary a selector, e.g #rightHand as a way to manage gestures
 	// e.g onreleased="" on #rightHand or #leftHand could add/remove the attribute, e.g pinchprimary/pinchsecondary
@@ -57,6 +84,44 @@ var tips = {
 	left : {},
 	right : {},
 }
+
+AFRAME.registerComponent('draw-on-board', {
+  init: function () {
+	// get right hand fingertip, if "beyond" board, add something
+	// boardEl.setAttribute("position", "0 1.5 -1.2")
+	this.z = document.getElementById("board").getAttribute("position").z
+	this.z = -1.2 // cheating, needed as it does yet exist
+        this.throttledFunction = AFRAME.utils.throttle(this.draw, 50, this);
+        this.p = document.querySelector('[pinchprimary]')
+        this.tip = new THREE.Vector3(); // create once an reuse it
+	this.lastPoint = null
+  },
+  draw: function () {
+	let tip = this.tip
+        this.p.object3D.traverse( e => { if (e.name == 'index-finger-tip' ) tip = e.position })
+	if (tip.z) {
+		if (tip.z < this.z){
+			let newPos = new THREE.Vector3( tip.x, (tip.y+1.5), (this.z+.01) )
+			if ( this.lastPoint && this.lastPoint.distanceTo( newPos ) > .01 ){
+				// merge nearby point
+				let drawEl = document.createElement("a-box")
+				drawEl.setAttribute("width", .01)
+				drawEl.setAttribute("depth", .02)
+				drawEl.setAttribute("height", .01)
+				drawEl.setAttribute("color", "red")
+				drawEl.setAttribute("position", "" + tip.x + " " + (tip.y+1.5) + " " + (this.z+.01) )
+				// tip.y seems to be too low... there is an offset too
+				AFRAME.scenes[0].appendChild( drawEl )
+			}
+			this.lastPoint = newPos
+		}
+	}
+	
+  },
+  tick: function (t, dt) {
+    this.throttledFunction();  // Called once a second.
+   },
+})
 
 AFRAME.registerComponent('save-on-exit-xr', {
   init: function () {
@@ -200,6 +265,7 @@ AFRAME.registerComponent('billboard-content', {
 	boardEl.setAttribute("height", 1)
 	boardEl.setAttribute("color", "#303030")
 	boardEl.setAttribute("position", "0 1.5 -1.2")
+	boardEl.id = "board"
 	AFRAME.scenes[0].appendChild( boardEl )
 	var grid = new THREE.GridHelper(1, 10, 0xFFFFFF, 0x888888 );
 	grid.rotateX(Math.PI/2)
@@ -299,7 +365,7 @@ AFRAME.registerComponent('selector-line', {
 })
 
 </script>
-<a-scene startfunctions save-on-exit-xr billboard-content>
+<a-scene startfunctions save-on-exit-xr billboard-content draw-on-board>
       <!-- Apartment 2 by Gabriele Romagnoli [CC-BY] via Poly Pizza -->
 	<a-gltf-model hide-on-enter-ar="" id="environment" rotation="0 90 0" position="-.3 .8 4" scale="8 8 8" gltf-model="../content/Apartment2.glb"></a-gltf-model>
 	<a-box color="gray" position="0 0 -1.6" scale="10 0.1 0.2"></a-box>
@@ -334,6 +400,12 @@ AFRAME.registerComponent('selector-line', {
       <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="1 1.05 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
 
       <a-troika-text anchor=left target id="clearhash" value="jxr window.location.hash=''" position="-1 2.05 -1" scale="0.1 0.1 0.1"></a-troika-text>
+
+	<!-- need to be able to bind each anchor point as targets that update the matching a-tube path-->
+      <a-tube generate-anchors id="number1" path="-0.3 1.5 -1, -0.2 1.6 -1, -0.2 1.4 -1" radius="0.01" material="color: red"></a-tube>
+      <a-tube generate-anchors id="number4" path="0.1 1.6 -1, 0 1.5 -1, 0.1 1.5 -1, 0.1 1.4 -1" radius="0.01" material="color: red"></a-tube>
+
+
 
     </a-scene>
   </body>
