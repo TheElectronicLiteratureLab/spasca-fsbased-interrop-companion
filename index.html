@@ -43,6 +43,44 @@ function listBoundGestures(){
 	console.log('pinchprimary pinchsecondary wristattachsecondary="target: #box" pressable start-on-press')
 }
 
+AFRAME.registerComponent('sumvectors', {
+  schema: {
+	v1: {type: 'selector'},
+	v2: {type: 'selector'}
+  },
+  init: function(){
+	updateSumVector( this.data.v1, this.data.v2 )	
+  }
+})
+
+function updateSumVector( sv1, sv2 ){
+console.log('updating sum vector', sv1.id, sv2.id)
+	let existingVector = document.getElementById( "vectorsum_" + sv1.id + "_" + sv2.id )
+	if ( existingVector ) existingVector.remove()
+
+	let v1 = sv1.getAttribute("path").split(',')
+	let v1_a = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v1[0] ) )
+	let v1_b = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v1[1] ) )
+	let v2 = sv2.getAttribute("path").split(',')
+	let v2_a = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v2[0] ) )
+	let v2_b = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v2[1] ) )
+
+	let vs_a = v1_a.clone()
+	let vs_b = vs_a.clone()
+		.add( v1_b.sub( v1_a ) )
+		.add( v2_b.sub( v2_a ) )
+
+	let tubeEl = document.createElement("a-tube")
+	tubeEl.id = "vectorsum_" + sv1.id + "_" + sv2.id 
+	tubeEl.setAttribute("path", AFRAME.utils.coordinates.stringify(vs_a) +', '+AFRAME.utils.coordinates.stringify(vs_b) )
+	tubeEl.setAttribute("radius", "0.005")
+	AFRAME.scenes[0].appendChild(tubeEl)
+	let coneEl = document.createElement("a-cone")
+	coneEl.setAttribute("scale", ".02 .02 .02")
+	coneEl.setAttribute("position", AFRAME.utils.coordinates.stringify(vs_b) ) // missing rotation
+	tubeEl.appendChild(coneEl) // parenting is kind of "fake" as it doesn't inherent position/rotation
+}
+
 AFRAME.registerComponent('generate-anchors', {
   init: function(){
 	let points = this.el.getAttribute('path').split(',')
@@ -61,13 +99,22 @@ AFRAME.registerComponent('generate-anchors', {
 })
 
 function moveAnchorPointTarget(id){
-	console.log('should update the position of'+id+' with new hand position')
+	console.log('updating the position of'+id+' with new hand position')
 	let [targetId,numberOnPath] = id.split('_')
 	let targetEl = document.getElementById(targetId)
 	let path = targetEl.getAttribute("path").split(',')
 	path[numberOnPath] = AFRAME.utils.coordinates.stringify( document.getElementById(id).getAttribute('position') )
 	targetEl.setAttribute("path", path.join(",") )
+
+	Array.from( document.querySelectorAll("[id*='vectorsum_']") )
+		.filter( el => el.id.includes(targetId) )
+		.map( el => {
+			let [sv1, sv2] = el.id.replace( "vectorsum_", '').split( '_' )
+			console.log(targetId, sv1, sv2)
+			updateSumVector( document.getElementById(sv1), document.getElementById(sv2) )
+		})
 }
+
 // switchSide() showcase a selector/attribute model. Maybe others do work this way.
 // might be possible to have a onreleased neary a selector, e.g #rightHand as a way to manage gestures
 	// e.g onreleased="" on #rightHand or #leftHand could add/remove the attribute, e.g pinchprimary/pinchsecondary
@@ -405,7 +452,15 @@ AFRAME.registerComponent('selector-line', {
       <a-tube generate-anchors id="number1" path="-0.3 1.5 -1, -0.2 1.6 -1, -0.2 1.4 -1" radius="0.01" material="color: red"></a-tube>
       <a-tube generate-anchors id="number4" path="0.1 1.6 -1, 0 1.5 -1, 0.1 1.5 -1, 0.1 1.4 -1" radius="0.01" material="color: red"></a-tube>
 
+      <a-tube generate-anchors id="vector1" path="0.3 1.4 -1, 0.3 1.6 -1" radius="0.005" material="color: green">
+	<a-cone scale=".02 .02 .02" color="green" position="0.3 1.6 -1"></a-cone><!-- should stick to end -->
+	</a-tube>
 
+      <a-tube generate-anchors id="vector2" path="0.3 1.4 -1, 0.5 1.6 -1" radius="0.005" material="color: blue">
+	<a-cone scale=".02 .02 .02" color="blue" position="0.5 1.6 -1"></a-cone><!-- should stick to end, also rotate -->
+	</a-tube>
+
+	<a-entity sumvectors="v1:#vector1; v2:#vector2"></a-entity>
 
     </a-scene>
   </body>
