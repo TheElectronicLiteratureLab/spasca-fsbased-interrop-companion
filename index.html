@@ -246,6 +246,19 @@ function showBoardFromHash(){ // the flattening... not very useful for now, idea
 		boardButtonData.style = "z-index:999; position:absolute; top:0px; left:0px; color:black; width: 100px;"
 		boardButtonData.value = JSON.stringify( content )
 		canvas2DpreviewEl.appendChild( boardButtonData )
+
+
+		/* from https://visual-meta.info */
+		let textareaEl = document.createElement( "textarea" )
+		textareaEl.id = "textareavisualmeta"
+		textareaEl.value = "@{visual-meta-start}"
+		getArrayFromClass("boardElement2D").map( p => 
+			textareaEl.value += `\ncontent={${p.innerText}}\nposition={${p.style.left.replace('px','')},${p.style.top.replace('px','')},${p.style.zIndex}}`
+		)
+		textareaEl.value += "\n@{visual-meta-start}"
+		textareaEl.style = "z-index:999; position:absolute; bottom:0px; left:0px; color:black; width: 800px; height:400px;"
+		canvas2DpreviewEl.appendChild( textareaEl )
+
 	})
 }
 
@@ -259,6 +272,14 @@ function updateBoardButtonData(){
 		})
 	)
 	boardButtonData.value = JSON.stringify( content )
+
+	let textareaEl = document.getElementById("textareavisualmeta")
+	textareaEl.value = "@{visual-meta-start}"
+	getArrayFromClass("boardElement2D").map( p => 
+		textareaEl.value += `\ncontent={${p.innerText}}\nposition={${p.style.left.replace('px','')},${p.style.top.replace('px','')},${p.style.zIndex}}`
+	)
+	textareaEl.value += "\n@{visual-meta-start}"
+	textareaEl.style = "z-index:999; position:absolute; bottom:0px; left:0px; color:black; width: 800px; height:400px;"
 }
 
 function dragElement(elmnt) { // from https://www.w3schools.com/howto/howto_js_draggable.asp
@@ -324,6 +345,32 @@ AFRAME.registerComponent('billboard-content', {
 	grid.translateY(.01)
 	grid.translateX(-.5)
 	boardEl.object3D.add(grid);
+	fetch('../content/DynamicView_260924.json').then( r => r.json() ).then( json => {
+		console.log(json)
+		json.nodes.map( (l,i) => {
+			let noteEl
+			let pos = json.layout.nodePositions[l.identifier]
+			noteEl = addNewNote(l.title, ""+(pos.x/1000)+" " + (1.2-pos.y/1000)+ " -1", scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
+			noteEl.setAttribute("max-width", 10)
+		})
+		json.connections.map( c => {
+			console.log(c)
+			return
+			// somehow those identifiers can't be found there
+			let pS = json.layout.nodePositions[c.startNodeIdentifier]
+			let pE = json.layout.nodePositions[c.endNodeIdentifier]
+			let posE = (pE.x/1000) + " " + (1.2-pE.y/1000) + " -1"
+			let posS = (pS.x/1000) + " " + (1.2-pS.y/1000) + " -1"
+			let tubeEl = document.createElement("a-tube")
+			tubeEl.setAttribute("path", posS +', '+posE)
+			tubeEl.setAttribute("radius", "0.005")
+			AFRAME.scenes[0].appendChild(tubeEl)
+
+		})
+		// should add connections too, cf with startNodeIdentifier and endNodeIdentifier
+			// can facilitate the working by using <a-tube> with path, as done before
+			// not actually easier than <a-line> so arguable
+	})
 	// bringing content in
 	fetch(billBoardSourceURL).then( r => r.json() ).then( json => {
 		let count = json.length // can get too high, thus unreachable, sticking to 1m total
