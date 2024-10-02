@@ -280,6 +280,23 @@ function updateBoardButtonData(){
 	)
 	textareaEl.value += "\n@{visual-meta-start}"
 	textareaEl.style = "z-index:999; position:absolute; bottom:0px; left:0px; color:black; width: 800px; height:400px;"
+
+	// JSON Canvas support
+
+	var JSONCanvas = { nodes : [], edges : [] }
+	getArrayFromClass("boardElement2D").map( (p,i) => JSONCanvas.nodes.push( {
+			x: Number(p.style.left.replace('px','')),
+			y: Number(p.style.top.replace('px','')),
+			text: p.innerText,
+			type: "text",
+		        width: 200,
+		        height: 200,
+			id: "nodeid_"+i // as there is not set id for now
+		})
+	)
+	// edges could be updated based on links as <a-line> or <a-tube> but this isn't done in XR yet.
+	console.log( JSONCanvas )
+
 }
 
 function dragElement(elmnt) { // from https://www.w3schools.com/howto/howto_js_draggable.asp
