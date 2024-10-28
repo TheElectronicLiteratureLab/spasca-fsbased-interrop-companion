@@ -83,6 +83,7 @@ console.log('updating sum vector', sv1.id, sv2.id)
 
 AFRAME.registerComponent('generate-anchors', {
   init: function(){
+return
 	let points = this.el.getAttribute('path').split(',')
 	let id = this.el.id
 	points.map( (p,i) => {
@@ -363,30 +364,44 @@ AFRAME.registerComponent('billboard-content', {
 	grid.translateX(-.5)
 	boardEl.object3D.add(grid);
 	fetch('../content/DynamicView_260924.json').then( r => r.json() ).then( json => {
-		console.log(json)
+		let positionedNodes = {}
+		console.log( json.nodes.map( l => l.title ) )
 		json.nodes.map( (l,i) => {
 			let noteEl
 			let pos = json.layout.nodePositions[l.identifier]
-			noteEl = addNewNote(l.title, ""+(pos.x/1000)+" " + (1.2-pos.y/1000)+ " -1", scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
+			let x = pos.x/1000
+			let y = 1.2-pos.y/1000
+			noteEl = addNewNote(l.title, ""+x+" "+y+ " -1", scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
 			noteEl.setAttribute("max-width", 10)
+			positionedNodes[l.title] = ""+x+" "+y+ " -1"
 		})
-		json.connections.map( c => {
-			console.log(c)
-			return
-			// somehow those identifiers can't be found there
-			let pS = json.layout.nodePositions[c.startNodeIdentifier]
-			let pE = json.layout.nodePositions[c.endNodeIdentifier]
-			let posE = (pE.x/1000) + " " + (1.2-pE.y/1000) + " -1"
-			let posS = (pS.x/1000) + " " + (1.2-pS.y/1000) + " -1"
-			let tubeEl = document.createElement("a-tube")
-			tubeEl.setAttribute("path", posS +', '+posE)
-			tubeEl.setAttribute("radius", "0.005")
-			AFRAME.scenes[0].appendChild(tubeEl)
+		fetch('../content/glossary.json').then( r => r.json() ).then( glossaryJson => {
+				let nodesNames = json.nodes.map( l => l.title )
+				let found = []
+				let entries = Object.values(glossaryJson.entries)
+				json.nodes.map( n => {
+					found.push( entries.filter(e=>e.entry.includes(n.title)).map( e => { return {title: n.title, entry: e.phrase} }) )
+				})
+				found = found.filter( e=> e.length ).map( m => { // list of pairs, but not all entry are nodes, so must remove them
+					return m.filter( n => nodesNames.includes(n.entry) ) 
+				})
+				// might have to remove duplicates as some definition have multiple entries
+					// e.g. Glossary or Visual-Meta
+				found.map( f => {
+					f.map( fe => {
+						let tubeEl = document.createElement("a-tube")
+						tubeEl.setAttribute("path", positionedNodes[fe.title] +', '+positionedNodes[fe.entry])
+						tubeEl.setAttribute("radius", "0.001")
+						tubeEl.setAttribute("opacity", "0.1")
+						AFRAME.scenes[0].appendChild(tubeEl)
+						// won't get updated live while moving though, assuming the nodes are NOT picked
+							// could rely on the live-selector-line component instead, relying on selectors
+								// present in the companion exploration
+									// ~/Prototypes/fot_sloan_companion/public/index.html
+					})
+				})
 
 		})
-		// should add connections too, cf with startNodeIdentifier and endNodeIdentifier
-			// can facilitate the working by using <a-tube> with path, as done before
-			// not actually easier than <a-line> so arguable
 	})
 	// bringing content in
 	fetch(billBoardSourceURL).then( r => r.json() ).then( json => {
@@ -513,6 +528,8 @@ AFRAME.registerComponent('selector-line', {
       <a-troika-text anchor=left target id="clearhash" value="jxr window.location.hash=''" position="-1 2.05 -1" scale="0.1 0.1 0.1"></a-troika-text>
 
 	<!-- need to be able to bind each anchor point as targets that update the matching a-tube path-->
+
+<a-entity visible=false>
       <a-tube generate-anchors id="number1" path="-0.3 1.5 -1, -0.2 1.6 -1, -0.2 1.4 -1" radius="0.01" material="color: red"></a-tube>
       <a-tube generate-anchors id="number4" path="0.1 1.6 -1, 0 1.5 -1, 0.1 1.5 -1, 0.1 1.4 -1" radius="0.01" material="color: red"></a-tube>
 
@@ -524,7 +541,8 @@ AFRAME.registerComponent('selector-line', {
 	<a-cone scale=".02 .02 .02" color="blue" position="0.5 1.6 -1"></a-cone><!-- should stick to end, also rotate -->
 	</a-tube>
 
-	<a-entity sumvectors="v1:#vector1; v2:#vector2"></a-entity>
+	<a-entity NOsumvectors="v1:#vector1; v2:#vector2"></a-entity>
+</a-entity>
 
     </a-scene>
   </body>
