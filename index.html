@@ -1,144 +1,1040 @@
 <!DOCTYPE html>
-<html>
-  <title>SpaSca : Spatial Scaffolding</title>
+<html lang="en">
   <head>
-    <!-- Suggestions? https://git.benetou.fr/utopiah/text-code-xr-engine/issues/ -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JXR filesystem and mimetype based explorations</title>
+    
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/kylebakerio/a-console@1.0.2/a-console.js"></script>
 
-    <script src='dependencies/aframe.offline.min.js'></script>
-    <script src="dependencies/a-console.js"></script>
-    <script src='dependencies/aframe-troika-text.min.js'></script>
-
-    <script src="dependencies/shiki0.14.1.js"></script>
-    <!-- bit demanding but it IS about code too, so arguably important enough -->
-
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.0/dist/aframe-extras.min.js"></script>
-
-    <script src='jxr-core.js'></script> 
+    <script src="https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/jxr-core_branch_teleport.js?version=cachebusing123"></script>
+        <!-- modified to include fixed onreleased/ondpicked, should truly be merged on master -->
+    <script src="https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/jxr-postitnote.js"></script>
+        <!-- use to define targets and left/right pinch interactions, respectively execute code and move targets -->
   </head>
   <body>
+    
+    <div style="position:fixed;z-index:1; top: 0%; left: 0%; border-bottom: 70px solid transparent; border-left: 70px solid #eee;">
+        <a href="https://git.benetou.fr/utopiah/text-code-xr-engine/issues/">
+                <img style="position:fixed;left:10px;" title="code repository" 
+                     src="https://fabien.benetou.fr/pub/home/future_of_text_demo/engine/gitea_logo.svg">
+        </a>
+    </div>
 
+<input type="file" id="myFile" name="filename" onchange="updateImage(this)" style="z-index: 1000;position: absolute;"/>
 <script>
-// goal : being able to modify the bindings in XR, hence the manager part
-
-const gestures = [];
-	// start with : left pinch, right pinch, right index tap
-var gesturesTargets = []
-	// start with target (updated by target component) and selectors e.g #box (maybe semantically clarified, i.e follow wrist)
-
-var boundGestures = [];
-	// start with
-		// left pinch ON [target] (correct selector)
-		// right pinch ON [target]
-		// right index tap ON #box
-
-AFRAME.registerComponent('empty', {
-  init: function(){
-	console.log('empty component example')
-  }
-})
-
-function listBoundGestures(){
-	console.log('could start with : left pinch, right pinch, box tap')
-	console.log(boundGestures, gestures, gesturesTargets)
-	console.log('pinchprimary pinchsecondary wristattachsecondary="target: #box" pressable start-on-press')
-}
-
-AFRAME.registerComponent('sumvectors', {
-  schema: {
-	v1: {type: 'selector'},
-	v2: {type: 'selector'}
-  },
-  init: function(){
-	updateSumVector( this.data.v1, this.data.v2 )	
-  }
-})
-
-function updateSumVector( sv1, sv2 ){
-console.log('updating sum vector', sv1.id, sv2.id)
-	let existingVector = document.getElementById( "vectorsum_" + sv1.id + "_" + sv2.id )
-	if ( existingVector ) existingVector.remove()
-
-	let v1 = sv1.getAttribute("path").split(',')
-	let v1_a = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v1[0] ) )
-	let v1_b = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v1[1] ) )
-	let v2 = sv2.getAttribute("path").split(',')
-	let v2_a = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v2[0] ) )
-	let v2_b = new THREE.Vector3().copy( AFRAME.utils.coordinates.parse( v2[1] ) )
-
-	let vs_a = v1_a.clone()
-	let vs_b = vs_a.clone()
-		.add( v1_b.sub( v1_a ) )
-		.add( v2_b.sub( v2_a ) )
-
-	let tubeEl = document.createElement("a-tube")
-	tubeEl.id = "vectorsum_" + sv1.id + "_" + sv2.id 
-	tubeEl.setAttribute("path", AFRAME.utils.coordinates.stringify(vs_a) +', '+AFRAME.utils.coordinates.stringify(vs_b) )
-	tubeEl.setAttribute("radius", "0.005")
-	AFRAME.scenes[0].appendChild(tubeEl)
-	let coneEl = document.createElement("a-cone")
-	coneEl.setAttribute("scale", ".02 .02 .02")
-	coneEl.setAttribute("position", AFRAME.utils.coordinates.stringify(vs_b) ) // missing rotation
-	tubeEl.appendChild(coneEl) // parenting is kind of "fake" as it doesn't inherent position/rotation
-}
-
-AFRAME.registerComponent('generate-anchors', {
-  init: function(){
-return
-	let points = this.el.getAttribute('path').split(',')
-	let id = this.el.id
-	points.map( (p,i) => {
-		let anchorEl = document.createElement("a-entity")
-		anchorEl.id = id + "_" + i
-		anchorEl.setAttribute("target", "")
-		anchorEl.setAttribute("binding-anchor", "") // could use this value instead of
-		anchorEl.setAttribute("onreleased", "moveAnchorPointTarget('"+anchorEl.id+"')" )
-		anchorEl.setAttribute("position", p.trim() )
-		anchorEl.setAttribute("scale", ".2 .2 .2" )
-		AFRAME.scenes[0].appendChild(anchorEl)
+let reader = new FileReader()
+function updateImage(el){
+	console.log(el)
+	reader.readAsDataURL( document.getElementById("myFile").files[0] )
+	reader.addEventListener("load", event => {
+		let el = document.createElement("a-image")
+		AFRAME.scenes[0].appendChild(el)
+		el.setAttribute("position", "0 "+(Math.random()+1)+" -0.5" ) 
+		el.setAttribute("scale", ".1 .1 .1")
+		el.setAttribute("src", reader.result)
+		el.setAttribute("target", "")
+		el.id = "screenshot_"+Date.now()
 	})
+}
+</script>
+
+ <button id="mainbutton" style="display:none; z-index: 1; position: absolute; width:50%; margin: auto; text-align:center; top:45%; left:30%; height:30%;" onclick="startExperience()">Start the experience (hand tracking recommended)</button>
+<script>
+
+/* filtering on files based on all found metadata (200 on .visualmeta.json)
+	based on occurences of keywords (or concepts)
+		most listed (dynamic, e.g most used keywords, sorted, take top 10)
+*/
+
+function loadBook(){
+	fetch('book_chapters.json').then( r => r.json() ).then( r => {
+		test_filteringFromVisualMeta(r)
+	})
+}
+
+// could also rely on https://observablehq.com/@spencermountain/topics-named-entity-recognition rather than delegate keyword/concept generation via API
+
+keywordsCount = {}
+
+function test_filteringFromVisualMeta(files){
+
+	files.map( f => {
+		newContent(f+'.pdf-0.jpg') // for testing
+		fetch(f+'.json').then( r => { if (r.ok) { return r.json() } } ).then( r => {
+			if (!r) return
+			console.log('visualmeta', f, r )
+			if (r["visual-meta"])
+				r["visual-meta"].keywords.map( k => { keywordsCount[k] ? keywordsCount[k]++ : keywordsCount[k]=1 } )
+			if (r["visualMeta"])
+				r["visualMeta"].keywords.map( k => { keywordsCount[k] ? keywordsCount[k]++ : keywordsCount[k]=1 } )
+		})
+	})
+
+	// return Object.keys( keywordsCount ).map( key => { return {count: keywordsCount[key], keyword: key} } ) .sort( (a,b) => a.count-b.count ) .slice(0,5) .map( e => e.keyword )
+	// could here the first page and get the visualmeta directly
+		// not respecting the naming convention
+}
+
+function topKeywords(numberOfResults=5){
+	return Object.keys( keywordsCount ).map( key => { return {count: keywordsCount[key], keyword: key} } ) .sort( (a,b) => a.count-b.count ) // .slice(0, numberOfResults) .map( e => e.keyword )
+}
+
+function filteringFromVisualMeta(files){
+	let docs = []
+	newContent('r2p.live.pdf-7.jpg') // for testing
+	docs.push( document.getElementById("r2plivepdf-0jpg") )
+	// should do this for all docs with visual meta, could be the result from a .layout.json file opening, including default.layout.json
+	keywordsCount = {}
+	docs.map( doc =>
+		doc.visualmeta["visual-meta"].keywords.map( k => { keywordsCount[k] ? keywordsCount[k]++ : keywordsCount[k]=1 } )
+	)
+	return Object.keys( keywordsCount ).map( key => { return {count: keywordsCount[key], keyword: key} } )
+		.sort( (a,b) => a.count-b.count )
+		.slice(0,5)
+		.map( e => e.keyword )
+	// should be use to add JXR notes to then filter by this keyword, changing Z position on all files from docs
+}
+
+// onboarding naming clarification
+	// could use visual linking to show, via line and post-it note
+		// icon vs document
+		// target areas
+		// viewer
+
+// specifically show layouts
+// Array.from( document.getElementById("virtualdesktopplane").children ).map( f => f.filename ).filter( f => f.includes('.layout.json'))
+	// arguably no need for that, might want to highlight them in icon view though, e.g specific color or drawing icon
+		// ideally visual preview generated as thumbnail and saved via companion
+
+AFRAME.registerComponent('gridplace', {
+  init: function () {
+	  // should hide on entering AR
+	const size = 1;
+	const divisions = 10;
+	const gridHelper = new THREE.GridHelper( size, divisions, 0xaaaaaa, 0xaaaaaa );
+	this.el.object3D.add( gridHelper );
+	  let innerRing = [ {x:0,z:1}, {x:1,z:0}, {x:0,z:-1}, {x:-1,z:0} ].map( offset => {
+		const gridHelper = new THREE.GridHelper( size, divisions, 0xcccccc, 0xcccccc );
+		gridHelper.position.x += offset.x
+		gridHelper.position.z += offset.z
+		this.el.object3D.add( gridHelper );
+	  })
+	  let midRing = [ {x:-1,z:1}, {x:1,z:1}, {x:1,z:-1}, {x:-1,z:-1}, 
+			  {x:0,z:2}, {x:2,z:0}, {x:0,z:-2}, {x:-2,z:0} ].map( offset => {
+		const gridHelper = new THREE.GridHelper( size, divisions, 0xdddddd, 0xdddddd );
+		gridHelper.position.x += offset.x
+		gridHelper.position.z += offset.z
+		this.el.object3D.add( gridHelper );
+	  })
   }
 })
 
-function moveAnchorPointTarget(id){
-	console.log('updating the position of'+id+' with new hand position')
-	let [targetId,numberOnPath] = id.split('_')
-	let targetEl = document.getElementById(targetId)
-	let path = targetEl.getAttribute("path").split(',')
-	path[numberOnPath] = AFRAME.utils.coordinates.stringify( document.getElementById(id).getAttribute('position') )
-	targetEl.setAttribute("path", path.join(",") )
+AFRAME.registerComponent('canonical-view', {
+  init: function () {
+	  // try to load default.layout.json and if it exists, use it, as canonical view
+	  let view = 'default.layout.json' // could be a component parameter
+	  fetch(view).then( r => r.text() ).then( r => newContent(view) )
+  }
+})
 
-	Array.from( document.querySelectorAll("[id*='vectorsum_']") )
-		.filter( el => el.id.includes(targetId) )
-		.map( el => {
-			let [sv1, sv2] = el.id.replace( "vectorsum_", '').split( '_' )
-			console.log(targetId, sv1, sv2)
-			updateSumVector( document.getElementById(sv1), document.getElementById(sv2) )
+let targetLocations = [
+	{position:'-1 .9 -.5', name:'test', distance:.1, color:'red', description: 'send to reMarkable'}, // height matching #virtualdesktopplane due to snapping
+	] 
+
+	// could have different resulting actions
+		// saveToCompanion() with emailing after
+
+function shareDirectlyToConnectedClients(filename){
+	fetch('/remoteredirect/'+filename) 
+}
+
+function makeTargetLocationsVisible(){
+	// visualize targetLocations, should only do it once though
+	targetLocations.map( tl => {
+		let el = addNewNote( tl.position, tl.position )
+		let elPlate = document.createElement("a-box")
+		elPlate.setAttribute("position", "0.5 -0.1 0.2" )
+		elPlate.setAttribute("width", "1")
+		elPlate.setAttribute("height", ".01")
+		elPlate.setAttribute("depth", "1")
+		//elPlate.setAttribute("wireframe", "true")
+		setTimeout( _ => el.appendChild( elPlate ), 100 )
+	})
+}
+
+function fileDropped(){
+	targetLocations.map( tl => {
+		let pos = new THREE.Vector3()
+		let el = selectedElements.at(-1).element
+		el.object3D.getWorldPosition( pos )
+		let dist = pos.distanceTo( AFRAME.utils.coordinates.parse( tl.position ) )
+			// does not seem accurate, maybe due to the moving element to have parent
+				// should get world coordinate instead
+		console.log( dist )
+		// simplistic, should instead be using e.g. https://threejs.org/docs/#api/en/math/Box3.containsPoint
+			// allowing for vertical and horizontal trays of different sizes
+		if (dist < tl.distance) {
+			el.setAttribute("color", tl.color)
+			// testing sending to remarkable pro
+			let filename = selectedElements.at(-1).element.filename
+			fetch('/send-remarkablepro/'+filename) // should be configurable too, callback
+			console.log(tl.description, filename) 
+		}
+	})
+}
+
+AFRAME.registerComponent('list-files', {
+  init: function () {
+	  fetch('/files').then( r => r.json() ).then( r => {
+		  // addNewNoteAsPostItNote( text, position=`-0.2 1.1 -0.1`, scale= "0.1 0.1 0.1", id=null, classes="notes", visible="true", rotation="0 0 0" ){
+
+		  // text only mode
+			  // r.map( (text,i) => addNewNote( text, '-0.4 '+(1.1+i/10)+' -0.4') )
+
+		  // icon mode
+	          let rootEl = document.getElementById("virtualdesktopplane")
+		  r.map( (text,i) => { 
+			  let el = addIcon( text, i, rootEl)
+		  })
+	  })
+  }
+})
+
+function newContentWithRefractoryPeriod(content){
+	if ( Date.now() - lastExecuted['newContentWithRefractoryPeriod'] < 500 ){
+		console.warn('ignoring, executed during the last 500ms already')
+		return
+	}
+	lastExecuted['newContentWithRefractoryPeriod'] = Date.now()
+	// decorator equivalent
+	newContent(content)
+}
+
+function addIcon(text, i, rootEl){
+	let idFromFilename = text.replaceAll('.','') // has to remove from proper CSS ID
+	const icon_prefix = "icon_"
+	if ( document.getElementById(icon_prefix+idFromFilename) ) return // avoid duplicates (assume either single directory or fullpath)
+	if (text.match(/.*\.pdf-(\d+)\.jpg/)) return // could consider more
+	if (text.match(/swp$|swx$|tmp$|~$|#$|#$/) ) return // cf newContent filtering with .swp and more
+	let el = document.createElement("a-box")
+	let x = Math.round(i/10)/10-(4/2)/10
+	let z = (-i%10)/10+(2/2)/10
+	el.id = icon_prefix+idFromFilename
+	el.filename = text
+	el.setAttribute("position", x+ " " + (1+z) + " 0 ") // vertical layout, leading to broken snapping
+	// el.setAttribute("position", x+ " 0 "+z) // horizontal layout
+	el.setAttribute("target", "")
+	el.setAttribute("value", "jxr newContentWithRefractoryPeriod('"+text+"')") // hidden text here, first time, not convinced it's a good idea, not respecting the prinple
+	//el.setAttribute("value", "jxr newContent('"+text+"')") // hidden text here, first time, not convinced it's a good idea, not respecting the prinple
+		// problematic as it can execute multiple times, leading to overlapping yet hidden viewers or content
+		// consider lastExecuted['viewerFullscreen'] equivalent yet without blocking when done programmatically, e.g. when used on load or layout
+
+	// on picked, could resize the bounding box height to .05, onreleased back to .005
+	el.setAttribute("onpicked", "selectedElements.at(-1).element.setAttribute('wireframe', 'false')")
+	el.setAttribute("onreleased", "let el = selectedElements.at(-1).element; el.setAttribute('wireframe', 'true'); el.setAttribute('rotation', '0 0 0'); el.object3D.position.y=0; fileDropped()")
+	// add animations on height and position for children, to become a box proper then flatten back
+		// box
+			// Array.from( document.getElementById('icon_withdefaultjxrstylesjson').children ).map( l => l.getAttribute("position").y -= .02); document.getElementById('icon_withdefaultjxrstylesjson').setAttribute("height", "0.05"); document.getElementById('icon_withdefaultjxrstylesjson').getAttribute("position").y += 0.02
+		// flatten back
+			// Array.from( document.getElementById('icon_withdefaultjxrstylesjson').children ).map( l => l.getAttribute("position").y += .02); document.getElementById('icon_withdefaultjxrstylesjson').setAttribute("height", "0.005"); document.getElementById('icon_withdefaultjxrstylesjson').getAttribute("position").y -= 0.02
+	el.setAttribute("wireframe", "true")
+	el.setAttribute("width", ".05")
+	el.setAttribute("height", ".005")
+	el.setAttribute("depth", ".05")
+	let elPlate = document.createElement("a-box")
+	elPlate.setAttribute("position", "0 0.02 0" )
+	elPlate.setAttribute("width", ".04")
+	elPlate.setAttribute("height", ".04")
+	elPlate.setAttribute("depth", ".001")
+	elPlate.setAttribute("rotation", "-30 0 0" )
+	if (text.includes('.layout.json')) {
+		//elPlate.setAttribute("color", "lightblue" )
+		let elVisibleKnownType = document.createElement("a-troika-text")
+		elVisibleKnownType.setAttribute("position", "-0.002 0.02 0.003" )
+		elVisibleKnownType.setAttribute("value", '{Layout}' )
+		elVisibleKnownType.setAttribute("color", "#000" )
+		elVisibleKnownType.setAttribute("scale", ".04 .04 .04" )
+		el.appendChild(elVisibleKnownType)
+		let el3Delement = document.createElement("a-dodecahedron")
+		el3Delement.setAttribute("wireframe", "true" )
+		el3Delement.setAttribute("position", "0 0.05 0" )
+		el3Delement.setAttribute("color", "#000" )
+		el3Delement.setAttribute("radius", ".01" )
+		el.appendChild(el3Delement)
+	}
+	// color coding based on typed
+	if (!text.includes('.')) elPlate.setAttribute("color", "lightblue" )
+	// heuristic, assuming directories do not have a . is their name
+	let thumbnailUrl = "/thumbnails/"+text+'.png'
+	fetch( thumbnailUrl ).then( r => { if (r.ok) elPlate.setAttribute("src", thumbnailUrl) })
+	// include a visual preview as thumbnail, if available
+	el.appendChild(elPlate)
+	let elFilename = document.createElement("a-troika-text")
+	elFilename.setAttribute("position", "0 0 0.01" )
+	elFilename.setAttribute("value", text )
+	// alternatively could use text as annotation
+		// elFilename.setAttribute("annotation", "content", name)
+			// rotate -90deg on x
+		// then 'jxr newContent('+filename+')' as value to make it executable on left pinch to open (default function)
+	// could optionally add more metadata e.g. file size, number of pages in documents, etc
+	elFilename.setAttribute("color", "#000" )
+	elFilename.setAttribute("scale", ".04 .04 .04" )
+	// some metadata e.g. file size or number of pages in documents could change depth, thickness
+	el.appendChild(elFilename)
+
+	rootEl.appendChild(el)
+	return el
+}
+
+AFRAME.registerComponent('book-page-from-plane', {
+  schema: {
+	 type: 'string' // e.g. book-page-from-plane="au.pdf-0.jpg" namely URL of first page with -N. convention (as done by companion conversion)
+  },
+  init: function () {
+	let pageIndex = Number( this.data.match(/.*\.pdf-(\d+)\.jpg/)[1] )
+	const xDiv = 10 // warning xDiv here isn't used like in modifyPage or topCornerPull or cornerFold, namely here it edge value, there it's point thus +1
+	const yDiv = 10
+	const geometry = new THREE.PlaneGeometry( 1, 1, xDiv, yDiv )
+	const texture = new THREE.TextureLoader().load( this.data.replace( '-'+pageIndex+'.', '-'+(pageIndex+1)+'.' ) )
+	const material = new THREE.MeshBasicMaterial( { map:texture } );
+	const plane = new THREE.Mesh( geometry, material )
+	plane.position.y = 2
+	plane.position.z = -1
+	this.el.object3D.add( plane )
+	const geometryAlt = new THREE.PlaneGeometry( 1, 1, xDiv, yDiv )
+	const textureAlt = new THREE.TextureLoader().load( this.data ); // immediately use the texture for material creation
+	const materialAlt = new THREE.MeshBasicMaterial( { map:textureAlt } );
+	const planeAlt = new THREE.Mesh( geometryAlt, materialAlt )
+	planeAlt.position.y = 2
+	planeAlt.position.x = -1.01
+	planeAlt.position.z = -1
+	this.el.object3D.add( planeAlt )
+	const shape = [0, .1, .15, .17, .15, .1, .05, 0, -0.01, 0, 0] // fading sin, could be sampled instead
+	// length of deformation must match xDiv
+	modifyPage(plane, xDiv+1, shape )
+	modifyPage(planeAlt, xDiv+1, shape.reverse() )
+  }
+})
+
+AFRAME.registerComponent('modified-page-from-plane', {
+  schema: {
+	url : { type: 'string' },
+	shape : { type: 'array', default: [0, .1, .15, .17, .15, .1, .05, 0, -0.01, 0, 0] }
+  },
+  init: function () {
+	const xDiv = 10 // warning xDiv here isn't used like in modifyPage or topCornerPull or cornerFold, namely here it edge value, there it's point thus +1
+	const yDiv = 10
+	const geometry = new THREE.PlaneGeometry( 1, 1, xDiv, yDiv )
+	const texture = new THREE.TextureLoader().load( this.data.url )
+	const material = new THREE.MeshBasicMaterial( { map:texture } );
+	const plane = new THREE.Mesh( geometry, material )
+	this.el.object3D.add( plane )
+	window.sheet = plane // to tinker faster
+	// length of deformation must match xDiv
+	modifyPage(sheet, xDiv+1, this.data.shape )
+  }
+})
+
+/* examples
+modifyPage(sheet, 11, Array(11).fill(0)) // flat
+modifyPage(sheet, 11, Array(11).fill(.1).map( (e,i)=>Math.sin(i)/10)) // 
+modifyPage(sheet, 11, Array(11).fill(.1).map( (e,i)=>(i*i)/200 ) ) // side pull
+*/
+
+function flattenPage(page){ modifyPage(page) }
+
+function modifyPage(page, xDiv = 11, modification=Array(xDiv).fill(0) ){
+	modification.map( (c,j) => {
+		for (let i=0;i<xDiv;i++){ page.geometry.attributes.position.setZ(j+i*xDiv,c) }
+		// for horizontal deformation 				   .setZ(j*xDiv+i,c) }
+	})
+	page.geometry.attributes.position.needsUpdate = true
+}
+
+function topCornerPull(page, value=1000){
+	Array(11).fill(.1).map( (e,i)=>(i*i)/value ).map( (c,j) => { for (let i=0;i<11;i++){
+		page.geometry.attributes.position.setZ(j+i*11,c/(i+1)) // top right corner
+		// page.geometry.attributes.position.setZ(i+j*11,c/(i+1)) bottom left corner
+	} })
+	page.geometry.attributes.position.needsUpdate = true
+}
+// test
+// let x = 5000; setInterval( _ => {x-=100; topCornerPull(sheet,x); if (x<500) x = 5000 }, 100)
+
+function cornerFold(page, xDiv=11){
+	page.geometry.attributes.position.setXYZ(xDiv*xDiv-1, .4, -.4, .05)
+	page.geometry.attributes.position.needsUpdate = true
+}
+
+let checkNewContent
+
+const source = new EventSource('/events');
+
+let fsChanges = []
+source.addEventListener('message', message => {
+	let data = JSON.parse( message.data )
+	if (data && !data.filename) return
+	// console.log(message)
+	fsChanges.push({timestamp: Date.now(), data: data })
+	// should parse with a refraction period, even just 50 ms, but NOT instantly
+	// clearTimeout( checkNewContent )
+	// checkNewContent = setTimeout( newContent, 50 )
+	// should instead add new content only, namely avoiding duplicates within a certain time window (e.g. 30s)
+		// might break the .live convention though
+	// TODO to simplify up according to sketch, otherwise can do batch copy
+
+	// rename+3 changes = new file
+		// Array.from ( new Set( fsChanges.filter( l => l.timestamp == fsChanges.at(-1).timestamp ).map( l => l.data.filename ) ) )
+			// works but ignores when files get deleted, could have some side effet
+	// rename alone = file deleted
+	clearTimeout( checkNewContent )
+	checkNewContent = setTimeout( _ =>{
+		Array.from ( new Set( fsChanges.filter( l => l.timestamp == fsChanges.at(-1).timestamp ).map( l => l.data.filename ) ) )
+			.map( filename => newContent( filename ) ) // not filtering done here
+			// not tested in depth but seems to work fine with 4 files at once
+		// should find another heuristic for DropBox too
+			// could be based on filename here as dedicated way to know
+	}, 50 )
+})
+
+let toExportContent = []
+
+// consider instead window.test = function (param) {console.log(param)}
+	// declared directly within the init function of the component, thus reaching global scope while being more portable
+
+let extractedPDF = {}
+
+let players = {}
+function viewerNext(id){
+	let player = players[id]
+	let fullPath = (player.playerId+'.pdf-'+0+'.jpg').replaceAll('.','')
+	console.log(fullPath)
+	let el = document.getElementById( fullPath )
+	if (player.currentPage < player.maxPage)
+		el.setAttribute("src", player.playerId+'.pdf-'+ (++player.currentPage) +'.jpg' )
+	// partly hide all pages first (reset)
+	Array.from( document.querySelectorAll("a-image[src^=au]") ).map( el => el.setAttribute("opacity", .5 ))
+	el.setAttribute("opacity", 1 )
+	let matches = Array.from( document.querySelectorAll("a-image[src^=au]") ).filter( el => el.getAttribute("src").includes('image-00'+player.currentPage) )
+		// cheating a bit, currentPage should be prepended with 0s
+	// somehow put them all... not correct!
+	matches.map( el => el.setAttribute("opacity", 1 ))
+	// then highlight the current ones (can be multiple) only
+}
+
+let FullscreenPage = 1
+let currentAssset = "A"
+let lastExecuted = {}
+lastExecuted['viewerFullscreen'] = Date.now()
+lastExecuted['newContentWithRefractoryPeriod'] = Date.now()
+function viewerFullscreen(id){
+	/*
+        <a-assets>
+		<img id="comicbook" crossOrigin="anonymous" src="alt_highres-01.jpg">
+        </a-assets>
+	<a-entity layer="type: quad; src: #comicbook" position="0 1.8 -5.5"></a-entity>
+	*/
+	console.warn('should : \nrely on layers, \nfade away rest (light or dark), \nadd option to leave that mode, \ninsure UX is not through (sides)')
+	// layer without <a-assets> working on desktop but not in XR
+		// maybe adding new assets then swapping src could work?
+		// surprising behavior
+			// changing position works
+			// changing src directly or on asset does not
+	// check how https://aframe.io/aframe/examples/showcase/comicbook/ does it
+		// https://github.com/aframevr/aframe/blob/master/examples/showcase/comicbook/page-controls.js#L57
+			// preloaded assets, fixed number
+		// relying on https://github.com/aframevr/aframe/blob/1717ef12ff2c61d6b67aca46fc6008d5a3f6fa5f/src/components/layer.js#L93
+			// maybe requires some time due to generateCubeMapTextures()
+
+	// must add refraction period, i.e. ignored if already executed during the last 500ms
+	if ( Date.now() - lastExecuted['viewerFullscreen'] < 500 ){
+		console.warn('ignoring, executed during the last 500ms already')
+		return
+	}
+	lastExecuted['viewerFullscreen'] = Date.now()
+	let layerEl = document.querySelector("[layer]")
+	if (currentAssset == "A"){
+		document.getElementById("pgB").setAttribute("src", "alt_highres-0"+(++FullscreenPage)+".jpg")
+		document.getElementById("pgB").addEventListener('load', evt => {
+			currentAssset = "B"
+			layerEl.setAttribute("layer", "src:#pgB")
+		})
+	} else {
+		document.getElementById("pgA").setAttribute("src", "alt_highres-0"+(++FullscreenPage)+".jpg")
+		document.getElementById("pgA").addEventListener('load', evt => { 
+			currentAssset = "A"
+			layerEl.setAttribute("layer", "src:#pgA")
+		})
+	}
+	// can be tested usding setInterval( _ => viewerFullscreen(''), 2000)
+
+	/*
+	let player = players[id]
+	console.log( player, player.playerId+'.pdf-'+ (player.currentPage) +'.jpg') 
+	let fullPath = (player.playerId+'.pdf-'+0+'.jpg').replaceAll('.','')
+	let layerEl = document.getElementById( "layercontent" )
+	layerEl.setAttribute("src", player.playerId+'.pdf-'+ (player.currentPage) +'.jpg')
+	*/
+}
+
+function viewerPrevious(id){
+	let player = players[id]
+	let fullPath = (player.playerId+'.pdf-'+0+'.jpg').replaceAll('.','')
+	let el = document.getElementById( fullPath )
+	let i = player.currentPage
+	if (player.currentPage > 0){
+		el.setAttribute("src", player.playerId+'.pdf-'+ (--player.currentPage) +'.jpg' )
+	}
+	// partly hide all pages first (reset)
+	Array.from( document.querySelectorAll("a-image[src^=au]") ).map( el => el.setAttribute("opacity", .5 ))
+	el.setAttribute("opacity", 1 )
+	let matches = Array.from( document.querySelectorAll("a-image[src^=au]") ).filter( el => el.getAttribute("src").includes('image-00'+player.currentPage) )
+		// cheating a bit, currentPage should be prepended with 0s
+	// somehow put them all... not correct!
+	matches.map( el => el.setAttribute("opacity", 1 ))
+	// then highlight the current ones (can be multiple) only
+}
+
+function viewerClose(id){
+	let player = players[id]
+	let fullPath = (player.playerId+'.pdf-'+0+'.jpg').replaceAll('.','')
+	let el = document.getElementById( fullPath )
+	players[id].ux.map( elUx => elUx.parentNode.remove( elUx ) )
+	el.parentNode.remove( el )
+	delete players[id]
+}
+
+function cloneCurrentPage(id){
+	let player = players[id]
+	let i = player.currentPage
+	let fullPath = (player.playerId+'.pdf-'+0+'.jpg').replaceAll('.','')
+	let el = document.createElement("a-image")
+	toExportContent.push(el)
+	AFRAME.scenes[0].appendChild(el)
+	el.setAttribute("position", "0 "+(Math.random()+1)+" "+(-1.5-i/10) ) 
+	el.setAttribute("src", player.playerId+'.pdf-'+ (player.currentPage) +'.jpg' )
+	el.setAttribute("target", "")
+	el.id = fullPath.replaceAll('.','')+"_cloned"
+	el.filename = player.playerId+'.pdf-'+player.currentPage+'.jpg'
+}
+
+function viewerAudioToggle(id){
+	let snd = document.getElementById( id ).components.sound
+	snd.isPlaying ? snd.pauseSound() : snd.playSound()
+	// requires user action, usually bypassed on standalone though
+}
+
+function viewerVideoToggle(id){
+	let snd = document.getElementById( id ).components.sound
+	snd.isPlaying ? snd.pauseSound() : snd.playSound()
+	// requires user action, usually bypassed on standalone though
+}
+
+function cachedImage( contentFilename ){
+	// example with image, f though should ideally be a parameter so that it works both with and without caching
+		// different way to assign src
+			// live is URL
+			// cached data directly
+	console.log('using cached image file', contentFilename)
+	if (!window.cachedFromPacked || !window.cachedFromPacked[contentFilename]) return
+	if (!window.cachedFromPacked[contentFilename].contenttype.includes("image")) return
+	let f = window.cachedFromPacked[contentFilename]
+	let text = f.content
+	// from there nearly entirely generic to live and offline
+	let idFromFilename = contentFilename.replaceAll('.','') // has to remove from proper CSS ID
+	let elFromId = document.querySelector( idFromFilename )
+	if (!elFromId) {
+		let el = document.createElement("a-curvedimage")
+		el.setAttribute("radius", 1)
+		el.setAttribute("theta-length", 100)
+		el.setAttribute("theta-start", -240)
+		toExportContent.push(el)
+		AFRAME.scenes[0].appendChild(el)
+		el.setAttribute("position", "0 "+(Math.random()+1)+" -1.5" ) 
+		el.setAttribute("src", 'data:'+f.contenttype+';base64,' + btoa( text ) )
+		// specific to cached version
+		el.setAttribute("target", "")
+		el.id = filePrefix+idFromFilename
+		el.filename = filePrefix+contentFilename
+	} else {
+		elFromId.setAttribute("src", contentFilename + "#"+Date.now()) // try to force update
+	}
+}
+
+const filePrefix = "file_"
+function newContent(contentFilename = "", fromLayout = false){
+	// fromLayout could be generalize to provenance
+// calling newContent() is equivalent to try to load the latest file update via SSE
+	if (contentFilename == "" ) contentFilename = fsChanges
+		?.filter( e => !e.data.filename.match(/swp$|swx$|tmp$|~$|#$|#$/) )
+		?.at(-1)?.data?.filename
+		// TODO problematic for legitimate batch, e.g. set of GLBs from asset packs
+			// could rely on .layout.json for that, could also convert a 2D map to that format
+
+	// most players/viewers would benefit from
+		// seeking
+			// e.g. page in book, moment in video, etc
+		// content extraction
+			// e.g. cloned (with provenance) page from book, image from video, etc
+
+	// fetch needs to work at least one to populate window.cachedFromPacked
+		// can be actived with e.g. newContent('test.packeddirectory.json') itself generated server side with ./packing_directory_script
+			// this could also be done periodically or on request from the client with a dedicated backend endpoint
+
+	// here it could also test on PDF for generated content...
+	// how to get that data though...
+	if (contentFilename.endsWith('.pdf')) {
+		fetch('/files').then( r => r.json() ).then( files => {
+			let max = Math.max.apply(Math, files.filter(f => f.startsWith('au.pdf-') ).filter( f => f.endsWith('.jpg') ).map( f => Number ( f.match(/.*\.pdf-(\d+)\.jpg/)[1]) ) )
+			newContent(contentFilename+'-'+max+'.jpg')
+		})
+	}
+
+	if (contentFilename) fetch( contentFilename ).then( r => {
+		let idFromFilename = contentFilename.replaceAll('.','') // has to remove from proper CSS ID
+
+		if (!r.ok){
+			console.warn(r.status,'on',r.url)
+			if ( window.cachedFromPacked ){
+				console.warn('caching available, trying to rely on it instead')
+				if (window.cachedFromPacked[contentFilename]?.contenttype.includes("image"))
+					cachedImage(contentFilename)
+				return
+				// still not possible due to r.headers being a function rather than "just" data
+			} else {
+				return
+			}
+		}
+
+		if (!fromLayout){
+			// skip when unpacking from e.g. .layout.json as the files are already there
+			let rootEl = document.getElementById("virtualdesktopplane")
+			let el = addIcon( contentFilename, rootEl.children.length+1, rootEl)
+			// should only add if not already present
+		}
+
+		if (r.headers.get('Content-Type').includes("audio/wav"))
+			console.warn( contentFilename,'of type audio/wav, should wait for mp3 conversion instead' )
+		if (r.headers.get('Content-Type').includes("audio/mpeg"))
+			r.text().then( text => {
+				let elFromId = document.getElementById(idFromFilename)
+				if (!elFromId) {
+					console.warn( contentFilename,'of type audio/mpeg, using a viewer instead' )
+					players[contentFilename] = { playerId: contentFilename }
+					let elControls = addNewNote( "jxr viewerAudioToggle('"+contentFilename+"')", '-0.4 1 -0.4')
+					elControls.id = idFromFilename
+					elControls.filename = contentFilename
+					elControls.setAttribute("sound", "src: url("+contentFilename+")")
+					toExportContent.push(elControls)
+				} else {
+					elFromId.setAttribute("sound", "src: url("+contentFilename+"#"+Date.now()+")") // try to force update, untested
+				}
+			})
+		if (r.headers.get('Content-Type').includes("video/mp4"))
+			r.text().then( text => {
+				let elFromId = document.getElementById(idFromFilename)
+				if (!elFromId) {
+					console.warn( contentFilename,', using a viewer instead' )
+					players[contentFilename] = { playerId: contentFilename }
+					let el = document.createElement("a-video")
+					toExportContent.push(el)
+					AFRAME.scenes[0].appendChild(el)
+					el.setAttribute("position", "0 1 -.5 " ) 
+					el.setAttribute("src", contentFilename)
+					el.setAttribute("target", "")
+					el.id = idFromFilename
+					el.filename = contentFilename
+					addNewNote( "jxr viewerVideoToggle('"+contentFilename+"')", '-0.4 1 -0.4')
+					// does not work... should play on the video element itself, not the AFrame entity unfortunately
+						// incoherent with audio
+				} else {
+					elFromId.setAttribute("src", contentFilename+"#"+Date.now()) // try to force update, untested
+				}
+			})
+		if (r.headers.get('Content-Type').includes("application/json"))
+			// should have another type, dedicated, e.g. application/jxr
+			r.text().then( text => {
+				let elFromId = document.getElementById(filePrefix+idFromFilename)
+				if (contentFilename.endsWith('.jxrstyles.json')) {
+					let json = JSON.parse( text )
+					console.log( 'jxrstyles', json )
+					if (json['default']) {
+						applyJXRStyle( styles['default'] )
+					} else {
+						console.warn( 'jxrstyles must include a default theme to be applied')
+					}
+					toExportContent.push({filename:contentFilename})
+				}
+				if (contentFilename.endsWith('.webannotation.json')) {
+					// from https://w3c.github.io/web-annotation/model/wd/#textual-body
+					let json = JSON.parse( text )
+					console.log( 'webannotation', json )
+					let targetEl = document.querySelector( json.target )
+					if ( json.target.includes('#') && json.target.includes('.') )
+						targetEl = document.getElementById( json.target.replace('#','') )
+						// trying to bypass ID with . in them (actually illegal..., to fix)
+					if (targetEl){
+						let pos = targetEl.getAttribute("position")
+						pos.z -= .2
+						pos.y += .2
+						let el = addNewNoteAsPostItNote( json.body.text, pos )
+						toExportContent.push(el)
+						// should add a visual link, https://git.benetou.fr/utopiah/text-code-xr-engine/src/branch/gesture-manager/index.html#L55
+							// to rewrite with https://aframe.io/docs/1.5.0/core/component.html#update-olddata
+								// or at least avoiding setAttribute position where there is no new value
+								// (made sense then when hands are always moving)
+									// consider if it can be event based, namely update after a element is moving or dropped
+					} else {
+						console.warn( 'webannotation target not found', json.target )
+					}
+				}
+				if (contentFilename.endsWith('.exported_author.json')) {
+					let json = JSON.parse( text )
+					let {x,y,z} = json.spatialCoordinates.xyz
+					let el = addNewNoteAsPostItNote( json.name + "\n" + json.description, ""+x/10+ " " +y/20 +" " + (-z) )
+					toExportContent.push(el)
+				}
+				if (contentFilename.endsWith('.extractedpdf.json')) {
+					extractedPDF[contentFilename] = JSON.parse( text )
+					// example of extracting highlight of
+						// page 6 in area betweeen
+						// y 190 and 200
+						// x 100 and 230
+						// getting the string " kinematics, optics, and circuits"
+					// extractedPDF["1729485719.extractedpdf.json"]
+						// .pages[5].content
+						// .filter( l => l.y > 190 && l.y < 200 && l.x > 100 && l.x < 230)
+						// .map( l => l.str).join('')
+					// related to highlights
+					// let t = 40
+					// p = extractedPDF["content.extractedpdf.json"].pages[2]
+					// hh = highlightToExport.at(-1).y * p.pageInfo.height
+					// hw = highlightToExport.at(-1).x * p.pageInfo.width
+					// p.content.filter( l => l.x > hw-t && l.x < hw+t && l.y > hh-t ).map(l=>l.str).join('')
+						// note that l has also a width, it's not per character
+					// example of 2 columns split, often used in research publications 
+					// left = p.content.filter( l => l.x < p.pageInfo.width /2).map(l=>l.str).join('')
+					// right = p.content.filter( l => l.x > p.pageInfo.width /2).map(l=>l.str).join('')
+					// sequential = left+right
+					// could also visually crop away margins, as done in krop
+					// visually verifying by drawing over the canvas would faciliate interaciton and debugging
+
+				}
+				if (contentFilename.endsWith('.layout.json')) {
+					let files = JSON.parse( text )
+					files.map( f => {
+						newContent( f.filename, true ) // problematic when the layoug re-uses files, e.g. 3D assets
+							// can add except with e.g. assets/ within path for now
+						// cascading conversion might be problematic here, but should work if coherent
+							// e.g. always saving pose for the final conversion, thus loading it back only for it too
+						setTimeout( _ => {
+							let el = document.getElementById( filePrefix+f.filename.replaceAll('.','') )
+							if (el){ // not all files become entities
+								el.id = f.id
+								if (!f.id) el.id = f.filename.replaceAll('.','') // has to remove from proper CSS ID
+								el.filename = f.filename
+								if (f.position) el.setAttribute("position", f.position)
+								if (f.rotation) el.setAttribute("rotation", f.rotation)
+								if (f.scale) el.setAttribute("scale", f.scale)
+							} else {
+								console.warn( f.filename, 'despite having no element should added to toExportContent' )
+								// arguably having non position/rotation could be a hint
+									// they might still be represented though, as filename are listed
+							}
+						}, 500) // optimistic depending on the files to load, to verify with e.g. video as fetch() surely delays entity creation
+					})
+					toExportContent.push({filename:contentFilename})
+				}
+				if (contentFilename.endsWith('.packeddirectory.json')) {
+					// potential enhancement https://developer.mozilla.org/en-US/docs/Web/API/Compression_Streams_API
+					let files = JSON.parse( text )
+					window.cachedFromPacked = {}
+					files.map( f => {
+						console.log( f.filename, atob(f.content) )
+						cachedFromPacked[f.filename] = {}
+						cachedFromPacked[f.filename].content = atob(f.content)
+						cachedFromPacked[f.filename].contenttype = f.contenttype
+						// replace fetch() in newContent() by directory providing the data
+							// used only once so should not be too hard
+								// few dedicated set of steps to be mindful of :
+									// checking if available with status (should also be 200 here)
+									// Content-Type (now available vi packaging script)
+									// getting text() as promise
+						// result usable as .e.g JSON.parse( cachedFromPacked['default.layout.json'] )
+					})
+					toExportContent.push({filename:contentFilename})
+				}
+			})
+		if (r.headers.get('Content-Type').includes("application/octet-stream"))
+			// should have another type, dedicated, e.g. application/jxr
+			r.text().then( text => {
+				let elFromId = document.getElementById(filePrefix+idFromFilename) // will never watch due to adding multiples
+				// consider URLs, cf https://www.ctrl.blog/entry/internet-shortcut-files.html
+					// could then become jxr to change location and go there
+					// cf Andrew
+				if (contentFilename.endsWith('.desktop')) {
+				//if (contentFilename.endsWith('.url')) { // Windows equivalent, doesn't use Name= but rather Title=
+				//if (contentFilename.endsWith('.webloc')) { // MacOS equivalent, XML based
+					let name, url
+					text.split('\n').map(line => {
+						if (line.includes("Name"))
+							name = line.split('=',2)[1]
+						if (line.includes("URL")){
+							url = line.split('=',2)[1]
+							// name could be a JXR annotation
+							let el = addNewNote( "jxr location='"+url+"'" )
+							setTimeout( _ => el.object3D.position.y += Math.random(), 200 )
+							if (name) el.setAttribute("annotation", "content", name)
+						}
+					})
+				}
+				if (contentFilename.endsWith('.telegramtranscription')) {
+					text.split(/> .*:\n/g).map( (t,i) => {
+						console.log(t)
+						let el = addNewNoteAsPostItNote( t, (Math.random()*2-1)+" "+(Math.random()*2+.5)+" -0.5" ) 
+						el.id = filePrefix+idFromFilename+"_"+i
+						el.filename = filePrefix+contentFilename
+						el.setAttribute("font-size", .1)
+						el.setAttribute("max-width", .5)
+						// el.setAttribute("width", .5) would have to be for children
+						toExportContent.push(el)
+					})
+	 			}
+				if (contentFilename.endsWith('.aframe.component')) {
+					// consider how highlighing via UV intersection here could apply to past work code
+						// e.g. https://x.com/utopiah/status/1661432874988347393
+						// i.e. allowing to potentially select to copy/paste
+
+					console.log('aframe component, to live reload. Ideally remove all existing, delete it, replace cleanly', text)
+					// assumption on component name from contentFilename
+					let componentName = contentFilename.replace('.aframe.component','')
+					delete AFRAME.components[componentName]
+					try { eval( text ) } catch (error) { console.error(`Evaluation failed with ${error}`) }
+					// could check if the component has been instanciated and thus potential side effects if remove hasn't been properly implemented
+					toExportContent.push({filename:contentFilename})
+				}
+				if (contentFilename.endsWith('.aframe.entity')) {
+					console.log('aframe entity, to live reload', text)
+					let el = document.createElement("a-entity")
+					el.innerHTML = text
+					AFRAME.scenes[0].appendChild(el)
+					toExportContent.push({filename:contentFilename})
+				}
+			})
+		if (r.headers.get('Content-Type').includes("/gzip"))
+			// does not work
+			r.text().then( text => {
+				if (contentFilename.endsWith('.packeddirectory.json.gz')) {
+					console.log ('.packeddirectory.json.zip detected')
+					const blob = new Blob([text], { type: 'application/gzip' })
+					console.log( DecompressBlob(blob) )
+					async function DecompressBlob(blob) {
+						const ds = new DecompressionStream("gzip");
+						const decompressedStream = blob.stream().pipeThrough(ds);
+						//const decompressedStream = blob.stream().pipeThrough(ds);
+						//const decompressedStream = blob.stream('application/gzip').pipeThrough(ds);
+						return await new Response(decompressedStream).blob();
+					}
+				}
+			})
+		if (r.headers.get('Content-Type').includes("text"))
+			r.text().then( text => {
+				let elFromId = document.getElementById(filePrefix+idFromFilename)
+				if (idFromFilename=="indexhtml") return
+				if (!elFromId) {
+					let el = addNewNoteAsPostItNote( text, "0 "+(Math.random()+1)+" -0.5" ) 
+					el.id = filePrefix+idFromFilename
+					el.filename = filePrefix+contentFilename
+					el.setAttribute("target", "")
+					toExportContent.push(el)
+				} else {
+					elFromId.setAttribute("value", text)
+				}
+			})
+		if (r.headers.get('Content-Type').includes("model/gl")) // to catch model/gltf+json or glb
+			r.text().then( text => {
+				let elFromId = document.getElementById(filePrefix+idFromFilename)
+				// exception with e.g. assets/ within path
+				let forceReuse = false
+				if (contentFilename.includes('assets/')) forceReuse = true
+				if (!elFromId || forceReuse) {
+					let el = document.createElement("a-gltf-model")
+					toExportContent.push(el)
+					AFRAME.scenes[0].appendChild(el)
+					el.setAttribute("position", "0 "+(Math.random()+1)+" -0.5" ) 
+					el.setAttribute("src", contentFilename)
+					el.setAttribute("scale", ".1 .1 .1")
+					el.setAttribute("target", "")
+					el.id = filePrefix+idFromFilename
+					el.filename = filePrefix+contentFilename
+				} else {
+					elFromId.setAttribute("src", contentFilename + "#"+Date.now()) // try to force update
+				}
+			})
+		if (r.headers.get('Content-Type').includes("image"))
+			r.text().then( text => {
+				if ( contentFilename.match(/.*\.pdf-(\d+)\.jpg/)){
+					// this could instead become a player/viewer, thus bringing some interactions to go to previous/next page
+					// assuming they don't exist yet, made from conversion
+					let maxPage = Number( contentFilename.match(/.*\.pdf-(\d+)\.jpg/)[1] )
+					let filenameStart = contentFilename.replace(/\.pdf.*/,'')
+					const viewerThresholdPages = 5 // 10 at threshold, otherwise should be a viewer
+					if (maxPage < viewerThresholdPages) for (let i = 0; i<maxPage; i++){
+						let fullPath = filenameStart+'.pdf-'+i+'.jpg'
+						let el = document.createElement("a-image")
+						toExportContent.push(el)
+						AFRAME.scenes[0].appendChild(el)
+						el.setAttribute("position", "0 "+(Math.random()+1)+" "+(-1.5-i/10) ) 
+						el.setAttribute("src", fullPath)
+						el.setAttribute("target", "")
+						el.id = fullPath.replaceAll('.','')
+						el.filename = fullPath
+					} else {
+						console.warn( maxPage, filenameStart,', using a viewer instead' )
+						// should also hide/delete all previously loaded page, if any
+						players[filenameStart] = { maxPage : maxPage, currentPage : 0, playerId: filenameStart, ux: [] }
+						let fullPath = filenameStart+'.pdf-'+0+'.jpg'
+						let el = document.createElement("a-image")
+						toExportContent.push(el)
+						AFRAME.scenes[0].appendChild(el)
+						let numberOfPlayers = Object.values( players ).length
+						let playerX = numberOfPlayers*1.2-1 // too close but useful to test
+						el.setAttribute("position", ""+playerX+" 1.1 -.7" ) 
+							// position could be based on the number of existing players to avoid overlap
+						el.setAttribute("src", fullPath)
+						el.setAttribute("target", "")
+						el.id = fullPath.replaceAll('.','')
+						el.filename = fullPath
+						// should also add a optional billboarding so that once moved, always readible
+						players[filenameStart].ux.push( addNewNote( "jxr viewerFullscreen('"+filenameStart+"')", (playerX-0.4)+' 0.8 -0.4') )
+						players[filenameStart].ux.push( addNewNote( "jxr viewerPrevious('"+filenameStart+"')", (playerX-0.4)+' 1 -0.4') )
+						players[filenameStart].ux.push( addNewNote( "jxr viewerNext('"+filenameStart+"')", (playerX+0.4)+' 1 -0.4') )
+						players[filenameStart].ux.push( addNewNote( "jxr cloneCurrentPage('"+filenameStart+"')", (playerX+0.4)+' 1.2 -0.4') )
+						players[filenameStart].ux.push( addNewNote( "jxr viewerClose('"+filenameStart+"')", (playerX+0.4)+' 1.4 -0.4') )
+						// ideally would be attached to content too
+						fetch(filenameStart+'.pdf.images.json').then( r => { if (r.ok) { return r.json() } } ).then( r => {
+							if (!r) return
+							// if exists should augment the viewer to display images to the side as targets too
+							r.map( url => {
+								let imageEl = document.createElement("a-image")
+								//AFRAME.scenes[0].appendChild(imageEl)
+								el.appendChild(imageEl)
+								imageEl.setAttribute("target", "")
+								imageEl.setAttribute("src", url)
+								imageEl.setAttribute("opacity", .5)
+								imageEl.setAttribute("scale", ".2 .2 .2")
+								if (Math.random()<.5)
+									x=(-Math.random()*1-1) 
+								else
+									x=(Math.random()*1+1)
+								// further to the sides
+								//imageEl.setAttribute("position", "" + x + " "+(Math.random()*1+.5)+" " + (-1.0+Math.random()/10 ) )
+								imageEl.setAttribute("position", "" + (playerX+x/2) + " "+(Math.random()*1-.5)+" " + (Math.random()/10 ) )
+								imageEl.filename = fullPath // provenance
+								// this should instead be parented to the viewer THEN deparented with the absolute position
+									// if not, having multiple viewers will be problematic
+									// could be done based how target has been updated to work despite parenting
+										// actually it mean it should already work as-is
+											// but it does not... so probably using the wrong JXR version
+												// teleport branch might have the fix
+								// https://git.benetou.fr/utopiah/text-code-xr-engine/commits/branch/teleport
+									// indeed didn't merge 5 months ago
+								// https://git.benetou.fr/utopiah/text-code-xr-engine/commits/branch/xr-to-2D-board
+							})
+						})
+						fetch(filenameStart+'.pdf.visualmeta.json').then( r => { if (r.ok) { return r.json() } } ).then( r => {
+							if (!r) return
+							console.log('visualmeta', r )
+							el.visualmeta = r
+							let elAbstract = addNewNoteAsPostItNote( r['visual-meta'].abstract, position=`-0.5 1.1 -0.5`) 
+							setTimeout( _ => elAbstract.setAttribute('troika-text', 'font-size', '0.1' , 100 ) )
+							// no impact
+						})
+					}
+				} else {
+					let elFromId = document.getElementById(filePrefix+contentFilename)
+					if (!elFromId) {
+						let el = document.createElement("a-curvedimage")
+						el.setAttribute("radius", 1)
+						el.setAttribute("theta-length", 100)
+						el.setAttribute("theta-start", -240)
+						toExportContent.push(el)
+						AFRAME.scenes[0].appendChild(el)
+						el.setAttribute("position", (Math.random()/2-1)+" "+(Math.random()+1)+" "+(Math.random()/10-1) ) 
+						el.setAttribute("rotatin", "0 90 0")
+						el.setAttribute("src", contentFilename)
+						el.setAttribute("target", "")
+						el.id = filePrefix+idFromFilename
+						el.filename = filePrefix+contentFilename
+					} else {
+						elFromId.setAttribute("src", contentFilename + "#"+Date.now()) // try to force update
+					}
+				}
+				/* does not work, see builder.html instead
+				// draw a map with walls, walkable area, trees, etc on desktop using e.g. Inkscape or Gimp
+					// save over with e.g. .live
+				if ( contentFilename.match(/.*.2dmap.png/)){
+					let img = document.createElement('img');
+					let canvas = document.createElement('canvas');
+					let context = canvas.getContext('2d');
+					img.src = 'data:image/png;base64,' + btoa( text )
+					canvas.width = img.width;
+					canvas.height = img.height;
+					context.drawImage(img, 0, 0 );
+					let myData = context.getImageData(0, 0, 100, 100)
+					console.log(myData)
+				}
+				*/
+			})
+		// should list unsupported content-types
+	})
+}
+
+// to export the generated targets
+function exportManipulableContent(){
+	console.log('save as .layout.json file')
+		// does have any impact, should consider .layout.json parsing instead
+	return toExportContent
+		.filter( el => (el.filename != 'default.layout.json') )
+		.map( el => { 
+			let res = {}
+			res.filename = el.filename
+			if (el.id) {
+				res.id= el.id
+				res.position= el.getAttribute("position")
+				res.rotation= el.getAttribute("rotation")
+			}
+			return res 
 		})
 }
 
-// switchSide() showcase a selector/attribute model. Maybe others do work this way.
-// might be possible to have a onreleased neary a selector, e.g #rightHand as a way to manage gestures
-	// e.g onreleased="" on #rightHand or #leftHand could add/remove the attribute, e.g pinchprimary/pinchsecondary
-		// it could also remove it for any other entity if it's an exclusive attribute (can only be used once)
-
-// need to list which entities can actually receive an attribute related to gesture
-	// for example pinchprimary/pinchsecondary need to be on entities with hand-tracking-controls 
-	// it would not make sense to expect a pinch from a sphere nor a single finger of a hand
-
-// draw a line between a selector and its instancing
-	// e.g between "#rightHand" and actually the element with this id
-
-var tips = {
-	left : {},
-	right : {},
+function saveToCompanion(){
+	fetch('/save-layout/'+JSON.stringify(exportManipulableContent()))
+		.then(r=>r.json())
+		.then(r=>console.log('saved to', r)) // not yet accessible, outside of public directory
 }
 
+function importManipulableContent(){
+	console.warn('does have any impact, should consider .layout.json parsing instead ( which is based on fetch though )')
+}
+
+</script>
+<canvas width="100px" height="100px" id="transparent" style="display:none;"></canvas>
+    <div style="position:fixed;z-index:1; top: 0%; right: 0%; ">
+	    <a download='highlight.png' href=''>download</a>
+    </div>
+<script>
+let canvas = document.getElementById("transparent");
+let ctx = canvas.getContext("2d");
+
+// edited from https://git.benetou.fr/utopiah/text-code-xr-engine/commit/ad6038a706b48d7edebbb9723ad5df95f3db95b4
 AFRAME.registerComponent('draw-on-board', {
   init: function () {
 	// get right hand fingertip, if "beyond" board, add something
 	// boardEl.setAttribute("position", "0 1.5 -1.2")
-	this.z = document.getElementById("board").getAttribute("position").z
-	this.z = -1.2 // cheating, needed as it does yet exist
         this.throttledFunction = AFRAME.utils.throttle(this.draw, 50, this);
         this.p = document.querySelector('[pinchprimary]')
         this.tip = new THREE.Vector3(); // create once an reuse it
@@ -148,403 +1044,211 @@ AFRAME.registerComponent('draw-on-board', {
 	let tip = this.tip
         this.p.object3D.traverse( e => { if (e.name == 'index-finger-tip' ) tip = e.position })
 	if (tip.z) {
-		if (tip.z < this.z){
-			let newPos = new THREE.Vector3( tip.x, (tip.y+1.5), (this.z+.01) )
-			if ( this.lastPoint && this.lastPoint.distanceTo( newPos ) > .01 ){
-				// merge nearby point
-				let drawEl = document.createElement("a-box")
-				drawEl.setAttribute("width", .01)
-				drawEl.setAttribute("depth", .02)
-				drawEl.setAttribute("height", .01)
-				drawEl.setAttribute("color", "red")
-				drawEl.setAttribute("position", "" + tip.x + " " + (tip.y+1.5) + " " + (this.z+.01) )
-				// tip.y seems to be too low... there is an offset too
-				AFRAME.scenes[0].appendChild( drawEl )
-			}
-			this.lastPoint = newPos
+		let newPos = new THREE.Vector3( tip.x, tip.y, tip.z )
+		if ( this.lastPoint && this.lastPoint.distanceTo( newPos ) > .01 ){
+			// cf raycaster version to get UVs, could try to add on index instead
 		}
+		this.lastPoint = newPos
 	}
-	
+
   },
   tick: function (t, dt) {
     this.throttledFunction();  // Called once a second.
    },
 })
 
-AFRAME.registerComponent('save-on-exit-xr', {
-  init: function () {
-    var sceneEl = this.el;
-	sceneEl.addEventListener('exit-vr', _ => {
-		saveBoard() // only when exiting VR proper, NOT "multitasking" so added onreleased to enable that workflow too
-		showBoardFromHash()
-	})
+AFRAME.registerComponent('raycaster-listen', {
+// could also add the overlay transparent pannel in front rather than manually adding it
+   init: function () {
+    // Use events to figure out what raycaster is listening so we don't have to
+    // hardcode the raycaster.
+    this.el.addEventListener('raycaster-intersected', evt => {
+      this.raycaster = evt.detail.el;
+    });
+    this.el.addEventListener('raycaster-intersected-cleared', evt => {
+      this.raycaster = null;
+    });
+    window.highlightToExport = []
+  },
+
+  tick: function () {
+    if (!this.raycaster) { return; }  // Not intersecting.
+
+    let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+    if (!intersection) { return; }
+    	//console.log(intersection.uv);
+	    window.highlightToExport.push( intersection.uv )
+	  // this could also be a data structure to export after then be applied back on the source of the image (e.g. PDF)
+	ctx.fillStyle = "#0cc";
+	let x = intersection.uv.x * 100 // should be also offsetsed by 100- on curved image (?!)
+	let y = 100-intersection.uv.y * 100
+	ctx.fillRect(x,y,1,1)
+	// will probably cause flickering... consider texture.needsUpdate instead or canvas.toDataURL(), might be faster
+	this.el.setAttribute("src", canvas.toDataURL() )
+	document.querySelector('[download]').href=document.getElementById('transparent').toDataURL()
   }
 });
 
-function saveBoard(){
-	let positions = [] // ordered is preserved as the elements are created in order too (bit risky)
-	getArrayFromClass("pannels").map( p => {
-		let v = p.getAttribute("position")
-
-		let o = new THREE.Vector3()
-		o.x = v.x.toFixed(3)
-		o.y = v.y.toFixed(3)
-		o.z = v.z.toFixed(3)
-
-		positions.push( o )
-	})
-
-	let data = {}
-	data.positions = positions
-
-	window.location.hash = JSON.stringify(data)
-	// generate URL and append the optional forced 2D overlay parameter
-		// warning : a URI has a maximum length which might be too short due to text content
-		// we can rely on the index position of the array ASSUMING that the .json file does not change between both moments
-}
-
-//const billBoardSourceURL = "../content/nlnetproposal.json"
-const billBoardSourceURL = "../content/snippets.json"
-
-function showBoardFromHash(){ // the flattening... not very useful for now, ideally could be brought to a better canvas
-	let positions = JSON.parse( decodeURI( window.location.hash.substring(1) ) ).positions
-
-	//could already do a preview
-	let canvas2DpreviewEl = document.createElement('div')
-	document.body.appendChild( canvas2DpreviewEl )
-	canvas2DpreviewEl.style = "zIndex:99; position:absolute; top:0; left:0; width:90%; height:90%; background-color:black;"
-
-	// done again, should be cached instead
-	fetch(billBoardSourceURL).then( r => r.json() ).then( json => {
-		let count = json.length // can get too high, thus unreachable, sticking to 1m total
-		json.map( (l,i) => {
-			let content = l
-			// trim very long texts (should evoque the memory of instead, other cluttering)
-			if (count > 500) content = l.substring(0,500) + "\n..."
-			let boardEl = document.createElement('span')
-			boardEl.innerText = content
-			boardEl.draggable = true
-			let pos = positions[i]
-			let x = 500 + pos.x * 1000
-			let y = pos.y * 500 - 200
-			let z = Math.round( pos.z*100 + 999 )
-			boardEl.style = "z-index:"+z+"; position:absolute; top:"+y+"px; left:"+x+"px; color:white; width: 1000px;"
-			boardEl.className = "boardElement2D"
-			canvas2DpreviewEl.appendChild( boardEl )
-			dragElement( boardEl )
-		})
-
-		// add 2D button on corner to copy data to clipboard
-		let boardButtonData = document.createElement( "input" )
-		boardButtonData.id = "boardbuttondata"
-		let content = []
-		getArrayFromClass("boardElement2D").map( p => content.push( {
-				zIndex: p.style.zIndex, 
-				x: p.style.left, 
-				y: p.style.top
-			})
-		)
-		boardButtonData.style = "z-index:999; position:absolute; top:0px; left:0px; color:black; width: 100px;"
-		boardButtonData.value = JSON.stringify( content )
-		canvas2DpreviewEl.appendChild( boardButtonData )
-
-
-		/* from https://visual-meta.info */
-		let textareaEl = document.createElement( "textarea" )
-		textareaEl.id = "textareavisualmeta"
-		textareaEl.value = "@{visual-meta-start}"
-		getArrayFromClass("boardElement2D").map( p => 
-			textareaEl.value += `\ncontent={${p.innerText}}\nposition={${p.style.left.replace('px','')},${p.style.top.replace('px','')},${p.style.zIndex}}`
-		)
-		textareaEl.value += "\n@{visual-meta-start}"
-		textareaEl.style = "z-index:999; position:absolute; bottom:0px; left:0px; color:black; width: 800px; height:400px;"
-		canvas2DpreviewEl.appendChild( textareaEl )
-
-	})
-}
-
-function updateBoardButtonData(){
-	let boardButtonData = document.getElementById("boardbuttondata")
-	let content = []
-	getArrayFromClass("boardElement2D").map( p => content.push( {
-			zIndex: p.style.zIndex, 
-			x: p.style.left, 
-			y: p.style.top
-		})
-	)
-	boardButtonData.value = JSON.stringify( content )
-
-	let textareaEl = document.getElementById("textareavisualmeta")
-	textareaEl.value = "@{visual-meta-start}"
-	getArrayFromClass("boardElement2D").map( p => 
-		textareaEl.value += `\ncontent={${p.innerText}}\nposition={${p.style.left.replace('px','')},${p.style.top.replace('px','')},${p.style.zIndex}}`
-	)
-	textareaEl.value += "\n@{visual-meta-start}"
-	textareaEl.style = "z-index:999; position:absolute; bottom:0px; left:0px; color:black; width: 800px; height:400px;"
-
-	// JSON Canvas support
-
-	var JSONCanvas = { nodes : [], edges : [] }
-	getArrayFromClass("boardElement2D").map( (p,i) => JSONCanvas.nodes.push( {
-			x: Number(p.style.left.replace('px','')),
-			y: Number(p.style.top.replace('px','')),
-			text: p.innerText,
-			type: "text",
-		        width: 200,
-		        height: 200,
-			id: "nodeid_"+i // as there is not set id for now
-		})
-	)
-	// edges could be updated based on links as <a-line> or <a-tube> but this isn't done in XR yet.
-	console.log( JSONCanvas )
-
-}
-
-function dragElement(elmnt) { // from https://www.w3schools.com/howto/howto_js_draggable.asp
-  var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-  elmnt.onmousedown = dragMouseDown;
-
-  function dragMouseDown(e) {
-    e = e || window.event;
-    e.preventDefault();
-    // get the mouse cursor position at startup:
-    pos3 = e.clientX;
-    pos4 = e.clientY;
-    document.onmouseup = closeDragElement;
-    // call a function whenever the cursor moves:
-    document.onmousemove = elementDrag;
-  }
-
-  function elementDrag(e) {
-    e = e || window.event;
-    e.preventDefault();
-    // calculate the new cursor position:
-    pos1 = pos3 - e.clientX;
-    pos2 = pos4 - e.clientY;
-    pos3 = e.clientX;
-    pos4 = e.clientY;
-    // set the element's new position:
-    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-  }
-
-  function closeDragElement() {
-    // stop moving when mouse button is released:
-    document.onmouseup = null;
-    document.onmousemove = null;
-	// note that this should probably save back to the hash too, otherwise no persistance.
-	// could also consider saving to JSON or whatever useful format (probably https://jsoncanvas.org )
-	updateBoardButtonData()
-  }
-} // done
-
-AFRAME.registerComponent('billboard-content', {
-  init: function(){
-	let positions = false
-	if (window.location.hash)
-	positions = JSON.parse( decodeURI( window.location.hash.substring(1) ) ).positions
-	// assume JSON is correct...
-
-	let boardEl = document.createElement("a-box")
-	boardEl.setAttribute("width", 2)
-	boardEl.setAttribute("depth", .01)
-	boardEl.setAttribute("height", 1)
-	boardEl.setAttribute("color", "#303030")
-	boardEl.setAttribute("position", "0 1.5 -1.2")
-	boardEl.id = "board"
-	AFRAME.scenes[0].appendChild( boardEl )
-	var grid = new THREE.GridHelper(1, 10, 0xFFFFFF, 0x888888 );
-	grid.rotateX(Math.PI/2)
-	grid.translateY(.01)
-	grid.translateX(.5)
-	boardEl.object3D.add(grid);
-	var grid = new THREE.GridHelper(1, 10, 0xFFFFFF, 0x888888 );
-	grid.rotateX(Math.PI/2)
-	grid.translateY(.01)
-	grid.translateX(-.5)
-	boardEl.object3D.add(grid);
-	fetch('../content/DynamicView_260924.json').then( r => r.json() ).then( json => {
-		let positionedNodes = {}
-		console.log( json.nodes.map( l => l.title ) )
-		json.nodes.map( (l,i) => {
-			let noteEl
-			let pos = json.layout.nodePositions[l.identifier]
-			let x = pos.x/1000
-			let y = 1.2-pos.y/1000
-			noteEl = addNewNote(l.title, ""+x+" "+y+ " -1", scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
-			noteEl.setAttribute("max-width", 10)
-			positionedNodes[l.title] = ""+x+" "+y+ " -1"
-		})
-		fetch('../content/glossary.json').then( r => r.json() ).then( glossaryJson => {
-				let nodesNames = json.nodes.map( l => l.title )
-				let found = []
-				let entries = Object.values(glossaryJson.entries)
-				json.nodes.map( n => {
-					found.push( entries.filter(e=>e.entry.includes(n.title)).map( e => { return {title: n.title, entry: e.phrase} }) )
-				})
-				found = found.filter( e=> e.length ).map( m => { // list of pairs, but not all entry are nodes, so must remove them
-					return m.filter( n => nodesNames.includes(n.entry) ) 
-				})
-				// might have to remove duplicates as some definition have multiple entries
-					// e.g. Glossary or Visual-Meta
-				found.map( f => {
-					f.map( fe => {
-						let tubeEl = document.createElement("a-tube")
-						tubeEl.setAttribute("path", positionedNodes[fe.title] +', '+positionedNodes[fe.entry])
-						tubeEl.setAttribute("radius", "0.001")
-						tubeEl.setAttribute("opacity", "0.1")
-						AFRAME.scenes[0].appendChild(tubeEl)
-						// won't get updated live while moving though, assuming the nodes are NOT picked
-							// could rely on the live-selector-line component instead, relying on selectors
-								// present in the companion exploration
-									// ~/Prototypes/fot_sloan_companion/public/index.html
-					})
-				})
-
-		})
-	})
-	// bringing content in
-	fetch(billBoardSourceURL).then( r => r.json() ).then( json => {
-		let count = json.length // can get too high, thus unreachable, sticking to 1m total
-		json.map( (l,i) => {
-			let content = l
-			// trim very long texts (should evoque the memory of instead, other cluttering)
-			if (count > 500) content = l.substring(0,500) + "\n..."
-			// could filter out or highlight when l begins with "TODO:"
-			let noteEl
-			if (positions)
-				noteEl = addNewNote(content, positions[i], scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
-			else 
-				noteEl = addNewNote(content, "-0.5 "+ (i/count+0.7)+" "+(-0.5-Math.random()), scale=".1 .1 .1", null, "pannels") // should add a class for 2D export
-			noteEl.setAttribute("max-width", 10)
-			noteEl.setAttribute("jsonID", i)
-			noteEl.setAttribute("onreleased", "saveBoard()")
-			// could also possible insure that it's in front of the board, always
-		})
-		billboarding = true
-		makeAnchorsVisibleOnTargets()
-	})
+// from https://git.benetou.fr/utopiah/text-code-xr-engine/src/branch/gesture-manager/index.html#L55
+AFRAME.registerComponent('live-selector-line', {
+  schema: {
+	  // unfortunately problematic it here due to ID being based on filenames and thus including '.' in their name
+	  // escaping .replaceAll('.','\.') while setting id also does not work
+	  start: {type: 'selector'},
+	  end: {type: 'selector'},
   },
-})
-
-AFRAME.registerComponent('selector-line', {
   init: function(){
+	  if (!this.data.start || !this.data.end){
+		  console.warn('start or end selector on live-selector-line not found')
+		  return
+	  }
 	this.newLine = document.createElement("a-entity")
 	this.newLine.setAttribute("line", "start: 0, 0, 0; end: 0 0 0.01; color: red")
+	this.newLine.id = "start_"+this.data.start.id+"_end_"+this.data.end.id
 	AFRAME.scenes[0].appendChild( this.newLine )
-        this.worldPosition=new THREE.Vector3()
-        this.hr=new THREE.Vector3()
-        this.hl=new THREE.Vector3()
-
-	document.querySelector('a-scene').addEventListener('enter-vr', _ => {
-		// seems there is a slight delay to get children for hands and no hasLoaded event to catch
-		setTimeout( _ => {
-				["left", "right"].map( (side, i) =>
-					[ "index-finger", "middle-finger", "ring-finger", "pinky-finger", "thumb"].map( (part, j) => {
-						document.querySelector('[hand-tracking-controls="hand: '+side+';"]').object3D.traverse( e => { if (e.name == part+"-tip") tips[side][part] = e })
-						addNewNote("#"+side+"_"+part+"_tip", "-1 "+ (j/10+1)+" "+(-1+i/10)) // for surfacing affordances as selectors 
-					})
-				)
-			}, 500
-		)
-		// risky bet, maybe hand are occluded when enter VR
-	} )
-	// might also want to "remove" them on leaving VR (works for AR and VR)
+        this.lastStartPos=new THREE.Vector3()
+        this.lastEndPos=new THREE.Vector3()
   },
   tick: function(){
-	let dist = 0
-	if (tips.left.thumb) { // assuming we are getting both hands which is not necessarily true
-		let proximityPairs = [
-			{ pair : [ tips.left.thumb, tips.right.thumb ], msg : 'thumbs touching-ish', eventName: "touchingThumbs"}, 
-			{ pair : [ tips.left["pinky-finger"], tips.right["pinky-finger"] ], msg : 'pinkies touching-ish', eventName: "touchingPinkies" },
-			{ pair : [ tips.right["pinky-finger"], tips.right["thumb"] ], msg : 'right pinky to thumb touching-ish', eventName: "rightPinkyToThumbTouching" },
-			// for the gesture manager those pairs and msg/events directly manipulable as selectors (cf this overall component)
-		]
-
-		proximityPairs.map( rule => {
-			dist = 0
-			dist = rule.pair[0].position.distanceTo(rule.pair[1].position)  
-			let threshold = .04 // tricky threshold, assuming with better camera and CV it will improve over time
-			if ( dist > 0 && dist < threshold) { 
-				console.log( rule.msg ) 
-				AFRAME.scenes[0].emit( rule.eventName )
-			}
-		})
-	}
-	// note that is about RELATIVE position, not absolute position!
-
-	// unfortunately here it does not work as it's not the entity itself for the hand that has a position... (cf NAF discussions)
-	let worldPosition = this.worldPosition
-	document.querySelector( this.el.getAttribute("value") ).object3D.traverse( e => { if (e.name == "wrist") {
-		worldPosition.copy(e.position);e.parent.updateMatrixWorld();e.parent.localToWorld(worldPosition)
-		}
-	})
-
-	let startPos = this.el.getAttribute("position") // does not seem to update..?
-	this.newLine.setAttribute("line", "end", AFRAME.utils.coordinates.stringify( worldPosition ) )
-	this.newLine.setAttribute("line", "start", AFRAME.utils.coordinates.stringify( startPos) )
-
-	//console.log( startPos, worldPosition)
+	  if (!this.data.start || !this.data.end){ return }
+	  let startPos = this.data.start.getAttribute("position")
+	  let endPos = this.data.end.getAttribute("position")
+	  if (startPos != this.lastStartPos){
+		this.newLine.setAttribute("line", "start", AFRAME.utils.coordinates.stringify( startPos) )
+		this.lastStartPos = startPos.clone()
+	  }
+	  if (endPos != this.lastEndPos){
+		this.newLine.setAttribute("line", "end", AFRAME.utils.coordinates.stringify( endPos ) )
+		this.lastEndPos = endPos.clone()
+	  }
   },
-  
-// try pinching modifier, e.g pinch while holding the SHIFT key
 })
 
+function applyJXRStyle(userStyle){
+	userStyle.map( style => {
+		Array.from( document.querySelectorAll(style.selector) ).map( el => el.setAttribute(style.attribute, style.value))
+	})
+}
+
+setTimeout( _ => {
+	// color scheme testing, unfortunately can't do CSS "proper"
+		// generalizing selector/attribute pairs though
+		// could be a user provided JSON, ideally CSS though as that's more common
+	const styles = {
+		light : [
+			{selector:'#start_file_sloan_testtxt_end_file_hello_worldtxt', attribute:'line', value: 'color:blue'},
+			{selector:'a-sky', attribute:'color', value: 'gray'},
+			{selector:'.notes', attribute:'color', value: 'black'},
+			{selector:'.notes', attribute:'outline-color', value: 'white'},
+			{selector:'a-troika-text a-plane', attribute:'color', value: 'red'},
+			{selector:'a-troika-text a-triangle', attribute:'color', value: 'darkred'}
+		],
+		print : [
+			{selector:'#start_file_sloan_testtxt_end_file_hello_worldtxt', attribute:'line', value: 'color:brown'},
+			{selector:'a-sky', attribute:'color', value: '#EEE'},
+			{selector:'.notes', attribute:'color', value: 'black'},
+			{selector:'.notes', attribute:'outline-color', value: 'white'},
+			{selector:'a-troika-text a-plane', attribute:'color', value: 'lightyellow'},
+			{selector:'a-troika-text a-triangle', attribute:'color', value: 'orange'}
+		],
+	}
+
+	setTimeout( _ => {  
+		AFRAME.scenes[0].setAttribute('live-selector-line', 'start:#file_sloan_testtxt;end:#file_hello_worldtxt')
+	} , 500 ) 
+	setTimeout( _ => { applyJXRStyle( styles['print'] ) } , 1000 ) 
+	// delayed enough time for the new element, here line between 2 notes, to get created
+
+	makeTargetLocationsVisible()
+
+	/* disable for now, works
+	Array.from( document.querySelectorAll('[target]') ).map( el => {
+		el.setAttribute('raycaster-targets', 'true') 
+		el.classList.add( 'collidable')
+	})
+	*/
+	// testing raycaster on controller, to check a bit more, if working could also be used on index finger tip or pen
+	
+	// newContent('au.pdf-11.jpg')
+	// newContent('other.pdf-11.jpg')
+
+	//document.getElementById("virtualdesktopplane").getAttribute("position").y += .4
+	//document.getElementById("virtualdesktopplane").getAttribute("position").z += .2
+	// should only be for desktop testing (can bring back down on entering XR)
+
+	// setInterval( _ => viewerFullscreen(''), 2000)
+}, 500)
+
+// trying to find a convenient way to be responsive with controllers to interact, not just hand tracking
+AFRAME.registerComponent('raycaster-targets', {
+	init: function () {
+    // Use events to figure out what raycaster is listening so we don't have to hardcode the raycaster.
+    this.el.addEventListener('raycaster-intersected', evt => { this.raycaster = evt.detail.el; });
+    this.el.addEventListener('raycaster-intersected-cleared', evt => { this.raycaster = null; });
+  },
+
+  tick: function () {
+    if (!this.raycaster) { return; }  // Not intersecting.
+
+    let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+    if (!intersection) { return; }
+    console.log(intersection.point);
+	  this.el.setAttribute( "color", "red" )
+  }
+})
+
+
 </script>
-<a-scene startfunctions save-on-exit-xr billboard-content draw-on-board>
-      <!-- Apartment 2 by Gabriele Romagnoli [CC-BY] via Poly Pizza -->
-	<a-gltf-model hide-on-enter-ar="" id="environment" rotation="0 90 0" position="-.3 .8 4" scale="8 8 8" gltf-model="../content/Apartment2.glb"></a-gltf-model>
-	<a-box color="gray" position="0 0 -1.6" scale="10 0.1 0.2"></a-box>
-	<a-box color="gray" position="0 2.7 -1.6" scale="10 0.1 0.2"></a-box>
-	<a-box color="gray" position="3.2 1.3 -1.6" scale="0.1 3 0.2"></a-box>
-	<a-box color="gray" position="-3.1 1.3 -1.6" scale="0.1 3 0.2"></a-box>
+<a-scene gridplace canonical-view list-files DISABLEDbook-page-from-plane="au.pdf-0.jpg"
+	xr-mode-ui="enabled: true; enterAREnabled: true; XRMode: xr;">
 
       <a-entity id="rig">
-		<a-entity id="player" hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0"></a-entity>
-		<a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
-		<a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
+                <a-entity id="player"
+                        hud camera look-controls wasd-controls waistattach="target: .movebypinch" position="0 1.6 0">
+		      <a-entity position="0 0 0" raycaster="objects: .clickable; showLine: true; far: 10; lineColor: red; lineOpacity: 0.5"></a-entity>
+
+		</a-entity>
+		<a-entity laser-controls="hand: left" raycaster="objects: .collidable; far: .5"></a-entity>
+		<a-entity oculus-touch-controls="hand: right"></a-entity>
+                <a-entity id="rightHand" pinchprimary hand-tracking-controls="hand: right;"></a-entity>
+                <a-entity id="leftHand" pinchsecondary wristattachsecondary="target: #box" hand-tracking-controls="hand: left;"></a-entity>
       </a-entity>
 
-      <a-box pressable start-on-press id="box" scale="0.05 0.05 0.05" color="pink"></a-box>
-      <!-- could attach functions here... BUT then they have to be activable with the other hand! -->
-      <!-- visual reminders of shortcuts, a poster on the far left/right of keyboard shortcuts -->
+      <a-box pressable="" start-on-press="" id="box" scale="0.05 0.05 0.05" color="pink" material="" geometry=""></a-box>
 
-      <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="../content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
-	scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
-      <a-sky hide-on-enter-ar color="lightblue"></a-sky>
-      <a-troika-text anchor=left target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text value="SpaSca : Spatial Scaffolding" anchor="left" outline-width="5%" font="https://fabien.benetou.fr/pub/home/future_of_text_demo/content/ChakraPetch-Regular.ttf" position="-5.26197 6.54224 -1.81284"
+        scale="4 4 5" rotation="90 0 0" troika-text="outlineWidth: 0.01; strokeColor: #ffffff" material="flatShading: true; blending: additive; emissive: #c061cb"></a-troika-text>
+      <a-sky hide-on-enter-ar color="black"></a-sky>
+  
+      <a-entity hide-on-enter-ar="" id="environmentsky" class="hidableenvironment" ></a-entity>
+      <a-troika-text anchor="left" target value="instructions : \n--right pinch to move\n--left pinch to execute" position="0 0.65 -0.2" scale="0.1 0.1 0.1"></a-troika-text>
+
+      <a-troika-text anchor=left target id="newContent('r2p.live')" value="jxr newContent('r2p.live.pdf-7.jpg')" position="0 1.10 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+
+      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="0 1.20 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-troika-text anchor=left target id="saveToCompanion" value="jxr saveToCompanion()" annotation="content:generating {L} file "position="0 1.15 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
       
-      <a-console position="-1 1.5 0" rotation="0 45 0" font-size="34" height=1 skip-intro=true></a-console>
+      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="0 1.05 -0.1" scale="0.1 0.1 0.1"></a-troika-text>
 
-      <a-troika-text anchor=left target selector-line value="#rightHand" position="1 1.30 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
+      <a-console position="-1 1.5 0" rotation="-45 90 0" font-size="34" height="0.5" skip-intro="true"></a-console>
 
-      <a-troika-text anchor=left target id="listboundgestures" value="jxr listBoundGestures()" position="1 1.40 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="switchside" value="jxr switchSide()" position="1 1.35 -0.4" scale="0.1 0.1 0.3"></a-troika-text>
-      <a-troika-text anchor=left target id="togglebillboarding" value="jxr toggleBillboarding()" position="1 1.55 -0.4" scale="0.1 0.1 0.3"></a-troika-text>
+      <a-image position="1 1.2 0" rotation="-45 -90 0" class="clickable" raycaster-listen src="#transparent" ></a-image>
+      <!--
+      <a-curvedimage position="0 1.2 -0.51" color="white" wireframe="true" radius="1" theta-length="100" theta-start="-240" ></a-curvedimage>
+      <a-curvedimage position="0 1.2 -0.5" class="clickable" raycaster-listen src="#transparent" radius="1" theta-length="100" theta-start="-240" ></a-curvedimage>
+      <a-entity modified-page-from-plane="url:au.pdf-0.jpg; shape: 0, .1, .15, .17, .15, .1, .05, 0, 0.1, 0, 0" position="0 1.5 -.5"></a-entity>
+      -->
+      <a-box id="virtualdesktopplane" wireframe=true position="0 .9 -.5" height=.01 depth=.4></a-box>
 
-      <a-troika-text anchor=left target id="locationreload" value="jxr location.reload()" position="1 1.20 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
-      <a-troika-text anchor=left target id="makeAnchorsVisibleOnTargets" value="jxr makeAnchorsVisibleOnTargets()" position="1 1.05 -0.4" scale="0.1 0.1 0.1"></a-troika-text>
-
-      <a-troika-text anchor=left target id="clearhash" value="jxr window.location.hash=''" position="-1 2.05 -1" scale="0.1 0.1 0.1"></a-troika-text>
-
-	<!-- need to be able to bind each anchor point as targets that update the matching a-tube path-->
-
-<a-entity visible=false>
-      <a-tube generate-anchors id="number1" path="-0.3 1.5 -1, -0.2 1.6 -1, -0.2 1.4 -1" radius="0.01" material="color: red"></a-tube>
-      <a-tube generate-anchors id="number4" path="0.1 1.6 -1, 0 1.5 -1, 0.1 1.5 -1, 0.1 1.4 -1" radius="0.01" material="color: red"></a-tube>
-
-      <a-tube generate-anchors id="vector1" path="0.3 1.4 -1, 0.3 1.6 -1" radius="0.005" material="color: green">
-	<a-cone scale=".02 .02 .02" color="green" position="0.3 1.6 -1"></a-cone><!-- should stick to end -->
-	</a-tube>
-
-      <a-tube generate-anchors id="vector2" path="0.3 1.4 -1, 0.5 1.6 -1" radius="0.005" material="color: blue">
-	<a-cone scale=".02 .02 .02" color="blue" position="0.5 1.6 -1"></a-cone><!-- should stick to end, also rotate -->
-	</a-tube>
-
-	<a-entity NOsumvectors="v1:#vector1; v2:#vector2"></a-entity>
-</a-entity>
+        <a-assets>
+		<img id="pgA" crossOrigin="anonymous" src="alt_highres-01.jpg">
+		<img id="pgB" crossOrigin="anonymous" src="alt_highres-02.jpg">
+        </a-assets>
+	<a-entity visible="false" layer="type: quad; src: #pgA" position="0 1.8 -1.5"></a-entity>
+      
+	<a-troika-text anchor=left target id="viewerFullscreen('r2p.live')" value="jxr viewerFullscreen('r2p.live')" position="-.5 1.10 0" rotation="0 90 0" scale="0.1 0.1 0.1"></a-troika-text>
 
     </a-scene>
+    
   </body>
-</script>
 </html>

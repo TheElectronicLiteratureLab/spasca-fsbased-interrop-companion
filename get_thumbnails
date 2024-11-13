@@ -1,0 +1,3 @@
+find_thumbnail(){     full_path="file://$(realpath -s "$1")";     md5name=$(printf %s "${full_path// /%20}" | md5sum);     find ~/.cache/thumbnails/ -name "${md5name%% *}.png"; }
+cd public
+for f in *; do echo -n "$f " ; cp "$(find_thumbnail $f | grep large)" "thumbnails/$f.png"; done;

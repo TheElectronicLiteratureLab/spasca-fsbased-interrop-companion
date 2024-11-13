@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@elasticemail/elasticemail-client": "^4.0.23",
+    "express": "^4.21.1",
+    "ip": "^2.0.1",
+    "node-html-to-image": "^5.0.0"
+  }
+}

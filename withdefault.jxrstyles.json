@@ -1,0 +1,26 @@
+{
+		"default" : [
+			{"selector":"#start_file_sloan_testtxt_end_file_hello_worldtxt", "attribute":"line", "value": "color:blue"},
+			{"selector":"a-sky", "attribute":"color", "value": "lightblue"},
+			{"selector":".notes", "attribute":"color", "value": "purple"},
+			{"selector":".notes", "attribute":"outline-color", "value": "darkblue"},
+			{"selector":"a-troika-text a-plane", "attribute":"color", "value": "white"},
+			{"selector":"a-troika-text a-triangle", "attribute":"color", "value": "gray"}
+		],
+		"light" : [
+			{"selector":"#start_file_sloan_testtxt_end_file_hello_worldtxt", "attribute":"line", "value": "color:blue"},
+			{"selector":"a-sky", "attribute":"color", "value": "gray"},
+			{"selector":".notes", "attribute":"color", "value": "black"},
+			{"selector":".notes", "attribute":"outline-color", "value": "white"},
+			{"selector":"a-troika-text a-plane", "attribute":"color", "value": "red"},
+			{"selector":"a-troika-text a-triangle", "attribute":"color", "value": "darkred"}
+		],
+		"print" : [
+			{"selector":"#start_file_sloan_testtxt_end_file_hello_worldtxt", "attribute":"line", "value": "color:brown"},
+			{"selector":"a-sky", "attribute":"color", "value": "#EEE"},
+			{"selector":".notes", "attribute":"color", "value": "black"},
+			{"selector":".notes", "attribute":"outline-color", "value": "white"},
+			{"selector":"a-troika-text a-plane", "attribute":"color", "value": "lightyellow"},
+			{"selector":"a-troika-text a-triangle", "attribute":"color", "value": "orange"}
+		]
+}

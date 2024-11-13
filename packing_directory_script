@@ -1,0 +1,14 @@
+#!/bin/bash
+
+cd public
+echo -n '[' > ../pack.json; for X in *;
+do
+	echo -n "{\"filename\":\"$X\", \"content\":\"$(base64 -w0 $X)\"" >> ../pack.json;
+	# curl --insecure -I https://192.168.0.129:3000/$X | grep "Content-Type" | sed 's/;.*//' | sed 's/\(.*\): \(.*\)/,"\1":"\2"/' #>> ../pack.json;
+	echo -n ",\"contenttype\":\"" >> ../pack.json;
+	curl --insecure -I -s -o /dev/null -w '%header{Content-Type}' https://192.168.0.129:3000/$X | sed 's/;.*//' >> ../pack.json;
+	echo -n "\"}," >> ../pack.json;
+done;
+
+sed -i "s/.$//" ../pack.json;
+echo -n "]" >> ../pack.json
