@@ -535,7 +535,7 @@ changenotify.on('close', (code) => {
 var ElasticEmail = require('@elasticemail/elasticemail-client');
 var defaultClient = ElasticEmail.ApiClient.instance;
 var apikey = defaultClient.authentications['apikey'];
-apikey.apiKey = "0C3D85070303586EB6A3C74E770942F903ACA0C46AFEEDB86CA334A8937056CFFDE92AE7D109FF5AAC41AB2B3CCFF1EB"
+apikey.apiKey = "REVOKED"
 const emailsApi = new ElasticEmail.EmailsApi();
 
 const callback = (error, data, response) => {
